@@ -1,0 +1,6 @@
+{
+  "name": "Nexus EIMS",
+  "description": "A centralized Employee Information Management System for tracking personnel, departments, and payroll.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
