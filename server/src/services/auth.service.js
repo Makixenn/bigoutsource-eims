@@ -141,6 +141,25 @@ export const AuthService = {
     return publicUser(user);
   },
 
+  async changePassword(user, { currentPassword, newPassword }) {
+    const { error: verifyError } = await supabaseAuth.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+
+    if (verifyError) {
+      throw new AppError('Current password is incorrect', 401);
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+    });
+
+    if (error) throw new AppError(authErrorMessage(error), 400);
+
+    return { changed: true };
+  },
+
   async bootstrapSuperAdmin() {
     const email = normalizeEmail(env.seedSuperAdmin.email);
     const password = env.seedSuperAdmin.password;
