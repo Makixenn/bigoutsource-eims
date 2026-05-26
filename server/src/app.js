@@ -10,6 +10,7 @@ import siteRoutes from './routes/site.routes.js';
 import auditLogRoutes from './routes/auditLog.routes.js';
 import accountRoutes from './routes/account.routes.js';
 import userRoutes from './routes/user.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
 import { authenticate, requireRole } from './middleware/auth.middleware.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
 
@@ -64,6 +65,7 @@ app.use('/api/devices', authenticate, deviceRoutes);
 app.use('/api/device-assignments', authenticate, assignmentRouter);
 app.use('/api/audit-logs', authenticate, auditLogRoutes);
 app.use('/api/users', authenticate, requireRole('super_admin'), userRoutes);
+app.use('/api/settings', authenticate, requireRole('super_admin'), settingsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
