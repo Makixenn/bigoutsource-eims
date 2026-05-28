@@ -89,6 +89,7 @@ export const AuditLogModel = {
     userAgent = null,
   }) {
     const enrichedLog = await enrichWithProfileName({
+    const payload = toDatabasePayload({
       userId,
       userEmail,
       userName,
@@ -108,6 +109,10 @@ export const AuditLogModel = {
     });
 
     return enrichWithProfileName(normalize(rows[0]));
+      body: payload,
+    });
+
+    return normalize(rows[0]);
   },
 
   async findAll(filters = {}) {
@@ -126,6 +131,10 @@ export const AuditLogModel = {
     const logs = await Promise.all(rows.map((row) => enrichWithProfileName(normalize(row), profileCache)));
 
     return logs
+
+    const rows = await supabaseRequest('audit_logs', { searchParams });
+    return rows
+      .map(normalize)
       .filter((log) => !filters.entityType || log.entityType === filters.entityType)
       .filter((log) => !filters.entityId || log.entityId === filters.entityId)
       .filter((log) => !filters.action || matchesText(log.action, filters.action))
