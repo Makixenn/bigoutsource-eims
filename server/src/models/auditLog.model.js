@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { supabaseRequest } from '../config/supabase.js';
+import { UserProfileModel } from './userProfile.model.js';
 
 function matchesText(value, search) {
   return String(value || '').toLowerCase().includes(String(search || '').toLowerCase());
@@ -43,6 +44,36 @@ function normalize(row) {
   };
 }
 
+function isSystemActor(log) {
+  return !log || log.userId === 'system' || log.userEmail === 'System';
+}
+
+function shouldUseProfileName(log) {
+  return !isSystemActor(log) && (!log.userName || log.userName === log.userEmail);
+}
+
+async function enrichWithProfileName(log, cache = new Map()) {
+  if (!shouldUseProfileName(log)) return log;
+
+  const cacheKey = log.userId ? `id:${log.userId}` : `email:${log.userEmail}`;
+  if (!cache.has(cacheKey)) {
+    let profile = null;
+
+    if (log.userId) {
+      profile = await UserProfileModel.findById(log.userId).catch(() => null);
+    }
+
+    if (!profile && log.userEmail) {
+      profile = await UserProfileModel.findByEmail(log.userEmail).catch(() => null);
+    }
+
+    cache.set(cacheKey, profile?.fullName || '');
+  }
+
+  const fullName = cache.get(cacheKey);
+  return fullName ? { ...log, userName: fullName } : log;
+}
+
 export const AuditLogModel = {
   async create({
     userId,
@@ -57,7 +88,7 @@ export const AuditLogModel = {
     ipAddress = null,
     userAgent = null,
   }) {
-    const payload = toDatabasePayload({
+    const enrichedLog = await enrichWithProfileName({
       userId,
       userEmail,
       userName,
@@ -73,10 +104,10 @@ export const AuditLogModel = {
 
     const rows = await supabaseRequest('audit_logs', {
       method: 'POST',
-      body: payload,
+      body: toDatabasePayload(enrichedLog),
     });
 
-    return normalize(rows[0]);
+    return enrichWithProfileName(normalize(rows[0]));
   },
 
   async findAll(filters = {}) {
@@ -91,8 +122,10 @@ export const AuditLogModel = {
     if (filters.entityId) searchParams.entity_id = `eq.${filters.entityId}`;
 
     const rows = await supabaseRequest('audit_logs', { searchParams });
-    return rows
-      .map(normalize)
+    const profileCache = new Map();
+    const logs = await Promise.all(rows.map((row) => enrichWithProfileName(normalize(row), profileCache)));
+
+    return logs
       .filter((log) => !filters.entityType || log.entityType === filters.entityType)
       .filter((log) => !filters.entityId || log.entityId === filters.entityId)
       .filter((log) => !filters.action || matchesText(log.action, filters.action))
