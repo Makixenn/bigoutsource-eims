@@ -19,6 +19,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
 import { cn } from '@/src/lib/utils';
+import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
 import { accountService } from '@/src/services/accountService';
@@ -33,6 +34,7 @@ type AccountOption = {
   id: string;
   name: string;
   accountType: 'internal' | 'external';
+  departmentCode: string;
   lastUsedAt?: string;
 };
 
@@ -47,6 +49,7 @@ type EmployeeRecord = Employee & {
 type AddEmployeeForm = {
   employeeNumber: string;
   firstName: string;
+  middleName: string;
   lastName: string;
   accountAssignment: string;
   phone: string;
@@ -106,6 +109,17 @@ const defaultVisibleFieldKeys: DirectoryFieldKey[] = [
 ];
 const requiredVisibleFieldKeys: DirectoryFieldKey[] = ['fullName'];
 const maxVisibleFieldCount = 4;
+const recordsPerPage = 10;
+const tableRowHeightClass = 'h-16';
+const actionColumnWidth = '10rem';
+
+const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
+  fullName: 2.4,
+  employeeId: 1,
+  employeeNumber: 1,
+  accountAssignment: 1.35,
+  site: 0.8,
+};
 
 const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (emp: EmployeeRecord) => ReactNode }> = [
   { key: 'id', label: 'Record ID', render: (emp) => emp.id || '-' },
@@ -148,6 +162,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
 const initialForm: AddEmployeeForm = {
   employeeNumber: '',
   firstName: '',
+  middleName: '',
   lastName: '',
   accountAssignment: '',
   phone: '',
@@ -198,7 +213,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     accountAssignment: emp.accountAssignment || '',
     boEmail: emp.boEmail || '',
     emailPassword: emp.emailPassword || '',
-    lmsAccount: emp.lmsAccount || '',
+    lmsAccount: generateLmsAccount(emp.fullName || '') || emp.lmsAccount || '',
     pcName: emp.pcName || '',
     biosDate: emp.biosDate ? String(emp.biosDate).slice(0, 10) : '',
     windowsKey: emp.windowsKey || '',
@@ -233,7 +248,37 @@ function normalizeAccount(account: any): AccountOption | null {
     id: account.id,
     name: account.name,
     accountType: account.accountType || account.account_type || 'external',
+    departmentCode: account.departmentCode || account.department_code || '',
     lastUsedAt: account.lastUsedAt || account.last_used_at || '',
+  };
+}
+
+function sanitizeNamePart(value = '') {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function suggestDepartmentCode(name = '') {
+  return name
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
+    .join('');
+}
+
+function generatedPreview(form: AddEmployeeForm, account?: AccountOption) {
+  const first = sanitizeNamePart(form.firstName);
+  const middleInitials = form.middleName
+    .split(/\s+/)
+    .map((part) => sanitizeNamePart(part).charAt(0))
+    .join('');
+  const last = sanitizeNamePart(form.lastName);
+  const code = account?.departmentCode || suggestDepartmentCode(account?.name || '');
+  const identifier = `${first.charAt(0)}${middleInitials}${last}`;
+  const domain = account?.accountType === 'internal' ? 'com' : ['hc', 'utd'].includes(code) ? 'team' : 'ph';
+
+  return {
+    lmsAccount: first && last ? `${first}.${last}` : '',
+    boEmail: identifier && code ? `${identifier}.${code}@bigoutsource.${domain}` : '',
+    pcName: identifier && code ? `${code}-${identifier}` : '',
   };
 }
 
@@ -282,6 +327,8 @@ export default function Directory() {
   const [siteFilter, setSiteFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [accountFilter, setAccountFilter] = useState(searchParams.get('account') || 'All Account');
+  const [accountFilter, setAccountFilter] = useState('All Account');
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
   const [sortState, setSortState] = useState<SortState | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -385,14 +432,81 @@ export default function Directory() {
       }
 
       return null;
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const hasSearchTerm = normalizedSearchTerm.length > 0;
+
+  const filteredEmployees = employees
+    .filter((emp) => {
+      if (hasSearchTerm) {
+        return statusFilter === 'Archived' ? emp.isArchived : true;
+      }
+
+      return statusFilter === 'Archived' ? emp.isArchived : !emp.isArchived;
+    })
+    .filter((emp) => {
+      const searchableValues = [
+        emp.id,
+        emp.fullName,
+        emp.employeeId,
+        emp.employeeNumber,
+        emp.accountAssignment,
+        emp.phone,
+        emp.address,
+        emp.boEmail,
+        emp.emailPassword,
+        emp.lmsAccount,
+        emp.status,
+        emp.siteId,
+        emp.site,
+        emp.pcName,
+        emp.rustDeskId,
+        emp.rustdeskId,
+        emp.remoteId,
+        emp.esetStatus,
+        emp.biosDate,
+        emp.activityWatchStatus,
+        emp.windowsKey,
+        emp.updatedAt,
+        emp.updatedBy,
+      ];
+      const matchesSearch =
+        !hasSearchTerm ||
+        searchableValues.some((value) => String(value || '').toLowerCase().includes(normalizedSearchTerm));
+
+      const matchesSite = siteFilter === 'All' || emp.site === siteFilter;
+      const matchesStatus = statusFilter === 'All' || statusFilter === 'Archived' || emp.status === statusFilter.toLowerCase();
+      const matchesAccount = accountFilter === 'All Account' || emp.accountAssignment === accountFilter;
+
+      return matchesSearch && matchesSite && matchesStatus && matchesAccount;
     });
   };
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / recordsPerPage));
+  const pageStartIndex = (currentPage - 1) * recordsPerPage;
+  const paginatedEmployees = filteredEmployees.slice(pageStartIndex, pageStartIndex + recordsPerPage);
+  const showTableEmptyState = isLoading || filteredEmployees.length === 0;
+  const placeholderRowCount = showTableEmptyState ? 0 : Math.max(0, recordsPerPage - paginatedEmployees.length);
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, siteFilter, statusFilter, accountFilter]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const updateForm = (field: keyof AddEmployeeForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
+  const preview = generatedPreview(form, selectedAccount);
+  const selectedAccountMissingCode = Boolean(selectedAccount && !selectedAccount.departmentCode);
+  const accountBasedPreviewPlaceholder = selectedAccount
+    ? 'Generated after name is entered'
+    : 'Generated after name and account are entered';
   const internalAccounts = accounts.filter((account) => account.accountType === 'internal');
   const externalAccounts = accounts.filter((account) => account.accountType === 'external');
   const selectAccount = async (account: AccountOption) => {
@@ -412,6 +526,7 @@ export default function Directory() {
 
   const visibleFieldKeys = selectedFields ?? defaultVisibleFieldKeys;
   const visibleFields = directoryFields.filter((field) => visibleFieldKeys.includes(field.key));
+  const visibleFieldWeightTotal = visibleFields.reduce((total, field) => total + (columnWeights[field.key] || 1), 0);
   const isCustomFieldView = selectedFields !== null;
   const canSelectMoreFields = visibleFieldKeys.length < maxVisibleFieldCount;
   const isFieldVisible = (field: DirectoryFieldKey) => visibleFieldKeys.includes(field);
@@ -545,16 +660,17 @@ export default function Directory() {
     try {
       const created = await employeeService.create({
         employeeNumber: form.employeeNumber.trim() || undefined,
-        fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
+        firstName: form.firstName.trim(),
+        middleName: form.middleName.trim() || undefined,
+        lastName: form.lastName.trim(),
+        fullName: [form.firstName.trim(), form.middleName.trim(), form.lastName.trim()].filter(Boolean).join(' '),
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
-        boEmail: form.boEmail.trim() || undefined,
         emailPassword: form.emailPassword.trim() || undefined,
         status: form.status,
         siteId: selectedSite && selectedSite.id !== selectedSite.name ? selectedSite.id : undefined,
         siteName: selectedSite?.name,
-        pcName: form.pcName.trim() || undefined,
         rustdeskId: form.rustdeskId.trim() || undefined,
         remoteId: form.remoteId.trim() || undefined,
         esetStatus: form.esetStatus,
@@ -585,7 +701,7 @@ export default function Directory() {
   return (
     <PageLayout title="Personnel Database" contentClassName="w-full max-w-none">
       <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[14rem_minmax(0,1fr)]">
-        <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block">
+        <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block min-h-[80vh]">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
@@ -600,7 +716,7 @@ export default function Directory() {
               Reset
             </button>
           </div>
-          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+          <div className="max-h-[78vh] space-y-2 overflow-y-auto pr-1">
             {directoryFields.map((field) => {
               const checked = isFieldVisible(field.key);
               const required = isRequiredField(field.key);
@@ -718,7 +834,13 @@ export default function Directory() {
         </div>
 
         <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[920px]">
+          <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
+            <colgroup>
+              {visibleFields.map((field) => (
+                <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
+              ))}
+              <col style={{ width: actionColumnWidth }} />
+            </colgroup>
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                 {visibleFields.map((field) => (
@@ -740,50 +862,101 @@ export default function Directory() {
                         <ArrowUpDown className="h-3 w-3 opacity-60" />
                       )}
                     </button>
+                  <th
+                    key={field.key}
+                    className={cn(
+                      'h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
+                      field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
+                    )}
+                  >
+                    <div className="truncate">{field.label}</div>
                   </th>
                 ))}
-                <th className="px-4 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
+                <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F3F4F6]">
-              {filteredEmployees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-[#F9FAFB] transition-colors group">
+              {paginatedEmployees.map((emp) => (
+                <tr key={emp.id} className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group')}>
                   {visibleFields.map((field) => (
-                    <td key={field.key} className="px-4 py-4 text-sm font-bold text-[#111827]">
-                      {field.render(emp)}
+                    <td
+                      key={field.key}
+                      className={cn(
+                        'py-0 align-middle text-sm font-bold text-[#111827]',
+                        field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
+                      )}
+                    >
+                      <div className="truncate">{field.render(emp)}</div>
                     </td>
                   ))}
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-4 py-0 text-right align-middle">
                     <Link
                       to={`/employee/${emp.id}`}
-                      className="p-2 text-[#9CA3AF] hover:text-[#111827] hover:bg-white rounded-xl transition-all inline-flex items-center gap-2 text-xs font-bold"
+                      className="inline-flex h-9 items-center gap-2 rounded-xl p-2 text-xs font-bold text-[#9CA3AF] transition-all hover:bg-white hover:text-[#111827]"
                     >
-                      View Profile
+                      <span className="truncate">View Profile</span>
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   </td>
                 </tr>
               ))}
+              {Array.from({ length: placeholderRowCount }).map((_, index) => (
+                <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none')}>
+                  <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
+                </tr>
+              ))}
+              {showTableEmptyState && (
+                <tr className="h-[40rem]">
+                  <td colSpan={visibleFields.length + 1} className="px-4 py-0 text-center align-middle">
+                    <div className="mx-auto flex max-w-md flex-col items-center justify-center">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
+                        {isLoading ? <Loader2 className="h-8 w-8 animate-spin text-[#9CA3AF]" /> : <Search className="h-8 w-8 text-[#D1D5DB]" />}
+                      </div>
+                      <h3 className="text-lg font-bold text-[#111827]">{isLoading ? 'Loading records' : 'No records found'}</h3>
+                      <p className="text-sm text-[#6B7280]">{isLoading ? 'Fetching personnel data from the database.' : 'Try adjusting your filters or search keywords.'}</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
-          {(isLoading || filteredEmployees.length === 0) && (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-[#F3F4F6] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                {isLoading ? <Loader2 className="w-8 h-8 text-[#9CA3AF] animate-spin" /> : <Search className="w-8 h-8 text-[#D1D5DB]" />}
-              </div>
-              <h3 className="text-lg font-bold text-[#111827]">{isLoading ? 'Loading records' : 'No records found'}</h3>
-              <p className="text-sm text-[#6B7280]">{isLoading ? 'Fetching personnel data from the database.' : 'Try adjusting your filters or search keywords.'}</p>
-            </div>
-          )}
-
           <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
-            <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
-              Total Personnel: {filteredEmployees.length}
-            </p>
+            <div>
+              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                Total Personnel: {filteredEmployees.length}
+              </p>
+              <p className="mt-1 text-xs font-black text-[#111827]">
+                Page {currentPage} of {totalPages}
+              </p>
+            </div>
             <div className="flex gap-2">
-              <button disabled className="px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold text-[#9CA3AF] cursor-not-allowed">Previous</button>
-              <button className="px-4 py-1.5 bg-white border border-[#E5E7EB] rounded-xl text-xs font-bold text-[#111827] hover:bg-[#F3F4F6]">Next</button>
+              <button
+                type="button"
+                disabled={!hasPreviousPage}
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                className={cn(
+                  'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
+                  hasPreviousPage
+                    ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
+                    : 'text-[#9CA3AF] cursor-not-allowed'
+                )}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={!hasNextPage}
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                className={cn(
+                  'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
+                  hasNextPage
+                    ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
+                    : 'text-[#9CA3AF] cursor-not-allowed'
+                )}
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
@@ -796,7 +969,7 @@ export default function Directory() {
             <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
               <div>
                 <h2 className="text-lg font-black text-[#111827]">Add Employee Record</h2>
-                <p className="text-xs font-bold text-[#6B7280]">First name, last name, account, and site are required. LMS account is generated automatically.</p>
+                <p className="text-xs font-bold text-[#6B7280]">First name, last name, account, and site are required. LMS, email, and PC name are generated automatically.</p>
               </div>
               <button onClick={closeModal} className="p-2 rounded-xl text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#111827] transition-all">
                 <X className="w-5 h-5" />
@@ -811,6 +984,9 @@ export default function Directory() {
                 <Field label="First Name" required>
                   <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="First name" />
                 </Field>
+                <Field label="Middle Name">
+                  <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="Middle name" />
+                </Field>
                 <Field label="Last Name" required>
                   <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="Last name" />
                 </Field>
@@ -821,7 +997,7 @@ export default function Directory() {
                       onClick={() => setIsAccountDropdownOpen((current) => !current)}
                       className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#D1D5DB] focus:ring-2 focus:ring-[#111827]"
                     >
-                      <span className="truncate">{form.accountAssignment || 'Select recent account'}</span>
+                      <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
                       <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
                     </button>
                     {isAccountDropdownOpen && (
@@ -842,7 +1018,10 @@ export default function Directory() {
                   <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="Phone number" />
                 </Field>
                 <Field label="Bigoutsource Email">
-                  <Input type="email" value={form.boEmail} onChange={(value) => updateForm('boEmail', value)} placeholder="name@bigoutsource.com" />
+                  <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} />
+                </Field>
+                <Field label="LMS Account">
+                  <GeneratedValue value={preview.lmsAccount} placeholder="Generated after name is entered" />
                 </Field>
                 <Field label="Email Password">
                   <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="Email password" />
@@ -864,8 +1043,13 @@ export default function Directory() {
                   </Select>
                 </Field>
                 <Field label="PC Name">
-                  <Input value={form.pcName} onChange={(value) => updateForm('pcName', value)} placeholder="PC name" />
+                  <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} />
                 </Field>
+                {selectedAccountMissingCode && (
+                  <div className="md:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+                    This preview uses the suggested account code. Add a stored department code to this account before saving.
+                  </div>
+                )}
                 <Field label="RustDesk ID">
                   <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
                 </Field>
@@ -958,9 +1142,6 @@ function AccountDropdownGroup({
           className="flex w-full items-center justify-between gap-3 border-t border-[#F3F4F6] px-3 py-2.5 text-left text-sm font-bold text-[#111827] transition-all hover:bg-[#F9FAFB]"
         >
           <span className="truncate">{account.name}</span>
-          <span className="rounded-lg bg-[#F3F4F6] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280]">
-            {account.accountType}
-          </span>
         </button>
       ))}
     </div>
@@ -986,6 +1167,14 @@ function Input({
       onChange={(event) => onChange(event.target.value)}
       className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
     />
+  );
+}
+
+function GeneratedValue({ value, placeholder }: { value: string; placeholder: string }) {
+  return (
+    <div className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm font-bold text-[#4B5563]">
+      {value || placeholder}
+    </div>
   );
 }
 

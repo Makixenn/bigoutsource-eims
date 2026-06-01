@@ -118,4 +118,25 @@ export const EmployeeImportModel = {
 
     return normalize(rows[0]);
   },
+
+  async removeByIds(ids = []) {
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (!uniqueIds.length) return [];
+
+    const rows = await supabaseRequest(TABLE, {
+      method: 'DELETE',
+      searchParams: {
+        id: `in.(${uniqueIds.join(',')})`,
+      },
+    });
+
+    return Array.isArray(rows) ? rows.map(normalize) : [];
+  async remove(id) {
+    const rows = await supabaseRequest(TABLE, {
+      method: 'DELETE',
+      searchParams: { id: `eq.${id}` },
+    });
+
+    return rows.map(normalize);
+  },
 };
