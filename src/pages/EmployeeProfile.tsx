@@ -32,10 +32,18 @@ import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
 import { auditLogService } from '@/src/services/auditLogService';
+import { accountService } from '@/src/services/accountService';
 
 type SiteOption = {
   id: string;
   name: string;
+};
+
+type AccountOption = {
+  id: string;
+  name: string;
+  accountType: 'internal' | 'external';
+  departmentCode: string;
 };
 
 type EmployeeForm = {
@@ -146,6 +154,28 @@ function formatEmployeeName(firstName = '', lastName = '') {
   return first || last;
 }
 
+function sanitizeNamePart(value = '') {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function generatedPreview(fullName = '', account?: AccountOption) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const first = sanitizeNamePart(parts[0] || '');
+  const last = sanitizeNamePart(parts.length > 1 ? parts[parts.length - 1] : '');
+  const middleInitials = parts
+    .slice(1, -1)
+    .map((part) => sanitizeNamePart(part).charAt(0))
+    .join('');
+  const code = account?.departmentCode || '';
+  const identifier = `${first.charAt(0)}${middleInitials}${last}`;
+  const domain = account?.accountType === 'internal' ? 'com' : ['hc', 'utd'].includes(code) ? 'team' : 'ph';
+
+  return {
+    boEmail: identifier && code ? `${identifier}.${code}@bigoutsource.${domain}` : '',
+    pcName: identifier && code ? `${code}-${identifier}` : '',
+  };
+}
+
 function formatDate(value?: string) {
   if (!value) return 'Unknown';
   return new Intl.DateTimeFormat(undefined, {
@@ -232,6 +262,7 @@ export default function EmployeeProfile() {
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
   const [form, setForm] = useState<EmployeeForm>(emptyEmployee);
   const [sites, setSites] = useState<SiteOption[]>([]);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -260,6 +291,7 @@ export default function EmployeeProfile() {
           siteService.list().catch(() => []),
           auditLogService.list({ entityType: 'employees', entityId: id, limit: 50 }).catch(() => []),
         ]);
+        const accountData = await accountService.list().catch(() => []);
 
         if (!isMounted) return;
 
@@ -267,6 +299,12 @@ export default function EmployeeProfile() {
         setEmployee(normalized);
         setForm(normalized);
         setSites((Array.isArray(siteData) ? siteData : []).map((site: any) => ({ id: site.id, name: site.name })));
+        setAccounts((Array.isArray(accountData) ? accountData : []).map((account: any) => ({
+          id: account.id,
+          name: account.name,
+          accountType: account.accountType || account.account_type || 'external',
+          departmentCode: account.departmentCode || account.department_code || '',
+        })));
         setAuditLogs(Array.isArray(auditData) ? auditData : []);
       } catch (error: any) {
         toast.error(error.message || 'Unable to load employee profile');
@@ -329,12 +367,10 @@ export default function EmployeeProfile() {
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
-        boEmail: form.boEmail.trim() || undefined,
         emailPassword: form.emailPassword.trim() || undefined,
         status: form.status,
         siteId: selectedSite?.id,
         siteName: selectedSite?.name,
-        pcName: form.pcName.trim() || undefined,
         biosDate: form.biosDate || undefined,
         windowsKey: form.windowsKey.trim() || undefined,
         rustdeskId: form.rustdeskId.trim() || undefined,
@@ -400,6 +436,11 @@ export default function EmployeeProfile() {
   }
 
   const pageTitle = employee.fullName ? `Profile: ${employee.fullName}` : 'Employee Profile';
+  const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
+  const preview = generatedPreview(form.fullName, selectedAccount);
+  const accountBasedPreviewPlaceholder = selectedAccount
+    ? 'Generated after name is entered'
+    : 'Generated after name and department are entered';
 
   return (
     <PageLayout title={pageTitle}>
@@ -519,10 +560,21 @@ export default function EmployeeProfile() {
             <ProfileSection icon={Globe} title="Work & Account Info">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                 <ProfileField label="Department/Account Type" icon={Briefcase} editing={isEditing}>
-                  {isEditing ? <Input value={form.accountAssignment} onChange={(value) => updateForm('accountAssignment', value)} /> : employee.accountAssignment || 'Not Assigned'}
+                  {isEditing ? (
+                    <Select value={form.accountAssignment} onChange={(value) => updateForm('accountAssignment', value)}>
+                      <option value="">Select department</option>
+                      {accounts.map((account) => (
+                        <option key={account.id} value={account.name}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    employee.accountAssignment || 'Not Assigned'
+                  )}
                 </ProfileField>
                 <ProfileField label="BigOutsource Email" icon={Mail} editing={isEditing}>
-                  {isEditing ? <Input type="email" value={form.boEmail} onChange={(value) => updateForm('boEmail', value)} /> : employee.boEmail || 'Not Assigned'}
+                  {isEditing ? <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} /> : employee.boEmail || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="Email Password" icon={Key} editing={isEditing}>
                   {isEditing ? <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} /> : employee.emailPassword || 'Not Assigned'}
@@ -566,7 +618,7 @@ export default function EmployeeProfile() {
             <ProfileSection icon={Laptop} title="Device Assets">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                 <ProfileField label="PC Name" icon={Laptop} editing={isEditing}>
-                  {isEditing ? <Input value={form.pcName} onChange={(value) => updateForm('pcName', value)} /> : employee.pcName || 'Unassigned'}
+                  {isEditing ? <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} /> : employee.pcName || 'Unassigned'}
                 </ProfileField>
                 <ProfileField label="BIOS Date" icon={Calendar} editing={isEditing}>
                   {isEditing ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate || 'Not Set'}
@@ -900,6 +952,14 @@ function Input({
       onChange={(event) => onChange(event.target.value)}
       className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
     />
+  );
+}
+
+function GeneratedValue({ value, placeholder }: { value: string; placeholder: string }) {
+  return (
+    <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563]">
+      {value || placeholder}
+    </div>
   );
 }
 
