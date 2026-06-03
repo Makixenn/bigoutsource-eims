@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Laptop, Database, Cpu, Wifi, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
+import { Pagination } from '@/src/components/Pagination';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { motion, AnimatePresence } from 'motion/react';
 import { deviceService } from '@/src/services/deviceService';
@@ -92,8 +93,6 @@ export default function Assets() {
   }, [filteredDevices, currentPage]);
 
   const totalPages = Math.max(1, Math.ceil(filteredDevices.length / recordsPerPage));
-  const hasNextPage = currentPage < totalPages;
-  const hasPreviousPage = currentPage > 1;
 
   const stats = useMemo(
     () => [
@@ -225,26 +224,7 @@ export default function Assets() {
                     Page {currentPage} of {totalPages}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={!hasPreviousPage}
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    className={`px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all ${hasPreviousPage ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]' : 'text-[#9CA3AF] cursor-not-allowed'
-                      }`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!hasNextPage}
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    className={`px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all ${hasNextPage ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]' : 'text-[#9CA3AF] cursor-not-allowed'
-                      }`}
-                  >
-                    Next
-                  </button>
-                </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
               </div>
               <SkeletonLoadingMessage message="Fetching asset data..." />
             </motion.div>
@@ -329,26 +309,7 @@ export default function Assets() {
                     Page {currentPage} of {totalPages}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={!hasPreviousPage}
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    className={`px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all ${hasPreviousPage ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]' : 'text-[#9CA3AF] cursor-not-allowed'
-                      }`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!hasNextPage}
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    className={`px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all ${hasNextPage ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]' : 'text-[#9CA3AF] cursor-not-allowed'
-                      }`}
-                  >
-                    Next
-                  </button>
-                </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
               </div>
             </motion.div>
           )}

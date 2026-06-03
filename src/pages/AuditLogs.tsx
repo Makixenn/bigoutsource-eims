@@ -3,6 +3,7 @@ import { AlertCircle, History, Loader2, Search, ChevronRight, CheckCircle2, Arro
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
+import { Pagination } from '@/src/components/Pagination';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { auditLogService } from '@/src/services/auditLogService';
 import { cn } from '@/src/lib/utils';
@@ -199,9 +200,6 @@ export default function AuditLogs() {
   const pageStartIndex = (currentPage - 1) * recordsPerPage;
   const pageEndIndex = pageStartIndex + recordsPerPage;
   const currentLogs = sortedLogs.slice(pageStartIndex, pageEndIndex);
-
-  const hasPreviousPage = currentPage > 1;
-  const hasNextPage = currentPage < totalPages;
 
   const toggleSort = (key: string) => {
     setSortConfig((current) => {
@@ -424,34 +422,7 @@ export default function AuditLogs() {
                 Page {currentPage} of {totalPages || 1}
               </p>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!hasPreviousPage}
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                className={cn(
-                  'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                  hasPreviousPage
-                    ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                    : 'text-[#9CA3AF] cursor-not-allowed'
-                )}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={!hasNextPage}
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                className={cn(
-                  'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                  hasNextPage
-                    ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                    : 'text-[#9CA3AF] cursor-not-allowed'
-                )}
-              >
-                Next
-              </button>
-            </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages || 1} onPageChange={setCurrentPage} />
           </div>
         )}
       </div>

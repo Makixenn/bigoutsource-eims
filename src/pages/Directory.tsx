@@ -23,6 +23,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
+import { Pagination } from '@/src/components/Pagination';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
@@ -497,9 +498,6 @@ export default function Directory() {
   const paginatedEmployees = sortedEmployees.slice(pageStartIndex, pageStartIndex + recordsPerPage);
   const showTableEmptyState = isLoading || sortedEmployees.length === 0;
   const placeholderRowCount = showTableEmptyState ? 0 : Math.max(0, recordsPerPage - paginatedEmployees.length);
-  const hasPreviousPage = currentPage > 1;
-  const hasNextPage = currentPage < totalPages;
-
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, siteFilter, statusFilter, accountFilter, sortConfig]);
@@ -1040,34 +1038,7 @@ export default function Directory() {
                     Page {currentPage} of {totalPages}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={!hasPreviousPage}
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    className={cn(
-                      'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                      hasPreviousPage
-                        ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                        : 'text-[#9CA3AF] cursor-not-allowed'
-                    )}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!hasNextPage}
-                    onClick={() => setCurrentPage((page) => Math.max(totalPages, page + 1))}
-                    className={cn(
-                      'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                      hasNextPage
-                        ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                        : 'text-[#9CA3AF] cursor-not-allowed'
-                    )}
-                  >
-                    Next
-                  </button>
-                </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
               </div>
               <SkeletonLoadingMessage message="Fetching personnel records..." />
             </motion.div>
@@ -1178,34 +1149,7 @@ export default function Directory() {
                     Page {currentPage} of {totalPages}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={!hasPreviousPage}
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    className={cn(
-                      'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                      hasPreviousPage
-                        ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                        : 'text-[#9CA3AF] cursor-not-allowed'
-                    )}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!hasNextPage}
-                    onClick={() => setCurrentPage((page) => Math.max(totalPages, page + 1))}
-                    className={cn(
-                      'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                      hasNextPage
-                        ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                        : 'text-[#9CA3AF] cursor-not-allowed'
-                    )}
-                  >
-                    Next
-                  </button>
-                </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
               </div>
             </motion.div>
           )}
