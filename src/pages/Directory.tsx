@@ -230,8 +230,8 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     fullName: String(emp.fullName || '').replace(/\u00A0/g, ' '),
     phone: emp.phone || '',
     address: emp.address || '',
-    siteId: emp.siteId || '',
-    site: emp.site || 'Unassigned',
+    siteId: emp.siteId === 'HQ' ? 'San Pablo City (HQ)' : emp.siteId || '',
+    site: emp.site === 'HQ' ? 'San Pablo City (HQ)' : emp.site || 'Unassigned',
     status: emp.status || 'active',
     accountAssignment: emp.accountAssignment || '',
     boEmail: emp.boEmail || '',
@@ -382,7 +382,7 @@ export default function Directory() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isStagingImport, setIsStagingImport] = useState(false);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>({ key: 'updatedAt', direction: 'desc' });
   const [form, setForm] = useState<AddEmployeeForm>(initialForm);
   const [activeStep, setActiveStep] = useState(0);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -495,7 +495,7 @@ export default function Directory() {
     });
 
   const sortedEmployees = useMemo(() => {
-    const targetSort: SortConfig = sortConfig || { key: 'fullName', direction: 'asc' };
+    const targetSort: SortConfig = sortConfig || { key: 'updatedAt', direction: 'desc' };
     return [...filteredEmployees].sort((a, b) => compareEmployees(a, b, targetSort));
   }, [filteredEmployees, sortConfig]);
   const totalPages = Math.max(1, Math.ceil(sortedEmployees.length / recordsPerPage));
@@ -1404,45 +1404,154 @@ export default function Directory() {
 
                   {activeStep === 4 && (
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                      <SectionCard title="Employee Information" eyebrow="Review" onEdit={() => setActiveStep(0)} status={!validationForStep(0).employeeNumber && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
-                        <ReviewGrid
-                          items={[
-                            ['Employee ID', form.employeeNumber || 'Missing'],
-                            ['Name', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Missing'],
-                            ['Phone', form.phone || 'Not provided'],
-                            ['Address', form.address || 'Not provided'],
-                          ]}
-                        />
+                      <SectionCard title="Employee Information" eyebrow="Review" status={!validationForStep(0).employeeNumber && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                            <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                          </Field>
+                          <Field label="First Name" required error={formErrors.firstName}>
+                            <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
+                          </Field>
+                          <Field label="Middle Name">
+                            <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" />
+                          </Field>
+                          <Field label="Last Name" required error={formErrors.lastName}>
+                            <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
+                          </Field>
+                          <Field label="Phone Number" error={formErrors.phone}>
+                            <Input value={form.phone} onChange={(value) => { if (!/^\d*$/.test(value)) { setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' })); setForm((current) => ({ ...current, phone: value.replace(/\D/g, '') })); } else { updateForm('phone', value); } }} placeholder="e.g. 09123456789" error={Boolean(formErrors.phone)} />
+                          </Field>
+                          <Field label="Address">
+                            <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
+                          </Field>
+                        </div>
                       </SectionCard>
-                      <SectionCard title="Accounts" eyebrow="Review" onEdit={() => setActiveStep(1)} status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
-                        <ReviewGrid
-                          items={[
-                            ['Account', form.accountAssignment || 'Missing'],
-                            ['Email', preview.boEmail || 'Pending generation'],
-                            ['LMS Account', preview.lmsAccount || 'Pending generation'],
-                            ['Password', form.emailPassword ? 'Provided' : 'Not provided'],
-                          ]}
-                        />
+                      <SectionCard title="Accounts" eyebrow="Review" status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
+                        <div className="grid grid-cols-1 gap-4">
+                          <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                                className={cn(
+                                  'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                  formErrors.accountAssignment ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
+                                )}
+                              >
+                                <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
+                                <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
+                              </button>
+                              <AnimatePresence>
+{isAccountDropdownOpen && (
+                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                  {accounts.length ? (
+                                    <div className="max-h-64 overflow-y-auto">
+                                      <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                      <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                    </div>
+                                  ) : (
+                                    <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                  )}
+                                </motion.div>
+                              )}
+                              </AnimatePresence>
+                            </div>
+                          </Field>
+                          <Field label="Password">
+                            <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
+                          </Field>
+                          <Field label="Bigoutsource Email">
+                            <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
+                              {preview.boEmail || 'Pending generation'}
+                            </div>
+                          </Field>
+                          <Field label="LMS Account">
+                            <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
+                              {preview.lmsAccount || 'Pending generation'}
+                            </div>
+                          </Field>
+                        </div>
                       </SectionCard>
-                      <SectionCard title="Assignment" eyebrow="Review" onEdit={() => setActiveStep(2)} status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
-                        <ReviewGrid
-                          items={[
-                            ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Missing'],
-                            ['Status', form.status === 'active' ? 'Active' : 'Inactive'],
-                          ]}
-                        />
+                      <SectionCard title="Assignment" eyebrow="Review" status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <Field label="Site" required error={formErrors.siteId}>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setIsSiteDropdownOpen((current) => !current)}
+                                className={cn(
+                                  'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                  formErrors.siteId ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
+                                )}
+                              >
+                                <span className="truncate">
+                                  {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
+                                </span>
+                                <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isSiteDropdownOpen && 'rotate-90')} />
+                              </button>
+                              <AnimatePresence>
+{isSiteDropdownOpen && (
+                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                  <div className="max-h-64 overflow-y-auto">
+                                    {sites.map((site) => (
+                                      <button
+                                        key={site.id}
+                                        type="button"
+                                        onClick={() => {
+                                          updateForm('siteId', site.id);
+                                          updateForm('status', 'active');
+                                          setIsSiteDropdownOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                      >
+                                        {site.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                              </AnimatePresence>
+                            </div>
+                          </Field>
+                          <Field label="Status">
+                            <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
+                              Active
+                            </div>
+                          </Field>
+                        </div>
                       </SectionCard>
-                      <SectionCard title="IT Assets" eyebrow="Review" onEdit={() => setActiveStep(3)} status="complete">
-                        <ReviewGrid
-                          items={[
-                            ['PC Name', preview.pcName || 'Pending generation'],
-                            ['RustDesk ID', form.rustdeskId || 'Not provided'],
-                            ['Remote ID', form.remoteId || 'Not provided'],
-                            ['ESET', form.esetStatus === 'active' ? 'Active' : 'Inactive'],
-                            ['ActivityWatch', form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'],
-                            ['BIOS Date', form.biosDate || 'Not provided'],
-                          ]}
-                        />
+                      <SectionCard title="IT Assets" eyebrow="Review" status="complete">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <Field label="PC Name">
+                            <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
+                              {preview.pcName || 'Pending generation'}
+                            </div>
+                          </Field>
+                          <Field label="RustDesk ID">
+                            <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
+                          </Field>
+                          <Field label="Remote ID">
+                            <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="Remote ID" />
+                          </Field>
+                          <Field label="ESET">
+                            <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
+                              <option value="inactive">Inactive</option>
+                              <option value="active">Active</option>
+                            </Select>
+                          </Field>
+                          <Field label="BIOS Date">
+                            <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                          </Field>
+                          <Field label="ActivityWatch">
+                            <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
+                              <option value="missing">Missing</option>
+                              <option value="installed">Installed</option>
+                            </Select>
+                          </Field>
+                          <Field label="Windows License Key">
+                            <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                          </Field>
+                        </div>
                       </SectionCard>
                       <div className="md:col-span-2 rounded-2xl border border-[#D1D5DB] bg-white p-5 shadow-lg shadow-[#1118270D]">
                         <label className="flex items-start gap-3">
@@ -1463,7 +1572,7 @@ export default function Directory() {
                 </div>
               </div>
 
-              <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-[#E5E7EB] bg-white/95 dark:bg-[#1A1D27]/95 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+              <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-[#E5E7EB] bg-white/95 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <button
                     type="button"

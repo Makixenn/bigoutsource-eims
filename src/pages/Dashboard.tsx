@@ -347,10 +347,10 @@ export default function Dashboard() {
                 <div className="flex-1 min-h-[300px]">
                   {growthTrend.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={growthTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <LineChart data={growthTrend} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
+                        <XAxis dataKey="month" label={{ value: 'Month & Year', position: 'bottom', fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
+                        <YAxis label={{ value: 'Employees', angle: -90, position: 'insideLeft', offset: -5, fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
                         <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
                         <Line type="monotone" dataKey="count" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, fill: '#6366F1', strokeWidth: 2, stroke: '#ffffff' }} activeDot={{ r: 6 }} />
                       </LineChart>

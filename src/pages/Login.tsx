@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle, Building2, Check, CheckCircle2, ChevronRight, Circle, Clock, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, ShieldX, User, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { AlertCircle, Building2, Check, CheckCircle2, ChevronRight, Circle, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, User, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
@@ -469,8 +468,8 @@ export default function Login() {
                           label="Confirm Password"
                           value={confirmPassword}
                           onChange={setConfirmPassword}
-                          showPassword={showConfirmPassword}
-                          onToggleVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+                          showPassword={showPassword}
+                          onToggleVisibility={() => setShowPassword(!showPassword)}
                           minLength={8}
                           placeholder="Re-enter password"
                           error={registrationErrors.confirmPassword}
