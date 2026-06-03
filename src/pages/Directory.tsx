@@ -323,7 +323,7 @@ function suggestDepartmentCode(name = '') {
 function generatedPreview(form: AddEmployeeForm, account?: AccountOption) {
   const firstRaw = String(form.firstName || '');
   const firstForLms = sanitizeNamePart(firstRaw);
-  
+
   const firstInitials = firstRaw
     .split(/\s+/)
     .filter(Boolean)
@@ -983,166 +983,166 @@ export default function Directory() {
             </div>
           </div>
 
-        <AnimatePresence mode="wait" initial={false}>
-          {isLoading ? (
-            <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-              <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
-                <colgroup>
-                  {visibleFields.map((field) => (
-                    <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
-                  ))}
-                  <col style={{ width: actionColumnWidth }} />
-                </colgroup>
-                <thead>
-                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+          <AnimatePresence mode="wait" initial={false}>
+            {isLoading ? (
+              <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
+                <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
+                  <colgroup>
                     {visibleFields.map((field) => (
-                      <th key={field.key} className={cn('h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
-                        <div className="truncate">{field.label}</div>
-                      </th>
+                      <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
                     ))}
-                    <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
-                  </tr>
-                </thead>
-                <tbody className="">
-                  {[...Array(recordsPerPage)].map((_, index) => (
-                    <tr key={`skeleton-${index}`} className={cn(tableRowHeightClass, 'animate-pulse border-b border-[#F3F4F6] last:border-0')}>
+                    <col style={{ width: actionColumnWidth }} />
+                  </colgroup>
+                  <thead>
+                    <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((field) => (
-                        <td key={field.key} className={cn('py-0 align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
-                          <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                        </td>
-                      ))}
-                      <td className="px-4 py-0 text-right align-middle">
-                        <div className="h-9 w-24 bg-gray-200 rounded-xl ml-auto"></div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
-                    Total Personnel: {filteredEmployees.length}
-                  </p>
-                  <p className="mt-1 text-xs font-black text-[#111827]">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                </div>
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-              </div>
-              <SkeletonLoadingMessage message="Fetching personnel records..." />
-            </motion.div>
-          ) : (
-            <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-              <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
-                <colgroup>
-                  {visibleFields.map((field) => (
-                    <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
-                  ))}
-                  <col style={{ width: actionColumnWidth }} />
-                </colgroup>
-                <thead>
-                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                    {visibleFields.map((field) => {
-                      const isSortable = sortableFieldKeys.includes(field.key);
-                      const isActiveSort = sortConfig?.key === field.key;
-                      const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
-
-                      return (
-                        <th
-                          key={field.key}
-                          className={cn(
-                            'h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
-                            field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
-                          )}
-                        >
-                          {isSortable ? (
-                            <button
-                              type="button"
-                              onClick={() => toggleSort(field.key)}
-                              aria-sort={isActiveSort ? (sortConfig?.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-                              className={cn(
-                                'flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]',
-                                isActiveSort && 'text-[#111827]'
-                              )}
-                            >
-                              <span className="truncate">{field.label}</span>
-                              <SortIcon className={cn('h-3.5 w-3.5 shrink-0', isActiveSort ? 'text-[#111827]' : 'text-[#9CA3AF]')} />
-                            </button>
-                          ) : (
-                            <div className="truncate">{field.label}</div>
-                          )}
+                        <th key={field.key} className={cn('h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
+                          <div className="truncate">{field.label}</div>
                         </th>
-                      );
-                    })}
-                    <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
-                  </tr>
-                </thead>
-                <tbody className="">
-                  {paginatedEmployees.map((emp, index) => (
-                    <motion.tr 
-                      key={emp.id} 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-                      className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group border-b border-[#F3F4F6] last:border-0')}
-                    >
-                    {visibleFields.map((field) => (
-                      <td
-                        key={field.key}
-                        className={cn(
-                          'py-0 align-middle text-sm font-bold text-[#111827]',
-                          field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
-                        )}
-                      >
-                        <div className="truncate">{field.render(emp)}</div>
-                      </td>
+                      ))}
+                      <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="">
+                    {[...Array(recordsPerPage)].map((_, index) => (
+                      <tr key={`skeleton-${index}`} className={cn(tableRowHeightClass, 'animate-pulse border-b border-[#F3F4F6] last:border-0')}>
+                        {visibleFields.map((field) => (
+                          <td key={field.key} className={cn('py-0 align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
+                            <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                          </td>
+                        ))}
+                        <td className="px-4 py-0 text-right align-middle">
+                          <div className="h-9 w-24 bg-gray-200 rounded-xl ml-auto"></div>
+                        </td>
+                      </tr>
                     ))}
-                    <td className="px-4 py-0 text-right align-middle">
-                      <Link
-                        to={`/employee/${emp.id}`}
-                        className="inline-flex h-9 items-center gap-2 rounded-xl p-2 text-xs font-bold text-[#9CA3AF] transition-all hover:bg-white hover:text-[#111827]"
-                      >
-                        <span className="truncate">View Profile</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
-                    </td>
-                  </motion.tr>
-                ))}
-                {Array.from({ length: placeholderRowCount }).map((_, index) => (
-                  <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none border-b border-[#F3F4F6] last:border-0')}>
-                    <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
-                  </tr>
-                ))}
-                {showTableEmptyState && (
-                  <tr className="h-[40rem]">
-                    <td colSpan={visibleFields.length + 1} className="px-4 py-0 text-center align-middle">
-                      <div className="mx-auto flex max-w-md flex-col items-center justify-center">
-                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
-                          <Search className="h-8 w-8 text-[#D1D5DB]" />
-                        </div>
-                        <h3 className="text-lg font-bold text-[#111827]">No records found</h3>
-                        <p className="text-sm text-[#6B7280]">Try adjusting your filters or search keywords.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              </table>
-
-              <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
-                    Total Personnel: {filteredEmployees.length}
-                  </p>
-                  <p className="mt-1 text-xs font-black text-[#111827]">
-                    Page {currentPage} of {totalPages}
-                  </p>
+                  </tbody>
+                </table>
+                <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                      Total Personnel: {filteredEmployees.length}
+                    </p>
+                    <p className="mt-1 text-xs font-black text-[#111827]">
+                      Page {currentPage} of {totalPages}
+                    </p>
+                  </div>
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                 </div>
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <SkeletonLoadingMessage message="Fetching personnel records..." />
+              </motion.div>
+            ) : (
+              <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+                <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
+                  <colgroup>
+                    {visibleFields.map((field) => (
+                      <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
+                    ))}
+                    <col style={{ width: actionColumnWidth }} />
+                  </colgroup>
+                  <thead>
+                    <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                      {visibleFields.map((field) => {
+                        const isSortable = sortableFieldKeys.includes(field.key);
+                        const isActiveSort = sortConfig?.key === field.key;
+                        const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+
+                        return (
+                          <th
+                            key={field.key}
+                            className={cn(
+                              'h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
+                              field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
+                            )}
+                          >
+                            {isSortable ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleSort(field.key)}
+                                aria-sort={isActiveSort ? (sortConfig?.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                className={cn(
+                                  'flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]',
+                                  isActiveSort && 'text-[#111827]'
+                                )}
+                              >
+                                <span className="truncate">{field.label}</span>
+                                <SortIcon className={cn('h-3.5 w-3.5 shrink-0', isActiveSort ? 'text-[#111827]' : 'text-[#9CA3AF]')} />
+                              </button>
+                            ) : (
+                              <div className="truncate">{field.label}</div>
+                            )}
+                          </th>
+                        );
+                      })}
+                      <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="">
+                    {paginatedEmployees.map((emp, index) => (
+                      <motion.tr
+                        key={emp.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
+                        className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group border-b border-[#F3F4F6] last:border-0')}
+                      >
+                        {visibleFields.map((field) => (
+                          <td
+                            key={field.key}
+                            className={cn(
+                              'py-0 align-middle text-sm font-bold text-[#111827]',
+                              field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
+                            )}
+                          >
+                            <div className="truncate">{field.render(emp)}</div>
+                          </td>
+                        ))}
+                        <td className="px-4 py-0 text-right align-middle">
+                          <Link
+                            to={`/employee/${emp.id}`}
+                            className="inline-flex h-9 items-center gap-2 rounded-xl p-2 text-xs font-bold text-[#9CA3AF] transition-all hover:bg-white hover:text-[#111827]"
+                          >
+                            <span className="truncate">View Profile</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </Link>
+                        </td>
+                      </motion.tr>
+                    ))}
+                    {Array.from({ length: placeholderRowCount }).map((_, index) => (
+                      <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none border-b border-[#F3F4F6] last:border-0')}>
+                        <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
+                      </tr>
+                    ))}
+                    {showTableEmptyState && (
+                      <tr className="h-[40rem]">
+                        <td colSpan={visibleFields.length + 1} className="px-4 py-0 text-center align-middle">
+                          <div className="mx-auto flex max-w-md flex-col items-center justify-center">
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
+                              <Search className="h-8 w-8 text-[#D1D5DB]" />
+                            </div>
+                            <h3 className="text-lg font-bold text-[#111827]">No records found</h3>
+                            <p className="text-sm text-[#6B7280]">Try adjusting your filters or search keywords.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+
+                <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                      Total Personnel: {filteredEmployees.length}
+                    </p>
+                    <p className="mt-1 text-xs font-black text-[#111827]">
+                      Page {currentPage} of {totalPages}
+                    </p>
+                  </div>
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -1198,7 +1198,7 @@ export default function Directory() {
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+              <div className={cn("min-h-0 flex-1 px-6 py-6", activeStep === 4 ? "overflow-y-auto" : "overflow-visible")}>
                 <div className="mx-auto min-h-[540px] w-full max-w-[1000px] transition-opacity duration-200">
                   {activeStep === 0 && (
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -1239,8 +1239,8 @@ export default function Directory() {
                       <SectionCard title="Contact Details" eyebrow="Optional">
                         <div className="grid grid-cols-1 gap-4">
                           <Field label="Phone Number" error={formErrors.phone}>
-                            <Input 
-                              value={form.phone} 
+                            <Input
+                              value={form.phone}
                               onChange={(value) => {
                                 if (!/^\d*$/.test(value)) {
                                   setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
@@ -1248,9 +1248,9 @@ export default function Directory() {
                                 } else {
                                   updateForm('phone', value);
                                 }
-                              }} 
-                              placeholder="e.g. 09123456789" 
-                              error={Boolean(formErrors.phone)} 
+                              }}
+                              placeholder="e.g. 09123456789"
+                              error={Boolean(formErrors.phone)}
                             />
                           </Field>
                           <Field label="Address">
@@ -1279,18 +1279,18 @@ export default function Directory() {
                                 <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
                               </button>
                               <AnimatePresence>
-{isAccountDropdownOpen && (
-                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                  {accounts.length ? (
-                                    <div className="max-h-64 overflow-y-auto">
-                                      <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
-                                      <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
-                                    </div>
-                                  ) : (
-                                    <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
-                                  )}
-                                </motion.div>
-                              )}
+                                {isAccountDropdownOpen && (
+                                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                    {accounts.length ? (
+                                      <div className="max-h-64 overflow-y-auto">
+                                        <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                        <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                      </div>
+                                    ) : (
+                                      <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                    )}
+                                  </motion.div>
+                                )}
                               </AnimatePresence>
                             </div>
                           </Field>
@@ -1348,26 +1348,26 @@ export default function Directory() {
                               </button>
 
                               <AnimatePresence>
-{isSiteDropdownOpen && (
-                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                  <div className="max-h-64 overflow-y-auto">
-                                    {sites.map((site) => (
-                                      <button
-                                        key={site.id}
-                                        type="button"
-                                        onClick={() => {
-                                          updateForm('siteId', site.id);
-                                          updateForm('status', 'active');
-                                          setIsSiteDropdownOpen(false);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
-                                      >
-                                        {site.name}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              )}
+                                {isSiteDropdownOpen && (
+                                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                    <div className="max-h-64 overflow-y-auto">
+                                      {sites.map((site) => (
+                                        <button
+                                          key={site.id}
+                                          type="button"
+                                          onClick={() => {
+                                            updateForm('siteId', site.id);
+                                            updateForm('status', 'active');
+                                            setIsSiteDropdownOpen(false);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                        >
+                                          {site.name}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </motion.div>
+                                )}
                               </AnimatePresence>
                             </div>
                           </Field>
@@ -1469,18 +1469,18 @@ export default function Directory() {
                                 <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
                               </button>
                               <AnimatePresence>
-{isAccountDropdownOpen && (
-                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                  {accounts.length ? (
-                                    <div className="max-h-64 overflow-y-auto">
-                                      <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
-                                      <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
-                                    </div>
-                                  ) : (
-                                    <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
-                                  )}
-                                </motion.div>
-                              )}
+                                {isAccountDropdownOpen && (
+                                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                    {accounts.length ? (
+                                      <div className="max-h-64 overflow-y-auto">
+                                        <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                        <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                      </div>
+                                    ) : (
+                                      <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                    )}
+                                  </motion.div>
+                                )}
                               </AnimatePresence>
                             </div>
                           </Field>
@@ -1517,26 +1517,26 @@ export default function Directory() {
                                 <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isSiteDropdownOpen && 'rotate-90')} />
                               </button>
                               <AnimatePresence>
-{isSiteDropdownOpen && (
-                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                  <div className="max-h-64 overflow-y-auto">
-                                    {sites.map((site) => (
-                                      <button
-                                        key={site.id}
-                                        type="button"
-                                        onClick={() => {
-                                          updateForm('siteId', site.id);
-                                          updateForm('status', 'active');
-                                          setIsSiteDropdownOpen(false);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
-                                      >
-                                        {site.name}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              )}
+                                {isSiteDropdownOpen && (
+                                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                    <div className="max-h-64 overflow-y-auto">
+                                      {sites.map((site) => (
+                                        <button
+                                          key={site.id}
+                                          type="button"
+                                          onClick={() => {
+                                            updateForm('siteId', site.id);
+                                            updateForm('status', 'active');
+                                            setIsSiteDropdownOpen(false);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                        >
+                                          {site.name}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </motion.div>
+                                )}
                               </AnimatePresence>
                             </div>
                           </Field>
@@ -1802,34 +1802,34 @@ function FilterDropdown({
         <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />
       </button>
       <AnimatePresence>
-{isOpen && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-          <div className="max-h-64 overflow-y-auto py-1">
-            {options.map((option) => {
-              const isSelected = value === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={cn(
-                    'flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6]',
-                    isSelected ? 'bg-[#EFF6FF]' : ''
-                  )}
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  <span className={cn('truncate text-sm font-bold', isSelected ? 'text-[#2563EB]' : 'text-[#4B5563]')}>
-                    {option.label}
-                  </span>
-                  {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-      )}
+        {isOpen && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+            <div className="max-h-64 overflow-y-auto py-1">
+              {options.map((option) => {
+                const isSelected = value === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={cn(
+                      'flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6]',
+                      isSelected ? 'bg-[#EFF6FF]' : ''
+                    )}
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <span className={cn('truncate text-sm font-bold', isSelected ? 'text-[#2563EB]' : 'text-[#4B5563]')}>
+                      {option.label}
+                    </span>
+                    {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
@@ -1895,31 +1895,31 @@ function AccountFilterDropdown({
         <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />
       </button>
       <AnimatePresence>
-{isOpen && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-          <div className="max-h-64 overflow-y-auto">
-            <div className="py-1 border-b border-[#F3F4F6]">
-              {renderOption('All Account', 'All Accounts')}
+        {isOpen && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+            <div className="max-h-64 overflow-y-auto">
+              <div className="py-1 border-b border-[#F3F4F6]">
+                {renderOption('All Account', 'All Accounts')}
+              </div>
+              {internalAccounts.length > 0 && (
+                <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
+                  <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                    Internal
+                  </div>
+                  {internalAccounts.map((account) => renderOption(account.name, account.name))}
+                </div>
+              )}
+              {externalAccounts.length > 0 && (
+                <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
+                  <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                    External
+                  </div>
+                  {externalAccounts.map((account) => renderOption(account.name, account.name))}
+                </div>
+              )}
             </div>
-            {internalAccounts.length > 0 && (
-              <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
-                <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
-                  Internal
-                </div>
-                {internalAccounts.map((account) => renderOption(account.name, account.name))}
-              </div>
-            )}
-            {externalAccounts.length > 0 && (
-              <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
-                <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
-                  External
-                </div>
-                {externalAccounts.map((account) => renderOption(account.name, account.name))}
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
