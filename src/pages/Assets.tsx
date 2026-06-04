@@ -218,7 +218,7 @@ export default function Assets() {
     }
 
     return result;
-  }, [devices, searchTerm, licenseFilter, sortConfig]);
+  }, [devices, searchTerm, licenseFilter, accountFilter, sortConfig]);
 
   const paginatedDevices = useMemo(() => {
     return filteredDevices.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);

@@ -191,20 +191,10 @@ export default function Dashboard() {
       }
     });
 
-    let dist = Array.from(counts.entries())
+    const dist = Array.from(counts.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-
-    if (dist.length === 0) {
-      dist = [
-        { name: 'Engineering', count: 42 },
-        { name: 'Customer Support', count: 35 },
-        { name: 'Operations', count: 20 },
-        { name: 'Human Resources', count: 12 },
-        { name: 'Finance', count: 8 }
-      ];
-    }
 
     return dist;
   }, [employees, accounts]);
@@ -390,7 +380,7 @@ export default function Dashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No department data available.</div>
+                    <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No data available.</div>
                   )}
                 </div>
               </motion.div>
