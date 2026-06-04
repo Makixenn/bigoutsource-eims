@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { EmployeeImportModel } from '../models/employeeImport.model.js';
 import { EmployeeModel } from '../models/employee.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
+import { AccountModel } from '../models/account.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
 
@@ -65,7 +66,7 @@ function normalizeSite(value) {
   if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
   if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
   if (next === 'wfh') return 'WFH';
-  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo (hq)' || next === 'san pablo city (hq)') return 'HQ';
+  if (next === 'hq' || next === 'san pablo' || next === 'hq' || next === 'hq' || next === 'hq') return 'HQ';
   return value || '';
 }
 
@@ -103,14 +104,19 @@ function completeness(record) {
   }, 0);
 }
 
-function validateRecord(record, duplicateKeys, existingIds = new Set()) {
+function validateRecord(record, duplicateKeys, existingIds = new Set(), validDepartments = new Set()) {
   const issues = [];
 
   if (!record.employeeNumber) issues.push({ code: 'missing_id', message: 'Missing employee ID' });
   if (!record.fullName) issues.push({ code: 'missing_name', message: 'Missing employee name' });
   if (!record.boEmail) issues.push({ code: 'missing_email', message: 'Missing Bigoutsource email' });
-  if (!record.accountAssignment) issues.push({ code: 'missing_account', message: 'Missing account' });
   
+  if (!record.accountAssignment) {
+    issues.push({ code: 'missing_account', message: 'Missing account' });
+  } else if (validDepartments.size > 0 && !validDepartments.has(record.accountAssignment)) {
+    issues.push({ code: 'invalid_department', message: 'Department not recognized' });
+  }
+
   const validSites = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
   if (!record.siteName) {
     issues.push({ code: 'missing_site', message: 'Missing site' });
@@ -189,6 +195,11 @@ async function loadExistingEmployeeIds() {
   );
 }
 
+async function loadValidDepartments() {
+  const accounts = await AccountModel.findAll();
+  return new Set(accounts.map((a) => a.name));
+}
+
 export const EmployeeImportService = {
   async stage({ rows }, user) {
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -209,9 +220,10 @@ export const EmployeeImportService = {
     });
 
     const duplicateKeys = new Set([...idCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id));
-    const existingIds = await loadExistingEmployeeIds();
+    const [existingIds, validDepartments] = await Promise.all([loadExistingEmployeeIds(), loadValidDepartments()]);
+    
     const stagedRows = normalizedRows.map((row) => {
-      const issues = validateRecord(row.normalizedData, duplicateKeys, existingIds);
+      const issues = validateRecord(row.normalizedData, duplicateKeys, existingIds, validDepartments);
       return {
         importBatchId,
         sourceSheet,
@@ -253,8 +265,53 @@ export const EmployeeImportService = {
     }
 
     const rows = (await EmployeeImportModel.findAll({ importBatchId })).filter((row) => row.duplicateKey === duplicateKey);
-    if (rows.length < 2) throw new AppError('Duplicate group not found', 404);
+    const isExistingIdCase = rows.length === 1 && rows[0].issues?.some((i) => i.code === 'existing_id');
 
+    if (rows.length < 2 && !isExistingIdCase) throw new AppError('Duplicate group not found', 404);
+
+    const [existingIds, validDepartments] = await Promise.all([loadExistingEmployeeIds(), loadValidDepartments()]);
+
+    // Handle existing_id case: record already exists in employees table
+    if (isExistingIdCase) {
+      const row = rows[0];
+      let normalizedData = row.normalizedData;
+
+      if (action === 'merge') {
+        const overrideData = mergedData || overrideNormalizedData;
+        if (overrideData && typeof overrideData === 'object') {
+          normalizedData = { ...normalizedData, ...overrideData };
+        }
+        normalizedData = coerceEditableData(normalizedData);
+      }
+
+      if (action === 'keep' && keepRowId === 'existing') {
+        // User chose to keep the existing record — skip the imported row
+        const updated = await EmployeeImportModel.update(row.id, {
+          ...row,
+          status: 'skipped',
+          duplicateKey: null,
+          resolution: { action: 'keep_existing', resolvedBy: user?.id, resolvedAt: new Date().toISOString() },
+        });
+        return { rows: [updated] };
+      }
+
+      // User chose to keep/merge the imported data — clear the existing_id issue and mark as ready
+      const remainingIssues = validateRecord(normalizedData, new Set(), new Set(), validDepartments)
+        .filter((issue) => issue.code !== 'existing_id' && issue.code !== 'duplicate_id');
+
+      const updated = await EmployeeImportModel.update(row.id, {
+        ...row,
+        normalizedData,
+        issues: remainingIssues,
+        status: remainingIssues.length ? 'issue' : 'ready',
+        duplicateKey: null,
+        resolution: { action: 'replace_existing', resolvedBy: user?.id, resolvedAt: new Date().toISOString() },
+      });
+
+      return { rows: [updated] };
+    }
+
+    // Standard duplicate handling (multiple rows in staging with same ID)
     let selectedRow = rows.find((row) => row.id === keepRowId) || rows[0];
     let normalizedData = selectedRow.normalizedData;
 
@@ -270,8 +327,9 @@ export const EmployeeImportService = {
       throw new AppError('Unsupported duplicate resolution action', 400);
     }
 
-    const existingIds = await loadExistingEmployeeIds();
-    const remainingIssues = validateRecord(normalizedData, new Set(), existingIds).filter((issue) => issue.code !== 'duplicate_id');
+    const remainingIssues = validateRecord(normalizedData, new Set(), existingIds, validDepartments)
+      .filter((issue) => issue.code !== 'duplicate_id');
+    const hasExistingId = remainingIssues.some((i) => i.code === 'existing_id');
     const updated = [];
 
     for (const row of rows) {
@@ -281,7 +339,7 @@ export const EmployeeImportService = {
           normalizedData,
           issues: remainingIssues,
           status: remainingIssues.length ? 'issue' : 'ready',
-          duplicateKey: null,
+          duplicateKey: hasExistingId ? row.normalizedData.employeeNumber : null,
           resolution: { action, resolvedBy: user?.id, resolvedAt: new Date().toISOString() },
         }));
       } else {
@@ -316,8 +374,8 @@ export const EmployeeImportService = {
       if (matchingRows.length) duplicateKeys.add(candidate.employeeNumber);
     }
 
-    const existingIds = await loadExistingEmployeeIds();
-    const issues = validateRecord(candidate, duplicateKeys, existingIds);
+    const [existingIds, validDepartments] = await Promise.all([loadExistingEmployeeIds(), loadValidDepartments()]);
+    const issues = validateRecord(candidate, duplicateKeys, existingIds, validDepartments);
     const updated = await EmployeeImportModel.update(id, {
       ...row,
       normalizedData: candidate,

@@ -32,8 +32,8 @@ function normalizeSite(value) {
   if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
   if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
   if (next === 'wfh') return 'WFH';
-  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo (hq)' || next === 'san pablo city (hq)') return 'HQ';
-  
+  if (next === 'hq' || next === 'san pablo' || next === 'hq' || next === 'hq' || next === 'hq') return 'HQ';
+
   const match = SITE_OPTIONS.find((option) => option.toLowerCase() === next);
   return match || value;
 }

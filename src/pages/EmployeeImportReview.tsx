@@ -108,8 +108,11 @@ function normalizeSiteOption(value?: string) {
   const next = String(value || '').trim().toLowerCase();
   if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
   if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
-  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo (hq)' || next === 'san pablo city (hq)') return 'HQ';
   if (next === 'wfh') return 'WFH';
+  if (next === 'hq') return 'HQ';
+  if (next === 'san pablo') return 'HQ';
+  if (next === 'san pablo') return 'HQ';
+  if (next === 'hq') return 'HQ';
   return value || '';
 }
 
@@ -483,7 +486,7 @@ export default function EmployeeImportReview() {
                   )}
                 </div>
               )}
-    
+
               {activeView === 'issues' && (
                 <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
                   {visibleIssueRows.length ? (
@@ -502,7 +505,7 @@ export default function EmployeeImportReview() {
                   )}
                 </div>
               )}
-    
+
               {activeView === 'ready' && (
                 <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
                   {readyRows.length ? (
@@ -518,14 +521,18 @@ export default function EmployeeImportReview() {
                       })}
                     />
                   ) : (
-                    <EmptyState title="No ready rows" detail="Resolve issues to move rows into the ready list." />
+                    <EmptyState
+                      title="No ready rows"
+                      detail="Resolve issues to move rows into the ready list."
+                      icon={<XCircle className="h-7 w-7 text-red-600" />}
+                    />
                   )}
                 </div>
               )}
             </div>
           )}
         </>
-        
+
         {isLoading && (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E5E7EB] bg-white py-12 text-center shadow-sm">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
@@ -735,13 +742,13 @@ function MergeRowsModal({
   const mergedCompleteness = completenessForData(form);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -997,13 +1004,13 @@ function ConfirmDeleteModal({
   const canConfirm = !requiresPhrase || typedPhrase === intent.phrase;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -1086,13 +1093,13 @@ function EditRowModal({
   onSave: () => void;
 }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -1394,11 +1401,25 @@ function SelectDropdown({
   );
 }
 
-function EmptyState({ title, detail }: { title: string; detail: string }) {
+function EmptyState({
+  title,
+  detail,
+  icon,
+}: {
+  title: string;
+  detail: string;
+  icon?: ReactNode;
+}) {
   return (
     <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-[#E5E7EB] bg-white p-10 text-center">
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F3F4F6]">
-        {title.includes('No') ? <CheckCircle2 className="h-7 w-7 text-green-600" /> : <XCircle className="h-7 w-7 text-[#9CA3AF]" />}
+        {icon ? (
+          icon
+        ) : title.includes('No') ? (
+          <CheckCircle2 className="h-7 w-7 text-green-600" />
+        ) : (
+          <XCircle className="h-7 w-7 text-[#9CA3AF]" />
+        )}
       </div>
       <p className="text-lg font-black text-[#111827]">{title}</p>
       <p className="mt-1 text-sm font-bold text-[#6B7280]">{detail}</p>
