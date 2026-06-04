@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { settingsService } from '@/src/services/settingsService';
+import { systemAlertService, type SystemAlert } from '@/src/services/systemAlertService';
 import { userService } from '@/src/services/userService';
 import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/components/imports/ImportIssuesButton';
@@ -70,6 +71,7 @@ function NotificationBell() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [seenPendingIds, setSeenPendingIds] = useState<Set<string>>(() => readSeenPendingRegistrationIds());
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set());
+  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
 
   const isSuperAdmin = user?.role === 'super_admin';
 
@@ -83,17 +85,22 @@ function NotificationBell() {
     [pendingUsers, seenPendingIds]
   );
 
-  const unreadCount = isSuperAdmin && notifyRegistrationAttempts ? unreadPendingUsers.length : 0;
+  const unreadCount = isSuperAdmin && notifyRegistrationAttempts 
+    ? unreadPendingUsers.length + systemAlerts.length 
+    : systemAlerts.length;
 
   const openNotifications = () => {
     setIsOpen(true);
 
-    if (!unreadPendingUsers.length) {
+    if (!unreadPendingUsers.length && !systemAlerts.length) {
       setActiveNotificationIds(new Set());
       return;
     }
 
-    const unreadIds = new Set(unreadPendingUsers.map((account) => String(account.uid)));
+    const unreadIds = new Set([
+      ...unreadPendingUsers.map((account) => String(account.uid)),
+      ...systemAlerts.map((alert) => String(alert.id))
+    ]);
     const nextSeenIds = new Set(seenPendingIds);
     unreadIds.forEach((id) => nextSeenIds.add(id));
     saveSeenPendingRegistrationIds(nextSeenIds);
@@ -102,9 +109,10 @@ function NotificationBell() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) {
+    if (!isSuperAdmin && user?.role !== 'admin') {
       setNotifyRegistrationAttempts(false);
       setUsers([]);
+      setSystemAlerts([]);
       setActiveNotificationIds(new Set());
       return;
     }
@@ -115,18 +123,22 @@ function NotificationBell() {
       setIsLoading(true);
 
       try {
-        const [settings, accountList] = await Promise.all([settingsService.get(), userService.list()]);
+        const [settings, accountList, alerts] = await Promise.all([
+          isSuperAdmin ? settingsService.get().catch(() => ({ notifyRegistrationAttempts: false })) : Promise.resolve({ notifyRegistrationAttempts: false }), 
+          isSuperAdmin ? userService.list().catch(() => []) : Promise.resolve([]),
+          (isSuperAdmin || user?.role === 'admin') ? systemAlertService.getUnread().catch(() => []) : Promise.resolve([])
+        ]);
         if (!isMounted) return;
 
         const nextUsers = Array.isArray(accountList) ? accountList : [];
         setNotifyRegistrationAttempts(Boolean(settings.notifyRegistrationAttempts));
         setUsers(nextUsers);
+        setSystemAlerts(Array.isArray(alerts) ? alerts : []);
         window.dispatchEvent(new CustomEvent(USER_ACCOUNTS_REFRESHED_EVENT, { detail: { users: nextUsers } }));
       } catch (error) {
         if (!isMounted) return;
 
         setNotifyRegistrationAttempts(false);
-        setUsers([]);
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -139,7 +151,7 @@ function NotificationBell() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, user?.role]);
 
   return (
     <>
@@ -200,13 +212,59 @@ function NotificationBell() {
                 <div className="flex h-32 items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-[#9CA3AF]" />
                 </div>
-              ) : !isSuperAdmin ? (
-                <NotificationEmptyState message="Notifications for account requests are available to Super Admin users." />
-              ) : !notifyRegistrationAttempts ? (
+              ) : (!isSuperAdmin && systemAlerts.length === 0) ? (
+                <NotificationEmptyState message="No pending alerts." />
+              ) : (!notifyRegistrationAttempts && systemAlerts.length === 0) ? (
                 <NotificationEmptyState message="Registration attempt notifications are turned off in Settings." />
-              ) : pendingUsers.length > 0 ? (
+              ) : (pendingUsers.length > 0 || systemAlerts.length > 0) ? (
                 <div className="space-y-3">
-                  {pendingUsers.map((account) => (
+                  {systemAlerts.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="rounded-xl border p-4 transition-colors"
+                      style={
+                        activeNotificationIds.has(String(alert.id))
+                          ? { borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)' }
+                          : { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }
+                      }
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="rounded-xl p-2"
+                          style={
+                            activeNotificationIds.has(String(alert.id))
+                              ? { color: '#EF4444' }
+                              : { backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-muted)' }
+                          }
+                        >
+                          <ShieldAlert className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>
+                              {alert.type === 'MISSING_DEPARTMENT' ? 'Department Missing' : 'System Alert'}
+                            </p>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await systemAlertService.markAsRead(alert.id);
+                                  setSystemAlerts((prev) => prev.filter((a) => a.id !== alert.id));
+                                } catch (error) {
+                                  // ignore
+                                }
+                              }}
+                              className="rounded-full bg-[#F3F4F6] px-2.5 py-1 text-[10px] font-black text-[#4B5563] transition-colors hover:bg-[#E5E7EB]"
+                            >
+                              Dismiss
+                            </button>
+                          </div>
+                          <p className="mt-1 text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>{alert.message}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {isSuperAdmin && notifyRegistrationAttempts && pendingUsers.map((account) => (
                     <div
                       key={account.uid}
                       className="rounded-xl border p-4 transition-colors"
@@ -244,7 +302,7 @@ function NotificationBell() {
                   ))}
                 </div>
               ) : (
-                <NotificationEmptyState message="No account requests are waiting for approval." />
+                <NotificationEmptyState message="No alerts or account requests." />
               )}
             </div>
 
