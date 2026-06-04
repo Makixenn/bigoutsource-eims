@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertCircle, Building2, Check, CheckCircle2, ChevronRight, Circle, Clock, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, ShieldX, User, X } from 'lucide-react';
+import { AlertCircle, Building2, Check, ChevronRight, Clock, Eye, EyeOff, Lock, Mail, MapPin, ShieldX, User, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -73,10 +73,7 @@ function getStepHasErrors(errors: RegistrationErrors, step: RegistrationStep) {
   return REGISTRATION_STEPS[step].fields.some((field) => Boolean(errors[field]));
 }
 
-function getFirstInvalidStep(errors: RegistrationErrors): RegistrationStep {
-  const invalidIndex = REGISTRATION_STEPS.findIndex((_, index) => getStepHasErrors(errors, index as RegistrationStep));
-  return (invalidIndex === -1 ? 2 : invalidIndex) as RegistrationStep;
-}
+
 
 export default function Login() {
   const { login, register } = useAuth();
@@ -102,9 +99,7 @@ export default function Login() {
   const [departmentOptionsError, setDepartmentOptionsError] = useState('');
   const [site, setSite] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [submittedRegistration, setSubmittedRegistration] = useState(false);
   const [modalError, setModalError] = useState('');
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(0);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<RegistrationStep>(0);
@@ -159,7 +154,7 @@ export default function Login() {
   const currentStepHasErrors =
     getStepHasErrors(registrationErrors, registrationStep) ||
     (registrationStep === 1 && (isLoadingDepartments || Boolean(departmentOptionsError)));
-  const firstInvalidStep = getFirstInvalidStep(registrationErrors);
+
   const passwordStrengthScore = PASSWORD_RULES.filter((rule) => rule.test(password)).length;
   const passwordStrength = passwordStrengthScore <= 2 ? 'Weak' : passwordStrengthScore <= 4 ? 'Fair' : 'Strong';
   const passwordStrengthColor =
@@ -177,7 +172,6 @@ export default function Login() {
     }
 
     if (isRegistering && Object.keys(registrationErrors).length > 0) {
-      setSubmittedRegistration(true);
       setModalError(getFirstRegistrationError(registrationErrors));
       return;
     }
@@ -196,7 +190,6 @@ export default function Login() {
         setMode('login');
         setPassword('');
         setConfirmPassword('');
-        setSubmittedRegistration(false);
         return;
       }
 
@@ -222,7 +215,6 @@ export default function Login() {
 
   const handleNextStep = () => {
     if (currentStepHasErrors) {
-      setSubmittedRegistration(true);
       setModalError(getFirstRegistrationError(registrationErrors));
       return;
     }
@@ -351,8 +343,6 @@ export default function Login() {
                 >
                   <RegistrationProgress
                     currentStep={registrationStep}
-                    maxUnlockedStep={maxUnlockedStep}
-                    firstInvalidStep={firstInvalidStep}
                     onStepClick={handleStepNavigation}
                   />
 
@@ -407,7 +397,6 @@ export default function Login() {
                           options={departmentOptions}
                           disabled={isLoadingDepartments || Boolean(departmentOptionsError)}
                           error={departmentOptionsError || registrationErrors.department}
-                          required
                         />
                         <SelectInput
                           icon={MapPin}
@@ -417,7 +406,6 @@ export default function Login() {
                           placeholder="Select site"
                           options={SITE_OPTIONS}
                           error={registrationErrors.site}
-                          required
                         />
                       </motion.div>
                     )}
@@ -724,7 +712,6 @@ function SelectInput({
   placeholder,
   options,
   error,
-  required,
   disabled,
 }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -734,7 +721,6 @@ function SelectInput({
   placeholder: string;
   options: string[];
   error?: string;
-  required?: boolean;
   disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -882,13 +868,9 @@ function PasswordInput({
 
 function RegistrationProgress({
   currentStep,
-  maxUnlockedStep,
-  firstInvalidStep,
   onStepClick,
 }: {
   currentStep: RegistrationStep;
-  maxUnlockedStep: RegistrationStep;
-  firstInvalidStep: RegistrationStep;
   onStepClick: (step: RegistrationStep) => void;
 }) {
   return (

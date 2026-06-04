@@ -7,16 +7,13 @@ import {
   CheckCircle2,
   ChevronRight,
   Circle,
-  Clipboard,
   Download,
   Loader2,
   Search,
   Save,
   ShieldAlert,
   Sparkles,
-  Upload,
   UserPlus,
-  Users,
   X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Laptop, Database, Cpu, Wifi, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronRight, CheckCircle2, Edit2, Save, X, Loader2 } from 'lucide-react';
+import { Laptop, Cpu, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronRight, CheckCircle2, Edit2, Save, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';

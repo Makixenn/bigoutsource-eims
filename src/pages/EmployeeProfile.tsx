@@ -459,9 +459,7 @@ export default function EmployeeProfile() {
     }
   };
 
-  const toggleSensitive = () => {
-    setShowSensitive(!showSensitive);
-  };
+
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
@@ -1782,22 +1780,4 @@ function AccountDropdownGroup({
   );
 }
 
-function Select({
-  value,
-  onChange,
-  children,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  children: ReactNode;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
-    >
-      {children}
-    </select>
-  );
-}
+

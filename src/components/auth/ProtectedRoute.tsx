@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { UserRole } from '@/src/types';

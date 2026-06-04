@@ -12,19 +12,10 @@ import {
   Briefcase,
   Laptop,
   ShieldCheck,
-  User,
-  Mail,
-  Key,
-  MapPin,
   Phone,
-  Calendar,
-  Globe,
   ChevronRight,
   X,
   Save,
-  RotateCcw,
-  Archive,
-  ShieldAlert,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowUpRight, Clock, Laptop, MapPin, UserCheck, UserMinus, Users, Building2, TrendingUp, BarChart3, UserPlus } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Clock, Laptop, MapPin, UserMinus, Users, TrendingUp, BarChart3, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';

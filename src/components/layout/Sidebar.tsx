@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Users,
   Building2,
-  ShieldAlert,
   Settings,
   LogOut,
   FileText,

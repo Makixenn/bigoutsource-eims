@@ -3,8 +3,6 @@ import type { ComponentType } from 'react';
 import {
   AlertTriangle,
   Building2,
-  ChevronRight,
-  Download,
   Edit3,
   Loader2,
   MoreVertical,
@@ -17,7 +15,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -99,9 +96,7 @@ function asArray(value: any) {
   return Array.isArray(value) ? value : [];
 }
 
-function safeFilePart(value = '') {
-  return value.trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'Department';
-}
+
 
 function isEmployeeArchived(emp: EmployeeRecord): boolean {
   return emp.isArchived === true || emp.status === 'archived';
