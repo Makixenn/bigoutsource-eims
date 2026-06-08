@@ -94,8 +94,8 @@ export function parseEmployeeName(data = {}) {
     }
 
     return {
-      firstName: restParts[0].replace(/\u00A0/g, ' '),
-      middleName: restParts.slice(1).join(' ').replace(/\u00A0/g, ' '),
+      firstName: restParts.slice(0, -1).join(' ').replace(/\u00A0/g, ' '),
+      middleName: (restParts[restParts.length - 1] || '').replace(/\u00A0/g, ' '),
       lastName: lastName.replace(/\u00A0/g, ' '),
       suffix: suffix,
       fullName: fullNameRaw
