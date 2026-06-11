@@ -22,8 +22,6 @@ export const CAPABILITIES = {
   'assets.edit': 'Manage IT assets',
   'departments.view': 'View departments',
   'departments.edit': 'Manage departments',
-  'sites.view': 'View sites',
-  'sites.edit': 'Manage sites',
   'imports.manage': 'Run employee imports',
   'reports.view': 'View reports',
   'reports.export': 'Export / download reports',
@@ -48,7 +46,6 @@ export const ROLE_CAPABILITIES = {
     'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view', 'departments.edit',
-    'sites.view', 'sites.edit',
     'imports.manage',
     'reports.view', 'reports.export',
     'auditlogs.view', 'auditlogs.undo',
@@ -57,7 +54,6 @@ export const ROLE_CAPABILITIES = {
   hr_admin: [
     'employees.view', 'employees.create', 'employees.edit', 'employees.delete',
     'departments.view', 'departments.edit',
-    'sites.view',
     'imports.manage',
     'reports.view', 'reports.export',
     'auditlogs.view',
@@ -68,7 +64,6 @@ export const ROLE_CAPABILITIES = {
     'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view',
-    'sites.view',
     'imports.manage',
     'reports.view', 'reports.export',
     'auditlogs.view',
@@ -77,7 +72,6 @@ export const ROLE_CAPABILITIES = {
   viewer: [
     'employees.view',
     'departments.view',
-    'sites.view',
     'notifications.employee_added',
   ],
 };

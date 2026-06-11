@@ -19,8 +19,6 @@ export type Capability =
   | 'assets.edit'
   | 'departments.view'
   | 'departments.edit'
-  | 'sites.view'
-  | 'sites.edit'
   | 'imports.manage'
   | 'reports.view'
   | 'reports.export'

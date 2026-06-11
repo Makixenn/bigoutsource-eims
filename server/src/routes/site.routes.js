@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import { SiteController } from '../controllers/site.controller.js';
-import { requirePermission } from '../middleware/auth.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
-import { createSiteValidator, updateSiteValidator } from '../validators/site.validator.js';
 
 const router = Router();
 
-router.get('/', requirePermission('sites.view'), SiteController.list);
-router.post('/', requirePermission('sites.edit'), validate(createSiteValidator), SiteController.create);
-router.put('/:id', requirePermission('sites.edit'), validate(updateSiteValidator), SiteController.update);
-router.delete('/:id', requirePermission('sites.edit'), SiteController.remove);
+// Sites are reference data — a fixed set of office locations used only to
+// populate dropdowns. Any authenticated user may read the list (the router is
+// mounted behind `authenticate`). There is no sites management UI, so the
+// write endpoints were removed along with the sites.view / sites.edit
+// capabilities.
+router.get('/', SiteController.list);
 
 export default router;
