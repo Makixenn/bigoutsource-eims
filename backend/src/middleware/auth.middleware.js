@@ -1,5 +1,5 @@
-import { supabaseAuth } from '../config/supabase.js';
-import { UserProfileModel } from '../models/userProfile.model.js';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../config/db.js';
 import { AppError } from '../utils/apiResponse.js';
 import { userHasCapability, userHasAnyCapability } from '../config/capabilities.js';
 import { RoleService } from '../services/role.service.js';
@@ -13,28 +13,23 @@ export async function authenticate(req, res, next) {
     }
 
     const token = header.slice('Bearer '.length);
-    const { data, error } = await supabaseAuth.auth.getUser(token);
-
-    if (error || !data.user) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
       throw new AppError('Invalid or expired token', 401);
     }
 
-    const profile = await UserProfileModel.findById(data.user.id);
+    const profile = await prisma.userProfile.findUnique({ where: { id: decoded.id } });
     if (!profile) throw new AppError('Account profile not found', 403);
     if (profile.status === 'pending') throw new AppError('Account pending approval', 403);
     if (profile.status === 'disabled') throw new AppError('Account disabled', 403);
-
-    const metaName =
-      data.user.user_metadata?.full_name ||
-      data.user.user_metadata?.name ||
-      data.user.user_metadata?.display_name ||
-      '';
 
     req.user = {
       ...profile,
       id: profile.id,
       email: profile.email,
-      fullName: profile.fullName || metaName,
+      fullName: profile.fullName,
       roles: [profile.role],
       capabilities: await RoleService.resolveUserCapabilities(profile),
     };

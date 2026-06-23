@@ -1,46 +1,24 @@
 import { randomUUID } from 'node:crypto';
-import { supabaseRequest } from '../config/supabase.js';
+import { prisma } from '../config/db.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
-
-function matchesText(value, search) {
-  return String(value || '').toLowerCase().includes(String(search || '').toLowerCase());
-}
-
-function toDatabasePayload(log) {
-  return {
-    id: log.id || randomUUID(),
-    user_id: log.userId || null,
-    user_email: log.userEmail || 'System',
-    user_name: log.userName || null,
-    user_role: log.userRole || null,
-    action: log.action,
-    entity_type: log.entityType,
-    entity_id: log.entityId || null,
-    entity_label: log.entityLabel || null,
-    details: log.details || {},
-    ip_address: log.ipAddress || null,
-    user_agent: log.userAgent || null,
-    created_at: log.createdAt || new Date().toISOString(),
-  };
-}
 
 function normalize(row) {
   if (!row) return null;
 
   return {
     id: row.id,
-    userId: row.user_id,
-    userEmail: row.user_email || 'System',
-    userName: row.user_name || '',
-    userRole: row.user_role || '',
+    userId: row.userId,
+    userEmail: row.userEmail || 'System',
+    userName: row.userName || '',
+    userRole: row.userRole || '',
     action: row.action,
-    entityType: row.entity_type,
-    entityId: row.entity_id,
-    entityLabel: row.entity_label || '',
+    entityType: row.entityType,
+    entityId: row.entityId,
+    entityLabel: row.entityLabel || '',
     details: row.details || {},
-    ipAddress: row.ip_address,
-    userAgent: row.user_agent,
-    createdAt: row.created_at,
+    ipAddress: row.ipAddress,
+    userAgent: row.userAgent,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : '',
   };
 }
 
@@ -98,31 +76,52 @@ export const AuditLogModel = {
       userAgent,
     });
 
-    const rows = await supabaseRequest('audit_logs', {
-      method: 'POST',
-      body: toDatabasePayload(enrichedLog),
+    const row = await prisma.auditLog.create({
+      data: {
+        id: enrichedLog.id || randomUUID(),
+        userId: enrichedLog.userId || null,
+        userEmail: enrichedLog.userEmail || 'System',
+        userName: enrichedLog.userName || null,
+        userRole: enrichedLog.userRole || null,
+        action: enrichedLog.action,
+        entityType: enrichedLog.entityType,
+        entityId: enrichedLog.entityId || null,
+        entityLabel: enrichedLog.entityLabel || null,
+        details: enrichedLog.details || {},
+        ipAddress: enrichedLog.ipAddress || null,
+        userAgent: enrichedLog.userAgent || null,
+      },
     });
 
-    return enrichWithProfileName(normalize(rows[0]));
+    return enrichWithProfileName(normalize(row));
   },
 
   async findAll(filters = {}) {
     const limit = Math.min(Number(filters.limit || 500), 1000);
-    const searchParams = {
-      select: '*',
-      order: 'created_at.desc',
-      limit: String(limit),
-    };
+    const where = {};
 
-    if (filters.entityType) searchParams.entity_type = `eq.${filters.entityType}`;
-    if (filters.entityId) searchParams.entity_id = `eq.${filters.entityId}`;
-    if (filters.action) searchParams.action = `ilike.*${filters.action}*`;
-    if (filters.userEmail) searchParams.user_email = `ilike.*${filters.userEmail}*`;
+    if (filters.entityType) where.entityType = filters.entityType;
+    if (filters.entityId) where.entityId = filters.entityId;
+    if (filters.action) where.action = { contains: filters.action, mode: 'insensitive' };
+    if (filters.userEmail) where.userEmail = { contains: filters.userEmail, mode: 'insensitive' };
     if (filters.search) {
-      searchParams.or = `action.ilike.*${filters.search}*,entity_type.ilike.*${filters.search}*,user_email.ilike.*${filters.search}*,user_name.ilike.*${filters.search}*,user_role.ilike.*${filters.search}*,entity_label.ilike.*${filters.search}*,user_agent.ilike.*${filters.search}*`;
+      where.OR = [
+        { action: { contains: filters.search, mode: 'insensitive' } },
+        { entityType: { contains: filters.search, mode: 'insensitive' } },
+        { userEmail: { contains: filters.search, mode: 'insensitive' } },
+        { userName: { contains: filters.search, mode: 'insensitive' } },
+        { userRole: { contains: filters.search, mode: 'insensitive' } },
+        { entityLabel: { contains: filters.search, mode: 'insensitive' } },
+        { userAgent: { contains: filters.search, mode: 'insensitive' } },
+      ];
     }
 
-    const rows = await supabaseRequest('audit_logs', { searchParams });
+    const rows = await prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
     const profileCache = new Map();
     const logs = await Promise.all(rows.map((row) => enrichWithProfileName(normalize(row), profileCache)));
 
@@ -130,14 +129,10 @@ export const AuditLogModel = {
   },
 
   async findById(id) {
-    const rows = await supabaseRequest('audit_logs', {
-      searchParams: {
-        select: '*',
-        id: `eq.${id}`,
-        limit: '1',
-      },
+    const row = await prisma.auditLog.findUnique({
+      where: { id },
     });
-    if (!rows || rows.length === 0) return null;
-    return enrichWithProfileName(normalize(rows[0]));
+    if (!row) return null;
+    return enrichWithProfileName(normalize(row));
   },
 };

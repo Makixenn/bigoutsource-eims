@@ -1,15 +1,14 @@
-import { supabaseAdmin, supabaseAuth } from '../config/supabase.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../config/db.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/apiResponse.js';
-import { UserProfileModel } from '../models/userProfile.model.js';
 import { RoleService } from '../services/role.service.js';
 import { publicUserPayload } from '../utils/publicUser.js';
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
-
-
 
 async function publicUser(profile) {
   const capabilities = Array.isArray(profile.capabilities)
@@ -19,57 +18,8 @@ async function publicUser(profile) {
   return publicUserPayload(profile, capabilities);
 }
 
-function authErrorMessage(error) {
-  const message = error?.message || '';
-  if (/already|duplicate|registered/i.test(message)) return 'An account with this email already exists';
-  return message || 'Authentication request failed';
-}
-
-async function findAuthUserByEmail(email) {
-  const target = normalizeEmail(email);
-  let page = 1;
-
-  while (page < 20) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
-    if (error) throw new AppError(error.message, 500);
-
-    const user = data.users.find((item) => normalizeEmail(item.email) === target);
-    if (user) return user;
-    if (data.users.length < 1000) return null;
-    page += 1;
-  }
-
-  return null;
-}
-
-async function createConfirmedAuthUser({ email, password, fullName, department, site }) {
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      full_name: fullName,
-      department,
-      site,
-    },
-  });
-
-  if (error) throw new AppError(authErrorMessage(error), /already|duplicate|registered/i.test(error.message || '') ? 409 : 400);
-  if (!data.user) throw new AppError('Unable to create user account', 500);
-  return data.user;
-}
-
-async function updateSeedAuthPassword(userId, password) {
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-    password,
-    email_confirm: true,
-  });
-
-  if (error) throw new AppError(authErrorMessage(error), 400);
-}
-
 async function assertActiveProfile(userId) {
-  const profile = await UserProfileModel.findById(userId);
+  const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
 
   if (!profile) {
     throw new AppError('Account profile not found. Please contact the Super Admin.', 403);
@@ -89,54 +39,49 @@ async function assertActiveProfile(userId) {
 export const AuthService = {
   async register({ email, password, fullName, department = 'Unassigned', site = 'HQ' }) {
     const normalizedEmail = normalizeEmail(email);
-    const existingProfile = await UserProfileModel.findByEmail(normalizedEmail);
+    const existingProfile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
     if (existingProfile) throw new AppError('An account with this email already exists', 409);
 
-    const authUser = await createConfirmedAuthUser({
-      email: normalizedEmail,
-      password,
-      fullName,
-      department,
-      site,
-    });
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    try {
-      const profile = await UserProfileModel.create({
-        id: authUser.id,
+    const profile = await prisma.userProfile.create({
+      data: {
         email: normalizedEmail,
+        passwordHash,
         fullName,
         role: 'viewer',
         status: 'pending',
         department,
         site,
-      });
+      },
+    });
 
-      return {
-        user: await publicUser(profile),
-        message: 'Account created and pending Super Admin approval.',
-      };
-    } catch (error) {
-      await supabaseAdmin.auth.admin.deleteUser(authUser.id).catch(() => {});
-      throw error;
-    }
+    return {
+      user: await publicUser(profile),
+      message: 'Account created and pending Super Admin approval.',
+    };
   },
 
   async login({ email, password }) {
-    const { data, error } = await supabaseAuth.auth.signInWithPassword({
-      email: normalizeEmail(email),
-      password,
-    });
-
-    if (error || !data.session || !data.user) {
+    const normalizedEmail = normalizeEmail(email);
+    const profile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
+    if (!profile) {
       throw new AppError('Invalid email or password', 401);
     }
 
-    const profile = await assertActiveProfile(data.user.id);
+    const isMatch = await bcrypt.compare(password, profile.passwordHash);
+    if (!isMatch) {
+      throw new AppError('Invalid email or password', 401);
+    }
+
+    await assertActiveProfile(profile.id);
+
+    const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
 
     return {
-      token: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-      expiresAt: data.session.expires_at,
+      token,
       user: await publicUser(profile),
     };
   },
@@ -146,20 +91,19 @@ export const AuthService = {
   },
 
   async changePassword(user, { currentPassword, newPassword }) {
-    const { error: verifyError } = await supabaseAuth.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
+    const profile = await prisma.userProfile.findUnique({ where: { id: user.id } });
+    if (!profile) throw new AppError('User not found', 404);
 
-    if (verifyError) {
+    const isMatch = await bcrypt.compare(currentPassword, profile.passwordHash);
+    if (!isMatch) {
       throw new AppError('Current password is incorrect', 401);
     }
 
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password: newPassword,
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.userProfile.update({
+      where: { id: user.id },
+      data: { passwordHash: newPasswordHash },
     });
-
-    if (error) throw new AppError(authErrorMessage(error), 400);
 
     return { changed: true };
   },
@@ -170,41 +114,41 @@ export const AuthService = {
 
     if (!email || !password) return;
 
-    const existingProfile = await UserProfileModel.findByEmail(email);
-    if (existingProfile) {
-      if (existingProfile.role !== 'super_admin' || existingProfile.status !== 'active') {
-        await UserProfileModel.update(existingProfile.id, {
-          role: 'super_admin',
-          status: 'active',
-          approvedAt: existingProfile.approvedAt || new Date().toISOString(),
+    let profile = await prisma.userProfile.findUnique({ where: { email } });
+    
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    if (profile) {
+      if (profile.role !== 'super_admin' || profile.status !== 'active') {
+        await prisma.userProfile.update({
+          where: { id: profile.id },
+          data: {
+            role: 'super_admin',
+            status: 'active',
+            passwordHash,
+            approvedAt: profile.approvedAt || new Date(),
+          },
+        });
+      } else {
+        await prisma.userProfile.update({
+          where: { id: profile.id },
+          data: { passwordHash },
         });
       }
-      await updateSeedAuthPassword(existingProfile.id, password);
       return;
     }
 
-    let authUser = await findAuthUserByEmail(email);
-    if (!authUser) {
-      authUser = await createConfirmedAuthUser({
+    await prisma.userProfile.create({
+      data: {
         email,
-        password,
+        passwordHash,
         fullName: env.seedSuperAdmin.fullName,
+        role: 'super_admin',
+        status: 'active',
         department: env.seedSuperAdmin.department,
         site: env.seedSuperAdmin.site,
-      });
-    } else {
-      await updateSeedAuthPassword(authUser.id, password);
-    }
-
-    await UserProfileModel.create({
-      id: authUser.id,
-      email,
-      fullName: env.seedSuperAdmin.fullName,
-      role: 'super_admin',
-      status: 'active',
-      department: env.seedSuperAdmin.department,
-      site: env.seedSuperAdmin.site,
-      approvedAt: new Date().toISOString(),
+        approvedAt: new Date(),
+      },
     });
   },
 };

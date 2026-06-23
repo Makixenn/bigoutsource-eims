@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { supabaseAuth } from '../config/supabase.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
 import { RoleService } from '../services/role.service.js';
 import { setRealtimeServer } from './accessEvents.js';
@@ -40,10 +40,9 @@ export function initRealtime(httpServer) {
       const token = tokenFromHandshake(socket);
       if (!token) throw new Error('Authentication required');
 
-      const { data, error } = await supabaseAuth.auth.getUser(token);
-      if (error || !data.user) throw new Error('Invalid or expired token');
-
-      const profile = await UserProfileModel.findById(data.user.id);
+      const decoded = jwt.verify(token, env.jwtSecret);
+      
+      const profile = await UserProfileModel.findById(decoded.userId);
       if (!profile || profile.status !== 'active') throw new Error('Account is not active');
 
       socket.user = {
@@ -54,7 +53,7 @@ export function initRealtime(httpServer) {
 
       next();
     } catch (error) {
-      next(error);
+      next(new Error('Authentication failed'));
     }
   });
 

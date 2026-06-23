@@ -6,7 +6,6 @@ import {
   META_CAPABILITIES,
   CAPABILITIES,
 } from '../config/capabilities.js';
-import { supabaseRequest } from '../config/supabase.js';
 import { AppError } from '../utils/apiResponse.js';
 import { emitUserAccessUpdated } from '../realtime/accessEvents.js';
 import { publicUserPayload } from '../utils/publicUser.js';
@@ -64,11 +63,14 @@ export function sanitizeCapabilities(input) {
   return [...set];
 }
 
+import { prisma } from '../config/db.js';
+
 async function isInUse(slug) {
-  const rows = await supabaseRequest('user_profiles', {
-    searchParams: { select: 'id', role: `eq.${slug}`, limit: '1' },
+  const row = await prisma.userProfile.findFirst({
+    where: { role: slug },
+    select: { id: true },
   });
-  return Array.isArray(rows) && rows.length > 0;
+  return !!row;
 }
 
 export const RoleService = {

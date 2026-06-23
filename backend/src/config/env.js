@@ -7,16 +7,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, '../../.env'), quiet: true });
 dotenv.config({ path: resolve(__dirname, '../../../.env'), quiet: true });
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabasePublishableKey =
-  process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || supabaseServiceRoleKey;
 const nodeEnv = process.env.NODE_ENV || 'development';
 const useLocalSeedAdmin = nodeEnv !== 'production';
 
+const jwtSecret = process.env.JWT_SECRET;
+
 const required = [
-  ['SUPABASE_URL', supabaseUrl],
-  ['SUPABASE_SERVICE_ROLE_KEY', supabaseServiceRoleKey],
+  ['JWT_SECRET', jwtSecret],
 ];
 
 for (const [key, value] of required) {
@@ -28,16 +25,12 @@ for (const [key, value] of required) {
 export const env = {
   nodeEnv,
   port: Number(process.env.PORT || 5001),
+  jwtSecret,
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000,https://bigoutsource-eims.vercel.app',
   corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:3000,https://bigoutsource-eims.vercel.app')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
-  supabase: {
-    url: supabaseUrl,
-    serviceRoleKey: supabaseServiceRoleKey,
-    publishableKey: supabasePublishableKey,
-  },
   seedSuperAdmin: {
     email: process.env.SEED_SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || (useLocalSeedAdmin ? 'kamote@gmail.com' : ''),
     password: process.env.SEED_SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || (useLocalSeedAdmin ? 'kamote123' : ''),

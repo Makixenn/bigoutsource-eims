@@ -1,4 +1,4 @@
-import { supabaseRequest } from '../config/supabase.js';
+import { prisma } from '../config/db.js';
 
 const SETTINGS_ID = 'global';
 
@@ -12,50 +12,37 @@ function normalize(row) {
   if (!row) return DEFAULT_SETTINGS;
 
   return {
-    companyName: row.company_name || DEFAULT_SETTINGS.companyName,
-    notifyRegistrationAttempts: row.notify_registration_attempts ?? DEFAULT_SETTINGS.notifyRegistrationAttempts,
-    notifySystemAlerts: row.notify_system_alerts ?? DEFAULT_SETTINGS.notifySystemAlerts,
-    updatedAt: row.updated_at || null,
+    companyName: row.companyName || DEFAULT_SETTINGS.companyName,
+    notifyRegistrationAttempts: row.notifyRegistrationAttempts ?? DEFAULT_SETTINGS.notifyRegistrationAttempts,
+    notifySystemAlerts: row.notifySystemAlerts ?? DEFAULT_SETTINGS.notifySystemAlerts,
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
   };
-}
-
-function toDatabasePayload(data) {
-  const payload = {
-    id: SETTINGS_ID,
-  };
-
-  if (data.companyName !== undefined) payload.company_name = String(data.companyName).trim() || DEFAULT_SETTINGS.companyName;
-  if (data.notifyRegistrationAttempts !== undefined) payload.notify_registration_attempts = Boolean(data.notifyRegistrationAttempts);
-  if (data.notifySystemAlerts !== undefined) payload.notify_system_alerts = Boolean(data.notifySystemAlerts);
-
-  return payload;
 }
 
 export const SettingsModel = {
   async get() {
-    const rows = await supabaseRequest('app_settings', {
-      searchParams: {
-        select: '*',
-        id: `eq.${SETTINGS_ID}`,
-        limit: '1',
-      },
+    const row = await prisma.appSettings.findUnique({
+      where: { id: SETTINGS_ID },
     });
 
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async update(data) {
-    const rows = await supabaseRequest('app_settings', {
-      method: 'POST',
-      searchParams: {
-        on_conflict: 'id',
+    const updateData = {};
+    if (data.companyName !== undefined) updateData.companyName = String(data.companyName).trim() || DEFAULT_SETTINGS.companyName;
+    if (data.notifyRegistrationAttempts !== undefined) updateData.notifyRegistrationAttempts = Boolean(data.notifyRegistrationAttempts);
+    if (data.notifySystemAlerts !== undefined) updateData.notifySystemAlerts = Boolean(data.notifySystemAlerts);
+
+    const row = await prisma.appSettings.upsert({
+      where: { id: SETTINGS_ID },
+      create: {
+        id: SETTINGS_ID,
+        ...updateData,
       },
-      headers: {
-        Prefer: 'resolution=merge-duplicates,return=representation',
-      },
-      body: toDatabasePayload(data),
+      update: updateData,
     });
 
-    return normalize(rows[0]);
+    return normalize(row);
   },
 };
