@@ -1,4 +1,4 @@
-import { supabaseRequest } from '../config/supabase.js';
+import { prisma } from '../config/db.js';
 
 function normalize(row) {
   if (!row) return null;
@@ -7,89 +7,87 @@ function normalize(row) {
     id: row.id,
     uid: row.id,
     email: row.email,
-    fullName: row.full_name || '',
+    fullName: row.fullName || '',
     role: row.role || 'viewer',
     roles: [row.role || 'viewer'],
     status: row.status || 'pending',
     department: row.department || 'Unassigned',
     site: row.site || 'HQ',
-    capabilityOverrides: Array.isArray(row.capability_overrides) ? row.capability_overrides : null,
-    approvedBy: row.approved_by || null,
-    approvedAt: row.approved_at || null,
-    createdAt: row.created_at || '',
-    updatedAt: row.updated_at || '',
+    capabilityOverrides: Array.isArray(row.capabilityOverrides) ? row.capabilityOverrides : null,
+    approvedBy: row.approvedById || null,
+    approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : '',
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };
-}
-
-function toDatabasePayload(data) {
-  const payload = {};
-
-  if (data.id !== undefined) payload.id = data.id;
-  if (data.email !== undefined) payload.email = String(data.email).trim().toLowerCase();
-  if (data.fullName !== undefined) payload.full_name = String(data.fullName).trim();
-  if (data.role !== undefined) payload.role = data.role;
-  if (data.status !== undefined) payload.status = data.status;
-  if (data.department !== undefined) payload.department = String(data.department || 'Unassigned').trim() || 'Unassigned';
-  if (data.site !== undefined) payload.site = String(data.site || 'HQ').trim() || 'HQ';
-  if (data.approvedBy !== undefined) payload.approved_by = data.approvedBy;
-  if (data.approvedAt !== undefined) payload.approved_at = data.approvedAt;
-  // `null` clears the override (account reverts to its role's capabilities).
-  if (data.capabilityOverrides !== undefined) payload.capability_overrides = data.capabilityOverrides;
-
-  return payload;
 }
 
 export const UserProfileModel = {
   async findAll(filters = {}) {
-    const searchParams = {
-      select: '*',
-      order: 'created_at.desc',
-    };
+    const where = {};
+    if (filters.status) where.status = filters.status;
 
-    if (filters.status) searchParams.status = `eq.${filters.status}`;
-
-    const rows = await supabaseRequest('user_profiles', { searchParams });
+    const rows = await prisma.userProfile.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
     return rows.map(normalize);
   },
 
   async findById(id) {
-    const rows = await supabaseRequest('user_profiles', {
-      searchParams: {
-        select: '*',
-        id: `eq.${id}`,
-        limit: '1',
-      },
+    const row = await prisma.userProfile.findUnique({
+      where: { id },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async findByEmail(email) {
-    const rows = await supabaseRequest('user_profiles', {
-      searchParams: {
-        select: '*',
-        email: `eq.${String(email).trim().toLowerCase()}`,
-        limit: '1',
-      },
+    const row = await prisma.userProfile.findUnique({
+      where: { email: String(email).trim().toLowerCase() },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async create(data) {
-    const rows = await supabaseRequest('user_profiles', {
-      method: 'POST',
-      body: toDatabasePayload(data),
+    const row = await prisma.userProfile.create({
+      data: {
+        id: data.id,
+        email: String(data.email).trim().toLowerCase(),
+        fullName: String(data.fullName).trim(),
+        role: data.role,
+        status: data.status,
+        department: String(data.department || 'Unassigned').trim() || 'Unassigned',
+        site: String(data.site || 'HQ').trim() || 'HQ',
+        approvedById: data.approvedBy,
+        approvedAt: data.approvedAt ? new Date(data.approvedAt) : undefined,
+        capabilityOverrides: data.capabilityOverrides,
+        passwordHash: data.passwordHash || '',
+      },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async update(id, data) {
-    const rows = await supabaseRequest('user_profiles', {
-      method: 'PATCH',
-      searchParams: {
-        id: `eq.${id}`,
-      },
-      body: toDatabasePayload(data),
+    const updateData = {};
+    if (data.email !== undefined) updateData.email = String(data.email).trim().toLowerCase();
+    if (data.fullName !== undefined) updateData.fullName = String(data.fullName).trim();
+    if (data.role !== undefined) updateData.role = data.role;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.department !== undefined) updateData.department = String(data.department || 'Unassigned').trim() || 'Unassigned';
+    if (data.site !== undefined) updateData.site = String(data.site || 'HQ').trim() || 'HQ';
+    if (data.approvedBy !== undefined) updateData.approvedById = data.approvedBy;
+    if (data.approvedAt !== undefined) updateData.approvedAt = data.approvedAt ? new Date(data.approvedAt) : null;
+    if (data.capabilityOverrides !== undefined) updateData.capabilityOverrides = data.capabilityOverrides;
+    if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
+
+    const row = await prisma.userProfile.update({
+      where: { id },
+      data: updateData,
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
+
+  async remove(id) {
+    await prisma.userProfile.delete({ where: { id } });
+    return true;
+  }
 };

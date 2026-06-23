@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id                  String        @id @default(uuid())
+  email               String        @unique
+  passwordHash        String        @map("password_hash")
+  fullName            String        @default("") @map("full_name")
+  role                String        @default("viewer")
+  status              String        @default("pending")
+  department          String        @default("Unassigned")
+  site                String        @default("HQ")
+  capabilityOverrides String[]      @map("capability_overrides")
+  approvedById        String?       @map("approved_by")
+  approvedBy          UserProfile?  @relation("Approver", fields: [approvedById], references: [id])
+  approvedUsers       UserProfile[] @relation("Approver")
+  approvedAt          DateTime?     @map("approved_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  notificationsReceived Notification[] @relation("Recipient")
+  notificationsActor    Notification[] @relation("Actor")
+
+  @@map("user_profiles")
+}
+
+model Employee {
+  id                String   @id @default(uuid())
+  name              String   @default("")
+  account           String   @default("")
+  phoneNumber       String   @default("") @map("phone_number")
+  address           String   @default("")
+  bigoutsourceEmail String   @default("") @map("bigoutsource_email")
+  emailPassword     String   @default("") @map("email_password")
+  lmsAccount        String   @default("") @map("lms_account")
+  status            String   @default("active")
+  site              String   @default("")
+  pcName            String   @default("") @map("pc_name")
+  biosDate          String   @default("") @map("bios_date")
+  windowsLicenseKey String   @default("") @map("windows_license_key")
+  rustdeskId        String   @default("") @map("rustdesk_id")
+  eset              String   @default("inactive")
+  activitywatch     String   @default("missing")
+  isArchived        Boolean  @default(false) @map("is_archived")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("employees")
+}
+
+model AppSettings {
+  id                         String   @id @default("global")
+  companyName                String   @default("BigOutsource") @map("company_name")
+  notifyRegistrationAttempts Boolean  @default(true) @map("notify_registration_attempts")
+  notifySystemAlerts         Boolean  @default(true) @map("notify_system_alerts")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  userEmail   String   @default("System") @map("user_email")
+  userName    String?  @map("user_name")
+  userRole    String?  @map("user_role")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  entityLabel String?  @map("entity_label")
+  details     Json     @default("{}")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  id          String       @id @default(uuid())
+  recipientId String       @map("recipient_id")
+  recipient   UserProfile  @relation("Recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  type        String       @default("general")
+  actorId     String?      @map("actor_id")
+  actor       UserProfile? @relation("Actor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorName   String?      @map("actor_name")
+  actorRole   String?      @map("actor_role")
+  message     String       @default("")
+  entityType  String       @default("") @map("entity_type")
+  entityId    String       @default("") @map("entity_id")
+  entityLabel String?      @map("entity_label")
+  actionUrl   String?      @map("action_url")
+  details     Json         @default("{}")
+  readAt      DateTime?    @map("read_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model EmployeeImportStaging {
+  id             String   @id @default(uuid())
+  importId       String   @map("import_id")
+  employeeNumber String   @map("employee_number")
+  name           String
+  site           String
+  account        String
+  rawData        Json     @map("raw_data")
+  status         String   @default("pending")
+  errors         String[]
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("employee_import_staging")
+}
+
+model Role {
+  slug         String   @id
+  name         String   @default("")
+  isSystem     Boolean  @default(false) @map("is_system")
+  capabilities String[]
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Account {
+  id             String    @id @default(uuid())
+  name           String    @unique @default("")
+  accountType    String    @default("external") @map("account_type")
+  departmentCode String?   @map("department_code")
+  lastUsedAt     DateTime? @map("last_used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}

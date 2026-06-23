@@ -1,4 +1,3 @@
-import { supabaseAdmin } from '../config/supabase.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
 import { RoleModel } from '../models/role.model.js';
 import { RoleService, sanitizeCapabilities } from '../services/role.service.js';
@@ -122,8 +121,7 @@ export const UserService = {
     if (!user) throw new AppError('User not found', 404);
     if (user.role === 'super_admin') throw new AppError('Super Admin accounts cannot be deleted here', 400);
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
-    if (error) throw new AppError(error.message || 'Unable to delete user', 500);
+    await UserProfileModel.remove(id);
 
     emitUserAccessRevoked(id, 'user.deleted');
     return { id };

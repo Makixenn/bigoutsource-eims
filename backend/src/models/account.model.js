@@ -1,4 +1,4 @@
-import { supabaseRequest } from '../config/supabase.js';
+import { prisma } from '../config/db.js';
 import { sanitizeDepartmentCode } from '../utils/employeeIdentity.js';
 
 const ACCOUNT_TYPES = ['internal', 'external'];
@@ -21,132 +21,102 @@ function normalize(row) {
   return {
     id: row.id,
     name: row.name || '',
-    accountType: row.account_type || 'external',
-    account_type: row.account_type || 'external',
-    departmentCode: row.department_code || '',
-    department_code: row.department_code || '',
-    lastUsedAt: row.last_used_at || '',
-    createdAt: row.created_at || '',
-    updatedAt: row.updated_at || '',
+    accountType: row.accountType || 'external',
+    account_type: row.accountType || 'external',
+    departmentCode: row.departmentCode || '',
+    department_code: row.departmentCode || '',
+    lastUsedAt: row.lastUsedAt ? row.lastUsedAt.toISOString() : '',
+    createdAt: row.createdAt ? row.createdAt.toISOString() : '',
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };
 }
 
 export const AccountModel = {
   async findAll({ search, type } = {}) {
-    const searchParams = {
-      select: '*',
-      order: 'name.asc',
-    };
+    const where = {};
+    if (search) where.name = { contains: String(search).trim(), mode: 'insensitive' };
+    if (type && ACCOUNT_TYPES.includes(type)) where.accountType = type;
 
-    if (search) searchParams.name = `ilike.*${String(search).trim()}*`;
-    if (type && ACCOUNT_TYPES.includes(type)) searchParams.account_type = `eq.${type}`;
-
-    const rows = await supabaseRequest('accounts', { searchParams });
+    const rows = await prisma.account.findMany({
+      where,
+      orderBy: { name: 'asc' },
+    });
     return rows.map(normalize);
   },
 
   async findByName(name) {
-    const rows = await supabaseRequest('accounts', {
-      searchParams: {
-        select: '*',
-        name: `eq.${String(name || '').trim()}`,
-        limit: '1',
-      },
+    const row = await prisma.account.findUnique({
+      where: { name: String(name || '').trim() },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async findById(id) {
-    const rows = await supabaseRequest('accounts', {
-      searchParams: {
-        select: '*',
-        id: `eq.${id}`,
-        limit: '1',
-      },
+    const row = await prisma.account.findUnique({
+      where: { id },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async findByDepartmentCode(code) {
-    const rows = await supabaseRequest('accounts', {
-      searchParams: {
-        select: '*',
-        department_code: `eq.${sanitizeDepartmentCode(code)}`,
-        limit: '1',
-      },
+    const row = await prisma.account.findFirst({
+      where: { departmentCode: sanitizeDepartmentCode(code) },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async findRecent(limit = 4) {
-    const rows = await supabaseRequest('accounts', {
-      searchParams: {
-        select: '*',
-        order: 'last_used_at.desc.nullslast,created_at.desc',
-        limit: String(limit),
-      },
+    const rows = await prisma.account.findMany({
+      orderBy: [
+        { lastUsedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take: Number(limit) || 4,
     });
     return rows.map(normalize);
   },
 
   async create(data) {
-    const payload = {
-      name: blankToNull(data.name),
-      account_type: normalizeType(data.accountType || data.account_type),
-      department_code: sanitizeDepartmentCode(data.departmentCode || data.department_code),
-      last_used_at: new Date().toISOString(),
-    };
-
-    const rows = await supabaseRequest('accounts', {
-      method: 'POST',
-      body: payload,
+    const row = await prisma.account.create({
+      data: {
+        name: blankToNull(data.name),
+        accountType: normalizeType(data.accountType || data.account_type),
+        departmentCode: sanitizeDepartmentCode(data.departmentCode || data.department_code),
+        lastUsedAt: new Date(),
+      },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async update(id, data) {
-    const payload = {
-      updated_at: new Date().toISOString(),
-    };
-    if (data.name !== undefined) payload.name = blankToNull(data.name);
+    const updateData = {};
+    if (data.name !== undefined) updateData.name = blankToNull(data.name);
 
     const accountType = data.accountType ?? data.account_type;
-    if (accountType !== undefined) payload.account_type = normalizeType(accountType);
+    if (accountType !== undefined) updateData.accountType = normalizeType(accountType);
 
     const departmentCode = data.departmentCode ?? data.department_code;
-    if (departmentCode !== undefined) payload.department_code = sanitizeDepartmentCode(departmentCode);
+    if (departmentCode !== undefined) updateData.departmentCode = sanitizeDepartmentCode(departmentCode);
 
-    const rows = await supabaseRequest('accounts', {
-      method: 'PATCH',
-      searchParams: {
-        id: `eq.${id}`,
-      },
-      body: payload,
+    const row = await prisma.account.update({
+      where: { id },
+      data: updateData,
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async remove(id) {
-    const rows = await supabaseRequest('accounts', {
-      method: 'DELETE',
-      searchParams: {
-        id: `eq.${id}`,
-      },
-    });
-    return Array.isArray(rows) && rows.length > 0;
+    await prisma.account.delete({ where: { id } });
+    return true;
   },
 
   async touch(id) {
-    const rows = await supabaseRequest('accounts', {
-      method: 'PATCH',
-      searchParams: {
-        id: `eq.${id}`,
-      },
-      body: {
-        last_used_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    const row = await prisma.account.update({
+      where: { id },
+      data: {
+        lastUsedAt: new Date(),
       },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 };

@@ -1,63 +1,60 @@
-import { supabaseRequest } from '../config/supabase.js';
+import { prisma } from '../config/db.js';
 
 function normalize(row) {
   if (!row) return null;
   return {
     slug: row.slug,
     name: row.name || '',
-    isSystem: Boolean(row.is_system),
+    isSystem: Boolean(row.isSystem),
     capabilities: Array.isArray(row.capabilities) ? row.capabilities : [],
-    createdAt: row.created_at || '',
-    updatedAt: row.updated_at || '',
+    createdAt: row.createdAt ? row.createdAt.toISOString() : '',
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };
 }
 
 export const RoleModel = {
   async findAll() {
-    const rows = await supabaseRequest('roles', {
-      searchParams: { select: '*', order: 'name.asc' },
+    const rows = await prisma.role.findMany({
+      orderBy: { name: 'asc' },
     });
     return rows.map(normalize);
   },
 
   async findBySlug(slug) {
-    const rows = await supabaseRequest('roles', {
-      searchParams: { select: '*', slug: `eq.${slug}`, limit: '1' },
+    const row = await prisma.role.findUnique({
+      where: { slug },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async create(data) {
-    const rows = await supabaseRequest('roles', {
-      method: 'POST',
-      body: {
+    const row = await prisma.role.create({
+      data: {
         slug: data.slug,
         name: data.name,
-        is_system: Boolean(data.isSystem),
+        isSystem: Boolean(data.isSystem),
         capabilities: Array.isArray(data.capabilities) ? data.capabilities : [],
       },
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async update(slug, data) {
-    const payload = { updated_at: new Date().toISOString() };
-    if (data.name !== undefined) payload.name = data.name;
-    if (data.capabilities !== undefined) payload.capabilities = Array.isArray(data.capabilities) ? data.capabilities : [];
+    const updateData = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.capabilities !== undefined) updateData.capabilities = Array.isArray(data.capabilities) ? data.capabilities : [];
 
-    const rows = await supabaseRequest('roles', {
-      method: 'PATCH',
-      searchParams: { slug: `eq.${slug}` },
-      body: payload,
+    const row = await prisma.role.update({
+      where: { slug },
+      data: updateData,
     });
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async remove(slug) {
-    const rows = await supabaseRequest('roles', {
-      method: 'DELETE',
-      searchParams: { slug: `eq.${slug}` },
+    await prisma.role.delete({
+      where: { slug },
     });
-    return Array.isArray(rows) && rows.length > 0;
+    return true;
   },
 };

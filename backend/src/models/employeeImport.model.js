@@ -1,43 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import { supabaseRequest } from '../config/supabase.js';
-
-const TABLE = 'employee_import_staging';
-
-function toDatabasePayload(row) {
-  return {
-    id: row.id || randomUUID(),
-    import_batch_id: row.importBatchId,
-    source_sheet: row.sourceSheet || 'IT Master Tracker',
-    source_row: row.sourceRow || null,
-    raw_data: row.rawData || {},
-    normalized_data: row.normalizedData || {},
-    issues: row.issues || [],
-    status: row.status || 'issue',
-    duplicate_key: row.duplicateKey || null,
-    resolution: row.resolution || null,
-    created_by: row.createdBy || null,
-    created_at: row.createdAt || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-}
+import { prisma } from '../config/db.js';
 
 function normalize(row) {
   if (!row) return null;
 
   return {
     id: row.id,
-    importBatchId: row.import_batch_id,
-    sourceSheet: row.source_sheet,
-    sourceRow: row.source_row,
-    rawData: row.raw_data || {},
-    normalizedData: row.normalized_data || {},
+    importBatchId: row.importBatchId,
+    sourceSheet: row.sourceSheet,
+    sourceRow: row.sourceRow,
+    rawData: row.rawData || {},
+    normalizedData: row.normalizedData || {},
     issues: row.issues || [],
     status: row.status,
-    duplicateKey: row.duplicate_key,
+    duplicateKey: row.duplicateKey,
     resolution: row.resolution,
-    createdBy: row.created_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdBy: row.createdById,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : '',
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };
 }
 
@@ -45,100 +25,91 @@ export const EmployeeImportModel = {
   async insertMany(rows) {
     if (!rows.length) return [];
 
-    const created = await supabaseRequest(TABLE, {
-      method: 'POST',
-      body: rows.map(toDatabasePayload),
-    });
+    const payloads = rows.map(row => ({
+      id: row.id || randomUUID(),
+      importBatchId: row.importBatchId,
+      sourceSheet: row.sourceSheet || 'IT Master Tracker',
+      sourceRow: row.sourceRow || null,
+      rawData: row.rawData || {},
+      normalizedData: row.normalizedData || {},
+      issues: row.issues || [],
+      status: row.status || 'issue',
+      duplicateKey: row.duplicateKey || null,
+      resolution: row.resolution || null,
+      createdById: row.createdBy || null,
+      createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),
+    }));
 
-    return created.map(normalize);
+    await prisma.employeeImportStaging.createMany({
+      data: payloads,
+    });
+    
+    // We cannot easily map returned since createMany does not return records.
+    return [];
   },
 
   async findAll(filters = {}) {
-    const searchParams = {
-      select: '*',
-      order: 'created_at.desc',
-      limit: String(Math.min(Number(filters.limit || 1000), 2000)),
-    };
+    const where = {};
+    if (filters.importBatchId) where.importBatchId = filters.importBatchId;
+    if (filters.status) where.status = filters.status;
 
-    if (filters.importBatchId) searchParams.import_batch_id = `eq.${filters.importBatchId}`;
-    if (filters.status) searchParams.status = `eq.${filters.status}`;
-
-    const rows = await supabaseRequest(TABLE, { searchParams });
+    const rows = await prisma.employeeImportStaging.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Number(filters.limit || 1000), 2000),
+    });
     return rows.map(normalize);
   },
 
   async findById(id) {
-    const rows = await supabaseRequest(TABLE, {
-      searchParams: {
-        select: '*',
-        id: `eq.${id}`,
-        limit: '1',
-      },
+    const row = await prisma.employeeImportStaging.findUnique({
+      where: { id },
     });
-
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async countPendingImports() {
-    const rows = await supabaseRequest(TABLE, {
-      searchParams: {
-        select: 'id',
-        status: 'in.(issue,ready)',
-        limit: '2000',
+    return prisma.employeeImportStaging.count({
+      where: {
+        status: { in: ['issue', 'ready'] },
       },
     });
-
-    return rows.length;
   },
 
   async update(id, data) {
-    const payload = toDatabasePayload({
-      id,
-      importBatchId: data.importBatchId,
-      sourceSheet: data.sourceSheet,
-      sourceRow: data.sourceRow,
-      rawData: data.rawData,
-      normalizedData: data.normalizedData,
-      issues: data.issues,
-      status: data.status,
-      duplicateKey: data.duplicateKey,
-      resolution: data.resolution,
-      createdBy: data.createdBy,
-      createdAt: data.createdAt,
+    const updateData = {};
+    if (data.importBatchId !== undefined) updateData.importBatchId = data.importBatchId;
+    if (data.sourceSheet !== undefined) updateData.sourceSheet = data.sourceSheet;
+    if (data.sourceRow !== undefined) updateData.sourceRow = data.sourceRow;
+    if (data.rawData !== undefined) updateData.rawData = data.rawData;
+    if (data.normalizedData !== undefined) updateData.normalizedData = data.normalizedData;
+    if (data.issues !== undefined) updateData.issues = data.issues;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.duplicateKey !== undefined) updateData.duplicateKey = data.duplicateKey;
+    if (data.resolution !== undefined) updateData.resolution = data.resolution;
+    if (data.createdBy !== undefined) updateData.createdById = data.createdBy;
+
+    const row = await prisma.employeeImportStaging.update({
+      where: { id },
+      data: updateData,
     });
-
-    delete payload.id;
-    delete payload.created_at;
-
-    const rows = await supabaseRequest(TABLE, {
-      method: 'PATCH',
-      searchParams: { id: `eq.${id}` },
-      body: payload,
-    });
-
-    return normalize(rows[0]);
+    return normalize(row);
   },
 
   async removeByIds(ids = []) {
     const uniqueIds = [...new Set(ids.filter(Boolean))];
     if (!uniqueIds.length) return [];
 
-    const rows = await supabaseRequest(TABLE, {
-      method: 'DELETE',
-      searchParams: {
-        id: `in.(${uniqueIds.join(',')})`,
-      },
+    await prisma.employeeImportStaging.deleteMany({
+      where: { id: { in: uniqueIds } },
     });
-
-    return Array.isArray(rows) ? rows.map(normalize) : [];
+    return [];
   },
 
   async remove(id) {
-    const rows = await supabaseRequest(TABLE, {
-      method: 'DELETE',
-      searchParams: { id: `eq.${id}` },
+    await prisma.employeeImportStaging.delete({
+      where: { id },
     });
-
-    return rows.map(normalize);
+    return [];
   },
 };
