@@ -34,7 +34,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
-import { cn } from '@/src/lib/utils';
+import { applySpecialShortcodes, cn } from '@/src/lib/utils';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
 import { siteService } from '@/src/services/siteService';
@@ -260,7 +260,7 @@ function applyCharacterLimit(field: keyof EmployeeForm, value: string) {
 }
 
 function sanitizeNamePart(value = '') {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function generatedPreview(fullName = '', account?: AccountOption) {
@@ -589,7 +589,10 @@ export default function EmployeeProfile() {
 
   const updateForm = (field: keyof EmployeeForm, value: any) => {
     if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
-      if (/[^a-zA-Z\-\'\s]/.test(value)) {
+      if (typeof value === 'string') {
+        value = applySpecialShortcodes(value);
+      }
+      if (/[^\p{L}\-'\s\[\]`]/u.test(value)) {
         return;
       }
     } else if (field === 'phone') {
@@ -677,6 +680,11 @@ export default function EmployeeProfile() {
 
     if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (/[[\]`]/u.test(form.firstName) || /[[\]`]/u.test(form.lastName) || (form.middleName && /[[\]`]/u.test(form.middleName))) {
+      toast.error('Name contains incomplete shortcodes');
       return;
     }
 
@@ -1882,24 +1890,44 @@ function Input({
   placeholder,
   type = 'text',
   error = false,
+  onAppendSpecialChar,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
   error?: boolean;
+  onAppendSpecialChar?: () => void;
 }) {
   return (
-    <input
-      type={type}
-      value={value}
-      placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn(
-        'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
-        error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]'
+    <div className="relative w-full">
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(
+          'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
+          error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]',
+          onAppendSpecialChar ? "pr-10" : ""
+        )}
+      />
+      {onAppendSpecialChar && (
+        <button
+          type="button"
+          onClick={onAppendSpecialChar}
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold transition-colors",
+            error 
+              ? "border-red-200 bg-red-100 text-red-600 hover:bg-red-200" 
+              : "border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]"
+          )}
+          title="Insert ñ"
+        >
+          ñ
+        </button>
       )}
-    />
+    </div>
   );
 }
 

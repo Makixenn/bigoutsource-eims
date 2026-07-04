@@ -17,6 +17,7 @@ export function AuthInput({
   placeholder,
   error,
   required,
+  onAppendSpecialChar,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -26,6 +27,7 @@ export function AuthInput({
   placeholder: string;
   error?: string | boolean;
   required?: boolean;
+  onAppendSpecialChar?: () => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -38,12 +40,26 @@ export function AuthInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={`peer w-full pl-11 pr-4 py-3.5 rounded-2xl text-[0.9375rem] focus:ring-4 transition-all outline-none shadow-sm shadow-gray-900/5 ${
+          className={`peer w-full pl-11 py-3.5 rounded-2xl text-[0.9375rem] focus:ring-4 transition-all outline-none shadow-sm shadow-gray-900/5 ${onAppendSpecialChar ? 'pr-12' : 'pr-4'} ${
             error 
               ? 'bg-red-50 border border-[#DC2626] text-[#111827] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
               : 'bg-gray-50 border border-gray-200 text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-gray-900 focus:ring-gray-900/5'
           }`}
         />
+        {onAppendSpecialChar && (
+          <button
+            type="button"
+            onClick={onAppendSpecialChar}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-md border text-xs font-bold transition-colors ${
+              error 
+                ? 'border-red-200 text-red-600 bg-red-100 hover:bg-red-200'
+                : 'border-gray-200 text-gray-500 bg-white hover:bg-gray-100'
+            }`}
+            title="Insert ñ"
+          >
+            ñ
+          </button>
+        )}
       </div>
       <AnimatePresence initial={false}>
         {typeof error === 'string' && error && (

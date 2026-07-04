@@ -28,7 +28,7 @@ import { ResizableHeader } from '@/src/components/ResizableHeader';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
-import { cn } from '@/src/lib/utils';
+import { applySpecialShortcodes, cn } from '@/src/lib/utils';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
@@ -92,6 +92,7 @@ type AddEmployeeForm = {
   biosDate: string;
   activityWatchStatus: 'installed' | 'missing';
   windowsKey: string;
+  dateHired?: string;
   isArchived?: boolean;
 };
 
@@ -221,13 +222,13 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     label: 'Status',
     render: (emp) => {
       const normalizedStatus = (emp.status || '').toLowerCase();
-      let statusStr = emp.status;
+      let statusStr: string = emp.status || 'Unknown';
       let colors = 'bg-gray-100 text-gray-700';
       if (normalizedStatus === 'active') colors = 'bg-green-50 text-green-700';
       else if (normalizedStatus === 'floating') colors = 'bg-orange-50 text-orange-700';
       else {
         colors = 'bg-red-50 text-red-700';
-        statusStr = 'Separated'; // Fallback for old inactive statuses
+        statusStr = emp.status && emp.status.toLowerCase() !== 'active' ? emp.status : 'Separated'; // Fallback for old inactive statuses
       }
 
       return (
@@ -270,6 +271,7 @@ const initialForm: AddEmployeeForm = {
   biosDate: '',
   activityWatchStatus: 'missing',
   windowsKey: '',
+  dateHired: '',
   isArchived: false,
 };
 
@@ -322,6 +324,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     rustdeskId: formatRustdeskId(emp.rustdeskId || emp.rustDeskId || ''),
     esetStatus: titleEsetStatus(emp.esetStatus || emp.eset) as Employee['esetStatus'],
     activityWatchStatus: titleActivityWatchStatus(emp.activityWatchStatus || emp.activitywatch) as Employee['activityWatchStatus'],
+    dateHired: emp.dateHired || '',
     updatedAt: emp.updatedAt || '',
     updatedBy: emp.updatedBy || '',
     isArchived: emp.isArchived ?? emp.is_archived ?? false,
@@ -712,7 +715,8 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
 
   const updateForm = (field: keyof AddEmployeeForm, value: string) => {
     if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
-      if (/[^a-zA-Z\-\'\s]/.test(value)) {
+      value = applySpecialShortcodes(value);
+      if (/[^\p{L}\-'\s\[\]`]/u.test(value)) {
         return;
       }
     }
@@ -998,11 +1002,16 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
     if ((requireAll || step === 0) && !form.employeeNumber.trim()) {
       errors.employeeNumber = 'Employee ID is required for HR and payroll matching.';
     }
-    if ((requireAll || step === 0) && !form.firstName.trim()) {
-      errors.firstName = 'Enter the employee first name.';
+    if ((requireAll || step === 0)) {
+      if (!form.firstName.trim()) errors.firstName = 'Enter the employee first name.';
+      else if (/[[\]`]/u.test(form.firstName)) errors.firstName = 'First name contains incomplete shortcodes.';
     }
-    if ((requireAll || step === 0) && !form.lastName.trim()) {
-      errors.lastName = 'Enter the employee last name.';
+    if ((requireAll || step === 0)) {
+      if (!form.lastName.trim()) errors.lastName = 'Enter the employee last name.';
+      else if (/[[\]`]/u.test(form.lastName)) errors.lastName = 'Last name contains incomplete shortcodes.';
+    }
+    if ((requireAll || step === 0) && form.middleName) {
+      if (/[[\]`]/u.test(form.middleName)) errors.middleName = 'Middle name contains incomplete shortcodes.';
     }
     if ((requireAll || step === 0) && form.phone && form.phone.length !== 11) {
       errors.phone = 'Phone number must be exactly 11 digits.';

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Building2, Check, Mail, MapPin, ShieldCheck, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { applySpecialShortcodes } from '@/src/lib/utils';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { authService } from '@/src/features/auth/services/authService';
 import { roleService, type Role } from '@/src/features/settings/services/roleService';
@@ -49,6 +50,7 @@ function getRegistrationErrors({
   const errors: RegistrationErrors = {};
 
   if (fullName.trim().length < 2) errors.fullName = 'Full name must be at least 2 characters.';
+  else if (/[^\p{L}\s\-']/u.test(fullName)) errors.fullName = 'Name can only contain letters, spaces, hyphens, and apostrophes.';
   if (!department.trim()) errors.department = 'Select a department.';
   if (!site.trim()) errors.site = 'Select a site.';
   const normalizedEmail = email.trim().toLowerCase();
@@ -261,11 +263,12 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
                 label="Full Name"
                 type="text"
                 value={fullName}
-                onChange={setFullName}
-                placeholder="e.g. Juan Dela Cruz"
+                onChange={(val) => setFullName(applySpecialShortcodes(val))}
+                placeholder="e.g. Niño Dela Cruz"
                 error={registrationErrors.fullName}
                 required
               />
+              <p className="text-xs text-gray-500 mt-1 pl-1">Hint: Type [`n] for ñ, [`e] for é, [`a] for á, etc.</p>
               <AuthInput
                 icon={Mail}
                 label="Email Address"
