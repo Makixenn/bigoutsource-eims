@@ -122,6 +122,7 @@ const fieldLabels: Array<[string, string]> = [
   ['rustdeskId', 'REMOTE ID'],
   ['esetStatus', 'ESET'],
   ['activityWatchStatus', 'Activity Watch'],
+  ['dateHired', 'Date Hired'],
   ['is_archived', 'Archived'],
 ];
 
@@ -1021,6 +1022,9 @@ function MergeRowsModal({
               <Field label="Windows Key">
                 <Input value={form.windowsKey || ''} onChange={(value) => onChange('windowsKey', value)} />
               </Field>
+              <Field label="Date Hired">
+                <Input type="date" value={form.dateHired || ''} onChange={(value) => onChange('dateHired', value)} />
+              </Field>
               <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 hover:bg-[#F3F4F6] transition-colors cursor-pointer shadow-xs">
                 <input
                   type="checkbox"
@@ -1437,9 +1441,9 @@ function EditRowModal({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto p-6 bg-[#F9FAFB]">
-          {/* Column 1: Work & Account Info */}
-          <div className="space-y-6">
-            <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50">
+          {/* Column 1: EMPLOYEE INFORMATION */}
+          <div className="space-y-8">
+            <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectDropdown
                   label="Department/Account"

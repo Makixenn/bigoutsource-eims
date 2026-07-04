@@ -372,7 +372,10 @@ async function generateWorkforceAnalytics(): Promise<ReportData> {
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentHiresCount = employees.filter(emp => emp.joinedAt && new Date(emp.joinedAt) >= thirtyDaysAgo).length;
+  const recentHiresCount = employees.filter(emp => {
+    const joinedAt = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+    return joinedAt && new Date(joinedAt) >= thirtyDaysAgo;
+  }).length;
 
   const kpiRows = [
     { 'Metric': 'Total Personnel', 'Value': employees.length },
@@ -407,12 +410,12 @@ async function generateWorkforceAnalytics(): Promise<ReportData> {
 
   const months = new Map<string, number>();
   const sortedEmployees = [...employees]
-    .filter(e => e.joinedAt)
-    .sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
+    .filter(e => e.dateHired || e.date_hired || e.createdAt || e.created_at)
+    .sort((a, b) => new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime() - new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime());
   
   let cumulative = 0;
   sortedEmployees.forEach(emp => {
-    const date = new Date(emp.joinedAt);
+    const date = new Date(emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at);
     const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(date);
     cumulative++;
     months.set(monthYear, cumulative);

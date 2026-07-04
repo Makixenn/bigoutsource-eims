@@ -1127,6 +1127,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
         biosDate: form.biosDate || undefined,
         activityWatchStatus: form.activityWatchStatus,
         windowsKey: form.windowsKey.trim() || undefined,
+        dateHired: form.dateHired || undefined,
       });
 
       const createdEmployee = normalizeEmployee(created);
@@ -1790,6 +1791,9 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                             </Field>
                             <Field label="Address">
                               <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
+                            </Field>
+                            <Field label="Date Hired">
+                              <Input type="date" value={form.dateHired || ''} onChange={(value) => updateForm('dateHired', value)} />
                             </Field>
                           </div>
                         </SectionCard>

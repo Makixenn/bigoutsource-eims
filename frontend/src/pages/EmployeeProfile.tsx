@@ -75,6 +75,7 @@ type EmployeeForm = {
   rustdeskId: string;
   esetStatus: 'active' | 'inactive';
   activityWatchStatus: 'installed' | 'missing';
+  dateHired: string;
   isArchived?: boolean;
   avatarUrl?: string;
 };
@@ -101,6 +102,7 @@ const emptyEmployee: EmployeeForm = {
   rustdeskId: '',
   esetStatus: 'inactive',
   activityWatchStatus: 'missing',
+  dateHired: '',
   isArchived: false,
   avatarUrl: '',
 };
@@ -124,6 +126,7 @@ const editableFields: Array<keyof EmployeeForm> = [
   'rustdeskId',
   'esetStatus',
   'activityWatchStatus',
+  'dateHired',
 ];
 
 const suffixOptions = ['Sr.', 'Jr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -376,6 +379,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     activityWatchStatus: normalizeActivityWatch(emp?.activityWatchStatus),
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
+    dateHired: emp?.dateHired || '',
   };
 }
 
@@ -701,20 +705,21 @@ export default function EmployeeProfile() {
         lastName: form.lastName.trim(),
         suffix: form.suffix?.trim() || '',
         accountAssignment: form.accountAssignment.trim(),
-        phone: form.phone.trim() || undefined,
-        address: form.address.trim() || undefined,
-        boEmail: form.boEmail.trim() || undefined,
-        lmsAccount: form.lmsAccount.trim() || undefined,
-        pcName: form.pcName.trim() || undefined,
-        emailPassword: form.emailPassword.trim() || undefined,
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        boEmail: form.boEmail.trim(),
+        lmsAccount: form.lmsAccount.trim(),
+        pcName: form.pcName.trim(),
+        emailPassword: form.emailPassword.trim(),
         status: form.status,
         siteId: selectedSite?.id,
         siteName: selectedSite?.name,
-        biosDate: form.biosDate || undefined,
-        windowsKey: form.windowsKey.trim() || undefined,
-        rustdeskId: form.rustdeskId.trim() || undefined,
+        biosDate: form.biosDate || '',
+        windowsKey: form.windowsKey.trim(),
+        rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
         activityWatchStatus: form.activityWatchStatus,
+        dateHired: form.dateHired || '',
       });
 
       const normalized = normalizeEmployee(updated);
@@ -1033,7 +1038,7 @@ export default function EmployeeProfile() {
 
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
-                <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
+                <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                     <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
@@ -1226,6 +1231,19 @@ export default function EmployeeProfile() {
                         </div>
                       ) : (
                         employee.site || <span className="text-red-500 font-black">Unassigned</span>
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
+                      {editingHR ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <Input
+                            type="date"
+                            value={form.dateHired}
+                            onChange={(value) => updateForm('dateHired', value)}
+                          />
+                        </div>
+                      ) : (
+                        employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
                       )}
                     </ProfileField>
                   </div>

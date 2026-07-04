@@ -6,7 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface NewHiresModalProps {
   isOpen: boolean;
   onClose: () => void;
-  recentHires: any[];
+  allEmployees: any[];
 }
 
 function formatTime(value?: string) {
@@ -14,39 +14,70 @@ function formatTime(value?: string) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
 }
 
-export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalProps) {
+export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+
+  const recentHires = useMemo(() => {
+    let hires = [];
+    if (!filterMonth) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      hires = allEmployees.filter(emp => {
+        const dateStr = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+        return dateStr && new Date(dateStr) >= thirtyDaysAgo;
+      });
+    } else {
+      const [year, month] = filterMonth.split('-');
+      hires = allEmployees.filter(emp => {
+        const dateStr = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        return d.getFullYear() === parseInt(year) && d.getMonth() + 1 === parseInt(month);
+      });
+    }
+    return hires.sort((a, b) => {
+      const aDate = new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime();
+      const bDate = new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime();
+      return bDate - aDate;
+    });
+  }, [allEmployees, filterMonth]);
 
   const stats = useMemo(() => {
     const total = recentHires.length;
-    const thisWeek = recentHires.filter(e => new Date(e.createdAt || e.created_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
+    const thisWeek = recentHires.filter(e => new Date(e.dateHired || e.date_hired || e.createdAt || e.created_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
     
     return { total, thisWeek };
   }, [recentHires]);
 
   const trendData = useMemo(() => {
     const days: Record<string, number> = {};
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+    let startDate = new Date();
+    let numDays = 30;
+
+    if (filterMonth) {
+      const [year, month] = filterMonth.split('-');
+      startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      numDays = new Date(parseInt(year), parseInt(month), 0).getDate();
+    } else {
+      startDate.setDate(startDate.getDate() - 29);
+    }
     
-    // Initialize last 30 days
-    for(let i=0; i<30; i++) {
-      const d = new Date(thirtyDaysAgo);
+    for(let i = 0; i < numDays; i++) {
+      const d = new Date(startDate);
       d.setDate(d.getDate() + i);
       const key = `${d.getMonth()+1}/${d.getDate()}`;
       days[key] = 0;
     }
 
     recentHires.forEach(e => {
-      const d = new Date(e.createdAt || e.created_at);
-      if (d >= thirtyDaysAgo) {
-        const key = `${d.getMonth()+1}/${d.getDate()}`;
-        if (days[key] !== undefined) days[key]++;
-      }
+      const d = new Date(e.dateHired || e.date_hired || e.createdAt || e.created_at);
+      const key = `${d.getMonth()+1}/${d.getDate()}`;
+      if (days[key] !== undefined) days[key]++;
     });
 
     return Object.entries(days).map(([date, count]) => ({ date, count }));
-  }, [recentHires]);
+  }, [recentHires, filterMonth]);
 
   const filteredHires = useMemo(() => {
     return recentHires.filter(e => 
@@ -57,7 +88,7 @@ export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalPro
 
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8,Name,Department,Position,Hire Date,Status\n" +
-      filteredHires.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || e.jobTitle || ''}","${formatTime(e.createdAt || e.created_at)}","Completed"`).join("\n");
+      filteredHires.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || e.jobTitle || ''}","${formatTime(e.dateHired || e.date_hired || e.createdAt || e.created_at)}","Completed"`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -71,7 +102,7 @@ export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalPro
     <BaseDashboardModal
       isOpen={isOpen}
       onClose={onClose}
-      title="New Hires (30 Days)"
+      title={filterMonth ? `New Hires (${new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(filterMonth + '-01T00:00:00'))})` : "New Hires (30 Days)"}
       icon={<UserPlus className="w-6 h-6" />}
       redirectUrl="/reports"
       redirectLabel="Open Recruitment Module"
@@ -90,7 +121,7 @@ export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalPro
 
       {/* Mini Trend Chart */}
       <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-sm">
-        <h3 className="text-sm font-bold text-[#111827] mb-4">Hiring Trend (Last 30 Days)</h3>
+        <h3 className="text-sm font-bold text-[#111827] mb-4">Hiring Trend {filterMonth ? `(${new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(filterMonth + '-01T00:00:00'))})` : '(Last 30 Days)'}</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -127,9 +158,18 @@ export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalPro
               className="w-full pl-9 pr-4 py-2 text-sm border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]"
             />
           </div>
-          <button onClick={handleExport} className="p-2 bg-white border border-[#E5E7EB] rounded-lg hover:bg-[#F3F4F6] text-[#4B5563]" title="Export">
-            <Download className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <input 
+              type="month" 
+              value={filterMonth}
+              onChange={e => setFilterMonth(e.target.value)}
+              className="px-3 py-2 text-sm border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]"
+              title="Filter by month"
+            />
+            <button onClick={handleExport} className="p-2 bg-white border border-[#E5E7EB] rounded-lg hover:bg-[#F3F4F6] text-[#4B5563]" title="Export">
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto max-h-80">
           <table className="w-full text-left">
@@ -148,7 +188,7 @@ export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalPro
                   <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || emp.jobTitle || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.createdAt || emp.created_at)}</td>
+                  <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at)}</td>
                   <td className="px-6 py-3">
                     <span className="px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-green-100 text-green-700">Completed</span>
                   </td>

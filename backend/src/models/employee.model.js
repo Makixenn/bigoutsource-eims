@@ -89,6 +89,7 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   }
   if (data?.esetStatus !== undefined) payload.eset = normalizeEset(data.esetStatus);
   if (data?.biosDate !== undefined) payload.bios_date = stringOrEmpty(data.biosDate);
+  if (data?.dateHired !== undefined) payload.date_hired = stringOrEmpty(data.dateHired);
   if (data?.activityWatchStatus !== undefined) {
     payload.activitywatch = canonical(data.activityWatchStatus, ACTIVITY_WATCH_OPTIONS, data.activityWatchStatus);
   }
@@ -125,6 +126,7 @@ function normalize(row) {
     site: row.site || '',
     pcName: row.pcName || row.pc_name || '',
     biosDate: row.biosDate || row.bios_date || '',
+    dateHired: row.dateHired || row.date_hired || '',
     windowsKey: row.windowsLicenseKey || row.windows_license_key || '',
     windowsLicenseKey: row.windowsLicenseKey || row.windows_license_key || '',
     rustdeskId: row.rustdeskId || row.rustdesk_id || '',
@@ -221,6 +223,7 @@ export const EmployeeModel = {
       rustdeskId: payload.rustdesk_id,
       eset: payload.eset,
       biosDate: payload.bios_date,
+      dateHired: payload.date_hired,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       isArchived: payload.is_archived,
@@ -255,6 +258,7 @@ export const EmployeeModel = {
         rustdeskId: payload.rustdesk_id,
         eset: payload.eset,
         biosDate: payload.bios_date,
+        dateHired: payload.date_hired,
         activitywatch: payload.activitywatch,
         windowsLicenseKey: payload.windows_license_key,
         isArchived: payload.is_archived,
@@ -277,6 +281,7 @@ export const EmployeeModel = {
 
   async update(id, data) {
     const payload = toDatabasePayload(data);
+    console.log('--- EmployeeModel Update Payload ---', payload);
     const updateData = {
       name: payload.name,
       account: payload.account,
@@ -291,6 +296,7 @@ export const EmployeeModel = {
       rustdeskId: payload.rustdesk_id,
       eset: payload.eset,
       biosDate: payload.bios_date,
+      dateHired: payload.date_hired,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       isArchived: payload.is_archived,

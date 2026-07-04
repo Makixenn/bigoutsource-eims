@@ -165,12 +165,12 @@ export default function Dashboard() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return employees
       .filter(emp => {
-        const dateStr = emp.createdAt || emp.created_at;
+        const dateStr = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
         return dateStr && new Date(dateStr) >= thirtyDaysAgo;
       })
       .sort((a, b) => {
-        const aDate = new Date(a.createdAt || a.created_at).getTime();
-        const bDate = new Date(b.createdAt || b.created_at).getTime();
+        const aDate = new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime();
+        const bDate = new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime();
         return bDate - aDate;
       })
       .slice(0, 4);
@@ -207,22 +207,22 @@ export default function Dashboard() {
         ]
       },
       {
-        label: 'New Hires (30d)',
+        label: 'New Hires',
         value: recentHires.length,
         icon: UserPlus,
         color: 'text-green-600',
         reportData: recentHires,
         viewAllLink: '/reports',
-        description: 'Employees onboarded in the last 30 days.',
+        description: 'Employees onboarded recently.',
         insights: [
           { label: 'Total Hires', value: recentHires.length, colorClass: 'text-green-600' },
-          { label: 'This Week', value: recentHires.filter(e => new Date(e.createdAt || e.created_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length, colorClass: 'text-blue-600' }
+          { label: 'This Week', value: recentHires.filter(e => new Date(e.dateHired || e.date_hired || e.createdAt || e.created_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length, colorClass: 'text-blue-600' }
         ],
         reportColumns: [
           { key: 'fullName', label: 'Name' },
           { key: 'email', label: 'Email' },
           { key: 'department', label: 'Department', render: (_: any, row: any) => row.accountAssignment || row.account || 'Unassigned' },
-          { key: 'createdAt', label: 'Joined Date', render: (val: any, row: any) => formatTime(val || row.created_at) }
+          { key: 'dateHired', label: 'Joined Date', render: (val: any, row: any) => formatTime(val || row.date_hired || row.createdAt || row.created_at) }
         ]
       },
       {
@@ -375,8 +375,9 @@ export default function Dashboard() {
   const attritionTimeline = useMemo(() => {
     const months = new Map();
     employees.forEach(emp => {
-      if (emp.createdAt || emp.created_at) {
-        const d = new Date(emp.createdAt || emp.created_at);
+      const dateHiredStr = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+      if (dateHiredStr) {
+        const d = new Date(dateHiredStr);
         const key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
         if (!months.has(key)) months.set(key, { month: key, timestamp: d.getTime(), hires: 0, separations: 0 });
         months.get(key).hires++;
@@ -397,16 +398,16 @@ export default function Dashboard() {
   const growthTrend = useMemo(() => {
     const months = new Map<string, number>();
     const sortedEmployees = [...employees]
-      .filter(e => e.createdAt || e.created_at)
+      .filter(e => e.dateHired || e.date_hired || e.createdAt || e.created_at)
       .sort((a, b) => {
-        const aDate = new Date(a.createdAt || a.created_at).getTime();
-        const bDate = new Date(b.createdAt || b.created_at).getTime();
+        const aDate = new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime();
+        const bDate = new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime();
         return aDate - bDate;
       });
 
     let cumulative = 0;
     sortedEmployees.forEach(emp => {
-      const date = new Date(emp.createdAt || emp.created_at);
+      const date = new Date(emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at);
       const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: '2-digit' }).format(date);
       cumulative++;
       months.set(monthYear, cumulative);
@@ -971,7 +972,7 @@ export default function Dashboard() {
       </div>
       <Suspense fallback={null}>
         <TotalPersonnelModal isOpen={activeModal === 'Total Personnel'} onClose={() => setActiveModal(null)} employees={employees} />
-        <NewHiresModal isOpen={activeModal === 'New Hires (30d)'} onClose={() => setActiveModal(null)} recentHires={recentHires} />
+        <NewHiresModal isOpen={activeModal === 'New Hires' || activeModal === 'New Hires (30d)'} onClose={() => setActiveModal(null)} allEmployees={employees} />
         <TurnoverRateModal isOpen={activeModal === 'Turnover Rate'} onClose={() => setActiveModal(null)} employees={employees} turnoverRate={turnoverStats.rate} inactiveEmployees={turnoverStats.inactiveList || []} attritionTimeline={attritionTimeline} />
         <AssignedAssetsModal isOpen={activeModal === 'Assigned Assets'} onClose={() => setActiveModal(null)} devices={devices} employees={employees} />
 

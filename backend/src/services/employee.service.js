@@ -27,6 +27,7 @@ const trackedFields = [
   'site',
   'status',
   'pcName',
+  'dateHired',
   'biosDate',
   'windowsKey',
   'rustdeskId',

@@ -48,6 +48,7 @@ model Employee {
   rustdeskId        String   @default("") @map("rustdesk_id")
   eset              String   @default("inactive")
   activitywatch     String   @default("missing")
+  dateHired         String   @default("") @map("date_hired")
   isArchived        Boolean  @default(false) @map("is_archived")
   avatarUrl         String?  @map("avatar_url")
   createdAt         DateTime @default(now()) @map("created_at")
