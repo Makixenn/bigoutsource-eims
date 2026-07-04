@@ -107,7 +107,8 @@ type DirectoryFieldKey =
   | 'emailPassword'
   | 'lmsAccount'
   | 'status'
-  | 'site';
+  | 'site'
+  | 'remoteId';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -120,10 +121,11 @@ const defaultVisibleFieldKeys: DirectoryFieldKey[] = [
   'fullName',
   'employeeId',
   'accountAssignment',
-  'site',
+  'boEmail',
+  'remoteId',
 ];
 const requiredVisibleFieldKeys: DirectoryFieldKey[] = ['fullName'];
-const maxVisibleFieldCount = 4;
+const maxVisibleFieldCount = 5;
 const recordsPerPage = 10;
 const tableRowHeightClass = 'h-16';
 const actionColumnWidth = '10rem';
@@ -132,6 +134,13 @@ const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
   fullName: 1.6,
   employeeId: 1,
   accountAssignment: 1.35,
+  boEmail: 1.6,
+  remoteId: 1.1,
+  phone: 1.1,
+  address: 2.0,
+  emailPassword: 1.0,
+  lmsAccount: 1.2,
+  status: 0.8,
   site: 0.8,
 };
 
@@ -234,6 +243,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     },
   },
   { key: 'site', label: 'Site', render: (emp) => emp.site || 'Unassigned' },
+  { key: 'remoteId', label: 'REMOTE ID', render: (emp) => emp.rustdeskId || '-' },
 ];
 
 const sortableFieldKeys: DirectoryFieldKey[] = directoryFields.map((field) => field.key);
@@ -852,7 +862,10 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   const visibleFieldKeys = selectedFields ?? defaultVisibleFieldKeys;
   const visibleFields = directoryFields.filter((field) => visibleFieldKeys.includes(field.key));
   const visibleFieldWeightTotal = visibleFields.reduce((total, field) => total + (columnWeights[field.key] || 1), 0);
-  const isCustomFieldView = selectedFields !== null;
+  const isCustomFieldView = selectedFields !== null && (
+    selectedFields.length !== defaultVisibleFieldKeys.length ||
+    !selectedFields.every((field) => defaultVisibleFieldKeys.includes(field))
+  );
   const maxSelectableFieldCount = maxVisibleFieldCount - requiredVisibleFieldKeys.length;
   const selectedSelectableFieldCount = visibleFieldKeys.filter((field) => !requiredVisibleFieldKeys.includes(field)).length;
   const canSelectMoreFields = visibleFieldKeys.length < maxVisibleFieldCount;
@@ -1206,9 +1219,9 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                     checked={checked}
                     disabled={disabled}
                     onChange={() => toggleField(field.key)}
-                    className="mt-0.5 h-4 w-4 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
                   />
-                  <span className="leading-snug">{field.label}</span>
+                  <span className="leading-snug flex-1 min-w-0 truncate" title={field.label}>{field.label}</span>
                 </label>
               );
             })}
@@ -1314,7 +1327,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
           <AnimatePresence mode="wait" initial={false}>
             {isLoading ? (
               <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-                <table className={cn("min-w-[920px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
+                <table className={cn("min-w-[1024px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <colgroup>
                     {visibleFields.map((field) => (
                       <col key={field.key} style={{ width: colWidths[field.key] ? `${colWidths[field.key]}px` : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
@@ -1366,7 +1379,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
               </motion.div>
             ) : (
               <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-                <table className={cn("min-w-[920px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
+                <table className={cn("min-w-[1024px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <colgroup>
                     {visibleFields.map((field) => (
                       <col key={field.key} style={{ width: colWidths[field.key] ? `${colWidths[field.key]}px` : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
