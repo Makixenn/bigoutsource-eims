@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import type React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Eye, EyeOff, Key, Loader2, Pencil, Search, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -123,6 +123,10 @@ export default function UserManagement() {
   const [permsTarget, setPermsTarget] = useState<AppUser | null>(null);
   const [permsDraft, setPermsDraft] = useState<string[]>([]);
   const [permsSaving, setPermsSaving] = useState(false);
+  const [passwordEditUser, setPasswordEditUser] = useState<AppUser | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const { data: fetchedUsers = [], isLoading: isUsersLoading } = useUsersQuery(refreshTrigger);
@@ -680,7 +684,7 @@ export default function UserManagement() {
                         <td className="px-6 py-4">
                           <AnimatePresence mode="wait">
                             {isEditing && editDraft ? (
-                              <motion.div key="edit-status" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} transition={{ duration: 0.15 }}>
+                              <motion.div key="edit-status" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} transition={{ duration: 0.15 }} className="flex items-center gap-2">
                                 <AnimatedSelect
                                   value={editDraft.status}
                                   onChange={(val) =>
@@ -690,8 +694,21 @@ export default function UserManagement() {
                                   }
                                   options={EDITABLE_ACCOUNT_STATUSES}
                                   disabled={busyId === user.uid}
-                                  className="w-full"
+                                  className="flex-1"
                                 />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPasswordEditUser(user);
+                                    setNewPassword('');
+                                    setShowPassword(false);
+                                  }}
+                                  disabled={busyId === user.uid}
+                                  className="group relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] disabled:opacity-50"
+                                >
+                                  <Key className="h-4 w-4" />
+                                  <ActionTooltip label="Edit Password" />
+                                </button>
                               </motion.div>
                             ) : (
                               <motion.div key="view-status" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} transition={{ duration: 0.15 }}>
@@ -1296,6 +1313,124 @@ export default function UserManagement() {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151]"
                   >
                     Go to Departments
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {passwordEditUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
+            onClick={() => !isUpdatingPassword && setPasswordEditUser(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4 border-b px-6 py-5" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-black" style={{ color: 'var(--color-text-primary)' }}>Edit Password</h2>
+                  <p className="mt-1 truncate text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
+                    {passwordEditUser.fullName || passwordEditUser.email}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => !isUpdatingPassword && setPasswordEditUser(null)}
+                  disabled={isUpdatingPassword}
+                  className="rounded-lg p-2 transition-colors hover:bg-[#F3F4F6] disabled:opacity-50"
+                  style={{ color: 'var(--color-text-faint)' }}
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    {/* Hidden username field to prevent browser autofill from hijacking the search bar */}
+                    <input 
+                      type="text" 
+                      name="username" 
+                      autoComplete="username" 
+                      value={passwordEditUser.email} 
+                      className="sr-only" 
+                      readOnly 
+                      tabIndex={-1} 
+                      aria-hidden="true" 
+                    />
+
+                    <label className="mb-1.5 block text-xs font-bold text-[#4B5563]">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="new-password"
+                        autoComplete="new-password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full rounded-xl border border-[#E5E7EB] px-4 py-2.5 pr-10 text-sm transition-all focus:border-[#111827] focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#9CA3AF] transition-colors hover:text-[#4B5563]"
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPasswordEditUser(null)}
+                    disabled={isUpdatingPassword}
+                    className="min-h-11 whitespace-nowrap rounded-xl border bg-white px-5 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] disabled:opacity-50"
+                    style={{ borderColor: 'var(--color-border)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newPassword || newPassword.length < 8) {
+                        toast.error('Password must be at least 8 characters long');
+                        return;
+                      }
+                      setIsUpdatingPassword(true);
+                      try {
+                        await userService.updatePassword(passwordEditUser.uid, newPassword);
+                        toast.success('Password updated successfully');
+                        setPasswordEditUser(null);
+                        setNewPassword('');
+                      } catch (error: any) {
+                        toast.error(error.message || 'Unable to update password');
+                      } finally {
+                        setIsUpdatingPassword(false);
+                      }
+                    }}
+                    disabled={isUpdatingPassword || !newPassword || newPassword.length < 8}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-[#374151] disabled:opacity-60"
+                  >
+                    {isUpdatingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    Save Password
                   </button>
                 </div>
               </div>

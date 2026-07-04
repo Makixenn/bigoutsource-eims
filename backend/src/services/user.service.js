@@ -100,6 +100,18 @@ export const UserService = {
     return updated;
   },
 
+  async updatePassword(id, newPassword) {
+    const user = await UserProfileModel.findById(id);
+    if (!user) throw new AppError('User not found', 404);
+    if (user.role === 'super_admin') throw new AppError('Super Admin accounts cannot be edited here', 400);
+
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const updated = await UserProfileModel.update(id, { passwordHash });
+    
+    return { changed: true };
+  },
+
   /**
    * Sets per-account capability overrides. Pass `null` to clear the override and
    * revert the account to its role's default capabilities. Meta-capabilities are
