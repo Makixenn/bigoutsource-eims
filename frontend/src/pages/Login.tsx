@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import logoUrl from '/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput } from '@/src/features/auth/components/authFields';
+import { LoginBackground } from '@/src/features/auth/components/LoginBackground';
 
 export default function Login() {
   const { login, loginMfa, resendLoginMfa } = useAuth();
@@ -100,10 +101,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Natural ambient background lighting */}
-      <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-blue-400/10 blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full bg-blue-300/10 blur-[140px] pointer-events-none" />
+    <LoginBackground>
 
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.97 }}
@@ -111,6 +109,9 @@ export default function Login() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-[440px] relative z-10"
       >
+        {/* Stronger, darker blue-tinted glow that pulses gently over a 5s cycle */}
+        <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-r from-[#1f6fa0]/60 to-[#2b93c9]/50 blur-2xl animate-[pulse_5s_ease-in-out_infinite]" />
+        
         <div className="bg-white/90 backdrop-blur-xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] p-8 md:p-10 overflow-hidden relative">
           {/* Subtle top accent inside card */}
           <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-gray-50 to-transparent pointer-events-none" />
@@ -257,6 +258,6 @@ export default function Login() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </LoginBackground>
   );
 }

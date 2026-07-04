@@ -110,7 +110,7 @@ const importReviewCache: {
 const fieldLabels: Array<[string, string]> = [
   ['employeeNumber', 'ID'],
   ['fullName', 'Name'],
-  ['accountAssignment', 'Account'],
+  ['accountAssignment', 'DEPARTMENT/CAMPAIGN.'],
   ['phone', 'Phone'],
   ['address', 'Address'],
   ['boEmail', 'Email'],
@@ -119,11 +119,9 @@ const fieldLabels: Array<[string, string]> = [
   ['status', 'Status'],
   ['siteName', 'Site'],
   ['pcName', 'PC Name'],
-  ['rustdeskId', 'RustDesk ID'],
+  ['rustdeskId', 'REMOTE ID'],
   ['esetStatus', 'ESET'],
-  ['biosDate', 'BIOS Date'],
   ['activityWatchStatus', 'Activity Watch'],
-  ['windowsKey', 'Windows Key'],
   ['is_archived', 'Archived'],
 ];
 
@@ -1002,7 +1000,7 @@ function MergeRowsModal({
               <Field label="PC Name">
                 <Input value={form.pcName || ''} onChange={(value) => onChange('pcName', value)} />
               </Field>
-              <Field label="RustDesk ID">
+              <Field label="REMOTE ID">
                 <Input value={form.rustdeskId || ''} onChange={(value) => onChange('rustdeskId', value)} />
               </Field>
               <SelectDropdown
@@ -1502,10 +1500,8 @@ function EditRowModal({
                 <Field label="PC Name">
                   <Input value={form.pcName || ''} onChange={(val) => onChange('pcName', val)} placeholder="e.g. PC-JOHN" />
                 </Field>
-                <Field label="BIOS Date">
-                  <Input type="date" value={form.biosDate || ''} onChange={(val) => onChange('biosDate', val)} />
-                </Field>
-                <Field label="RustDesk ID">
+
+                <Field label="REMOTE ID">
                   <Input value={form.rustdeskId || ''} onChange={(val) => onChange('rustdeskId', val)} placeholder="e.g. 123 456 789" />
                 </Field>
               </div>
@@ -1526,9 +1522,7 @@ function EditRowModal({
                   onSelect={(val) => onChange('activityWatchStatus', val)}
                 />
                 <div className="sm:col-span-2">
-                  <Field label="Windows Key">
-                    <Input value={form.windowsKey || ''} onChange={(val) => onChange('windowsKey', val)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX" />
-                  </Field>
+  
                 </div>
                 <div className="sm:col-span-2">
                   <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 hover:bg-[#F9FAFB] transition-colors cursor-pointer shadow-xs">

@@ -1035,7 +1035,7 @@ export default function EmployeeProfile() {
               <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
                 <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="Department/Account Type" icon={Briefcase} editing={editingHR}>
+                    <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
                         <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
                           <button
@@ -1259,77 +1259,13 @@ export default function EmployeeProfile() {
                         employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
-                    <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
-                      {editingIT ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-red-500 font-black">Not Set</span>}
-                    </ProfileField>
                     {canViewSecrets && (
-                    <ProfileField label="RustDesk ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
+                    <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
                       {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
                     </ProfileField>
                     )}
                   </div>
 
-                  {canViewSecrets && (
-                  <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
-                      <AnimatePresence mode="popLayout" initial={false}>
-                        {editingSecrets ? (
-                          <motion.div
-                            key="edit-windows"
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          >
-                            <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" error={Boolean(formErrors.windowsKey)} />
-                            {formErrors.windowsKey && <span className="mt-1.5 block text-xs font-bold text-red-600">{formErrors.windowsKey}</span>}
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="view-windows"
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          >
-                            <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit overflow-hidden flex items-center">
-                              <AnimatePresence mode="popLayout" initial={false}>
-                                <motion.span
-                                  key={showSensitive ? 'visible' : 'hidden'}
-                                  initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
-                                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                  exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
-                                  transition={{ duration: 0.2 }}
-                                  className="inline-block"
-                                >
-                                  {showSensitive ? (employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>) : (employee.windowsKey ? '*****-*****-*****-*****-*****' : <span className="text-red-500 font-black">Not Assigned</span>)}
-                                </motion.span>
-                              </AnimatePresence>
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <AnimatePresence mode="popLayout" initial={false}>
-                      {!isEditing && employee.windowsKey && (
-                        <motion.button
-                          key="reveal-button"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          type="button"
-                          onClick={handleReveal}
-                          className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-xl text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                        >
-                          {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          {showSensitive ? 'Hide' : 'Reveal Key'}
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  )}
                 </ProfileSection>
                 )}
               </motion.div>

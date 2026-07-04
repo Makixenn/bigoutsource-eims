@@ -201,7 +201,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     },
   },
   { key: 'employeeId', label: 'Employee ID', render: (emp) => emp.employeeId || '-' },
-  { key: 'accountAssignment', label: 'Account', render: (emp) => emp.accountAssignment || '-' },
+  { key: 'accountAssignment', label: 'DEPARTMENT/CAMPAIGN.', render: (emp) => emp.accountAssignment || '-' },
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
   { key: 'boEmail', label: 'Bigoutsource Email', render: (emp) => emp.boEmail || '-' },
