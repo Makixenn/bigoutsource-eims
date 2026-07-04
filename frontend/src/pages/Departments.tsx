@@ -74,11 +74,11 @@ function suggestDepartmentCode(name = ''): string {
 }
 
 function sanitizeDepartmentCode(value = '') {
-  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3);
+  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 1);
 }
 
 function isValidDepartmentCode(code: string) {
-  return /^[a-z]{2,3}$/.test(code);
+  return /^[a-z]{1}$/.test(code);
 }
 
 function normalizeDepartment(account: any): Department | null {
@@ -311,7 +311,7 @@ export default function Departments() {
   const addDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deptName.trim()) { toast.error('Department name is required'); return; }
-    if (!isAddCodeValid) { toast.error('Department code must be 2–3 letters'); return; }
+    if (!isAddCodeValid) { toast.error('Department code must be 1 lowercase letter'); return; }
     if (isDuplicateAddCode) { toast.error('Department code already exists. Edit the code to resolve the collision.'); return; }
 
     setIsAddSaving(true);
@@ -338,7 +338,7 @@ export default function Departments() {
     if (!selectedDepartment) return;
     const name = editName.trim();
     if (!name) { toast.error('Department name is required'); return; }
-    if (!isEditCodeValid) { toast.error('Department code must be 2–3 letters'); return; }
+    if (!isEditCodeValid) { toast.error('Department code must be 1 lowercase letter'); return; }
     if (isDuplicateEditName) { toast.error('Department name already exists'); return; }
     if (isDuplicateEditCode) { toast.error('Department code already exists. Edit the code to resolve the collision.'); return; }
 
@@ -580,7 +580,7 @@ export default function Departments() {
                   : !deptCode
                     ? 'Auto-generated from the department name.'
                     : !isAddCodeValid
-                      ? 'Code must be 2–3 lowercase letters.'
+                      ? 'Code must be 1 lowercase letter.'
                       : 'Looks good!'
               }
               hintColor={
@@ -598,8 +598,8 @@ export default function Departments() {
                     setIsDeptCodeEdited(true);
                     setDeptCode(sanitizeDepartmentCode(e.target.value));
                   }}
-                  placeholder="hc"
-                  maxLength={3}
+                  placeholder="h"
+                  maxLength={1}
                   className={cn(
                     'form-input pr-14',
                     isDuplicateAddCode || (!deptCode ? false : !isAddCodeValid)
@@ -610,7 +610,7 @@ export default function Departments() {
                   )}
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#9CA3AF]">
-                  {deptCode.length}/3
+                  {deptCode.length}/1
                 </span>
               </div>
             </FormField>
@@ -696,7 +696,7 @@ export default function Departments() {
                 isDuplicateEditCode
                   ? 'Code already taken — edit manually to resolve the collision (e.g. append a digit).'
                   : !isEditCodeValid
-                    ? 'Code must be 2–3 lowercase letters.'
+                    ? 'Code must be 1 lowercase letter.'
                     : 'Looks good!'
               }
               hintColor={isDuplicateEditCode || !isEditCodeValid ? 'error' : 'success'}
@@ -708,8 +708,8 @@ export default function Departments() {
                     setIsEditCodeEdited(true);
                     setEditCode(sanitizeDepartmentCode(e.target.value));
                   }}
-                  placeholder="hc"
-                  maxLength={3}
+                  placeholder="h"
+                  maxLength={1}
                   className={cn(
                     'form-input pr-14',
                     isDuplicateEditCode || !isEditCodeValid
@@ -718,7 +718,7 @@ export default function Departments() {
                   )}
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#9CA3AF]">
-                  {editCode.length}/3
+                  {editCode.length}/1
                 </span>
               </div>
             </FormField>

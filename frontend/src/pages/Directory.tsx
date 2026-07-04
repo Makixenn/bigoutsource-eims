@@ -215,7 +215,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
   { key: 'boEmail', label: 'Bigoutsource Email', render: (emp) => emp.boEmail || '-' },
-  { key: 'emailPassword', label: 'Password', render: (emp) => emp.emailPassword || '-' },
+  { key: 'emailPassword', label: 'EMAIL DEFAULT PASSWORD', render: (emp) => emp.emailPassword || '-' },
   { key: 'lmsAccount', label: 'LMS Account', render: (emp) => emp.lmsAccount || '-' },
   {
     key: 'status',
@@ -1447,7 +1447,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                           <td
                             key={field.key}
                             className={cn(
-                              'py-0 align-middle text-sm font-bold text-[#111827] cursor-default select-none',
+                              'py-0 align-middle text-sm font-bold text-[#111827]',
                               field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
                             )}
                           >
@@ -1676,7 +1676,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Password">
+                            <Field label="EMAIL DEFAULT PASSWORD">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
                           </div>
@@ -1850,7 +1850,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Password">
+                            <Field label="EMAIL DEFAULT PASSWORD">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
                             <Field label="Bigoutsource Email" error={formErrors.boEmail}>

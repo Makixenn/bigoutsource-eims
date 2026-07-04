@@ -1116,7 +1116,7 @@ export default function EmployeeProfile() {
                       )}
                     </ProfileField>
                     {canViewSecrets && (
-                    <ProfileField label="Email Password" icon={Key} editing={editingSecrets}>
+                    <ProfileField label="EMAIL DEFAULT PASSWORD" icon={Key} editing={editingSecrets}>
                       {editingSecrets ? (
                         <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
                       ) : (
