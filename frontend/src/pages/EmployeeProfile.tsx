@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from 'react';
 import type { ElementType, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import {
   Archive,
@@ -15,6 +16,7 @@ import {
   EyeOff,
   Globe,
   Key,
+  Info,
   Laptop,
   Loader2,
   Mail,
@@ -76,6 +78,8 @@ type EmployeeForm = {
   esetStatus: 'active' | 'inactive';
   activityWatchStatus: 'installed' | 'missing';
   dateHired: string;
+  separationDate: string;
+  separationReason: string;
   isArchived?: boolean;
   avatarUrl?: string;
 };
@@ -103,6 +107,8 @@ const emptyEmployee: EmployeeForm = {
   esetStatus: 'inactive',
   activityWatchStatus: 'missing',
   dateHired: '',
+  separationDate: '',
+  separationReason: '',
   isArchived: false,
   avatarUrl: '',
 };
@@ -127,6 +133,8 @@ const editableFields: Array<keyof EmployeeForm> = [
   'esetStatus',
   'activityWatchStatus',
   'dateHired',
+  'separationDate',
+  'separationReason'
 ];
 
 const suffixOptions = ['Sr.', 'Jr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -377,14 +385,17 @@ function normalizeEmployee(emp: any): EmployeeForm {
     rustdeskId: formatRustdeskId(emp?.rustdeskId || emp?.rustDeskId || ''),
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
     activityWatchStatus: normalizeActivityWatch(emp?.activityWatchStatus),
+    dateHired: emp?.dateHired || emp?.date_hired || '',
+    separationDate: emp?.separationDate || emp?.separation_date || '',
+    separationReason: emp?.separationReason || emp?.separation_reason || '',
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
-    dateHired: emp?.dateHired || '',
   };
 }
 
 export default function EmployeeProfile() {
   const { id } = useParams();
+  const queryClient = useQueryClient();
   const { user, can } = useAuth();
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
   const [form, setForm] = useState<EmployeeForm>(emptyEmployee);
@@ -398,6 +409,9 @@ export default function EmployeeProfile() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveIntent, setArchiveIntent] = useState<'archive' | 'unarchive' | null>(null);
   const [archiveStatusReason, setArchiveStatusReason] = useState<'separated' | 'floating'>('separated');
+  const [archiveSeparationReason, setArchiveSeparationReason] = useState<string>('Voluntary Separation (Resignation)');
+  const [archiveSeparationReasonOther, setArchiveSeparationReasonOther] = useState<string>('');
+  const [archiveSeparationDate, setArchiveSeparationDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -570,6 +584,7 @@ export default function EmployeeProfile() {
     try {
       const updated = await employeeService.uploadAvatar(id, file);
       const normalized = normalizeEmployee(updated);
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
       setEmployee(normalized);
       setForm(normalized);
       toast.success('Avatar uploaded successfully', { id: loadingToast });
@@ -727,11 +742,16 @@ export default function EmployeeProfile() {
         rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
         activityWatchStatus: form.activityWatchStatus,
-        dateHired: form.dateHired || '',
+        dateHired: form.dateHired,
+        separationDate: form.separationDate,
+        separationReason: form.separationReason
       });
 
       const normalized = normalizeEmployee(updated);
       const refreshedLogs = await auditLogService.list({ entityType: 'employees', entityId: id, limit: 50 }).catch(() => auditLogs);
+      
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      
       setEmployee(normalized);
       setForm(normalized);
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
@@ -755,7 +775,14 @@ export default function EmployeeProfile() {
 
       const updated = await employeeService.update(id, { 
         is_archived: newValue,
-        status: newValue ? archiveStatusReason : 'active'
+        status: newValue ? archiveStatusReason : 'active',
+        ...(newValue && archiveStatusReason === 'separated' ? { 
+          separation_reason: archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason, 
+          separation_date: archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : new Date().toISOString()
+        } : {
+          separation_reason: null,
+          separation_date: null
+        })
       });
 
       const normalized = normalizeEmployee(updated);
@@ -859,7 +886,12 @@ export default function EmployeeProfile() {
                 <div className="absolute -top-16 left-8">
                   <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter relative group overflow-hidden">
                     {employee.avatarUrl ? (
-                      <img src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} alt={employee.fullName} className="w-full h-full object-cover" />
+                      <img 
+                        src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} 
+                        alt={employee.fullName} 
+                        className="w-full h-full object-cover" 
+                        style={{ objectFit: 'cover' }}
+                      />
                     ) : (
                       employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'
                     )}
@@ -1017,6 +1049,30 @@ export default function EmployeeProfile() {
                           type="button"
                           onClick={() => {
                             setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
+                            setArchiveStatusReason((form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated');
+                            
+                            const predefinedReasons = ['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract'];
+                            const currentReason = form.separationReason || employee.separationReason;
+                            if (currentReason) {
+                              if (predefinedReasons.includes(currentReason)) {
+                                setArchiveSeparationReason(currentReason);
+                                setArchiveSeparationReasonOther('');
+                              } else {
+                                setArchiveSeparationReason('Other');
+                                setArchiveSeparationReasonOther(currentReason);
+                              }
+                            } else {
+                              setArchiveSeparationReason('Voluntary Separation (Resignation)');
+                              setArchiveSeparationReasonOther('');
+                            }
+
+                            const currentDate = form.separationDate || employee.separationDate;
+                            if (currentDate) {
+                              setArchiveSeparationDate(currentDate.split('T')[0]);
+                            } else {
+                              setArchiveSeparationDate('');
+                            }
+                            
                             setShowArchiveModal(true);
                           }}
                           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${employee.isArchived
@@ -1254,6 +1310,63 @@ export default function EmployeeProfile() {
                         employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
                       )}
                     </ProfileField>
+
+                    {(form.status === 'inactive' || form.status === 'separated' || form.status === 'floating') && (
+                      <>
+                        <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
+                          {editingHR ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <Input
+                                type="date"
+                                value={form.separationDate}
+                                onChange={(value) => updateForm('separationDate', value)}
+                              />
+                            </div>
+                          ) : (
+                            employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
+                          )}
+                        </ProfileField>
+                        <ProfileField label="Separation Reason" icon={Info} editing={editingHR}>
+                          {editingHR ? (
+                            <div className="flex flex-col gap-2 w-full">
+                              <select
+                                value={
+                                  ['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract'].includes(form.separationReason)
+                                    ? form.separationReason
+                                    : form.separationReason ? 'Other' : ''
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== 'Other') {
+                                    updateForm('separationReason', val);
+                                  } else {
+                                    // Set to a placeholder or leave as current if they choose Other
+                                    updateForm('separationReason', 'Other (Please specify)');
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-[#111827] outline-none appearance-none"
+                              >
+                                <option value="" disabled>Select Reason</option>
+                                <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
+                                <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
+                                <option value="Retirement">Retirement</option>
+                                <option value="End of Contract">End of Contract</option>
+                                <option value="Other">Other</option>
+                              </select>
+                              {(!['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract', ''].includes(form.separationReason)) && (
+                                <Input
+                                  value={form.separationReason === 'Other (Please specify)' ? '' : form.separationReason}
+                                  onChange={(value) => updateForm('separationReason', value)}
+                                  placeholder="Please specify the reason..."
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            employee.separationReason || <span className="text-[#6B7280] font-medium">Not Assigned</span>
+                          )}
+                        </ProfileField>
+                      </>
+                    )}
                   </div>
                 </ProfileSection>
 
@@ -1626,6 +1739,43 @@ export default function EmployeeProfile() {
                         <option value="separated">SEPARATED</option>
                         <option value="floating">FLOATING</option>
                       </select>
+
+                      {archiveStatusReason === 'separated' && (
+                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Separation</label>
+                          <select
+                            value={archiveSeparationReason}
+                            onChange={(e) => setArchiveSeparationReason(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                          >
+                            <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
+                            <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
+                            <option value="Retirement">Retirement</option>
+                            <option value="End of Contract">End of Contract</option>
+                            <option value="Other">Other</option>
+                          </select>
+
+                          {archiveSeparationReason === 'Other' && (
+                            <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                              <input
+                                type="text"
+                                placeholder="Please specify the reason..."
+                                value={archiveSeparationReasonOther}
+                                onChange={(e) => setArchiveSeparationReasonOther(e.target.value)}
+                                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                              />
+                            </div>
+                          )}
+
+                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Exit Date</label>
+                          <input
+                            type="date"
+                            value={archiveSeparationDate}
+                            onChange={(e) => setArchiveSeparationDate(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

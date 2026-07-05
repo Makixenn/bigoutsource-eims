@@ -24,28 +24,28 @@ export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalPr
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       hires = allEmployees.filter(emp => {
-        const dateStr = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+        const dateStr = emp.dateHired || emp.date_hired;
         return dateStr && new Date(dateStr) >= thirtyDaysAgo;
       });
     } else {
       const [year, month] = filterMonth.split('-');
       hires = allEmployees.filter(emp => {
-        const dateStr = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+        const dateStr = emp.dateHired || emp.date_hired;
         if (!dateStr) return false;
         const d = new Date(dateStr);
         return d.getFullYear() === parseInt(year) && d.getMonth() + 1 === parseInt(month);
       });
     }
     return hires.sort((a, b) => {
-      const aDate = new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime();
-      const bDate = new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime();
+      const aDate = new Date(a.dateHired || a.date_hired).getTime();
+      const bDate = new Date(b.dateHired || b.date_hired).getTime();
       return bDate - aDate;
     });
   }, [allEmployees, filterMonth]);
 
   const stats = useMemo(() => {
     const total = recentHires.length;
-    const thisWeek = recentHires.filter(e => new Date(e.dateHired || e.date_hired || e.createdAt || e.created_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
+    const thisWeek = recentHires.filter(e => new Date(e.dateHired || e.date_hired) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
     
     return { total, thisWeek };
   }, [recentHires]);
@@ -71,7 +71,7 @@ export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalPr
     }
 
     recentHires.forEach(e => {
-      const d = new Date(e.dateHired || e.date_hired || e.createdAt || e.created_at);
+      const d = new Date(e.dateHired || e.date_hired);
       const key = `${d.getMonth()+1}/${d.getDate()}`;
       if (days[key] !== undefined) days[key]++;
     });
@@ -88,7 +88,11 @@ export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalPr
 
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8,Name,Department,Position,Hire Date,Status\n" +
-      filteredHires.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || e.jobTitle || ''}","${formatTime(e.dateHired || e.date_hired || e.createdAt || e.created_at)}","Completed"`).join("\n");
+      filteredHires.map(e => {
+        const isFuture = new Date(e.dateHired || e.date_hired) > new Date();
+        const statusText = isFuture ? 'Joining Soon' : 'Joined';
+        return `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || e.jobTitle || ''}","${formatTime(e.dateHired || e.date_hired)}","${statusText}"`;
+      }).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -183,17 +187,25 @@ export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalPr
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F3F4F6]">
-              {filteredHires.map(emp => (
-                <tr key={emp.id} className="hover:bg-[#F9FAFB]">
-                  <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || emp.jobTitle || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at)}</td>
-                  <td className="px-6 py-3">
-                    <span className="px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-green-100 text-green-700">Completed</span>
-                  </td>
-                </tr>
-              ))}
+              {filteredHires.map(emp => {
+                const isFuture = new Date(emp.dateHired || emp.date_hired) > new Date();
+                
+                return (
+                  <tr key={emp.id} className="hover:bg-[#F9FAFB]">
+                    <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
+                    <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
+                    <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || emp.jobTitle || '-'}</td>
+                    <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.dateHired || emp.date_hired)}</td>
+                    <td className="px-6 py-3">
+                      {isFuture ? (
+                        <span className="px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-orange-100 text-[#EA580C]">Joining Soon</span>
+                      ) : (
+                        <span className="px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-green-100 text-[#10B981]">Joined</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredHires.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-[#6B7280] text-sm font-medium">No recent hires found.</td>

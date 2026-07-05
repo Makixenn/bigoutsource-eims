@@ -56,7 +56,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
     const assets: any[] = [];
     devices.forEach(d => {
         const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
-        const dept = emp ? (emp.accountAssignment || emp.account || 'Unassigned') : 'Unassigned';
+        const dept = emp ? (emp.department || emp.accountAssignment || emp.account || 'Unassigned') : 'Unassigned';
         
         let issues = [];
         let risk = 'Low';

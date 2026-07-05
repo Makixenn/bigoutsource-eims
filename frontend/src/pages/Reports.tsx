@@ -361,19 +361,20 @@ async function generateTerminationsReport(): Promise<ReportData> {
 // ─── Report 6: Workforce Analytics ───────────────────────────────────────────
 
 async function generateWorkforceAnalytics(): Promise<ReportData> {
-  const employees = excludeArchivedEmployees(asArray(await employeeService.list()));
+  const allEmployees = asArray(await employeeService.list());
+  const employees = excludeArchivedEmployees(allEmployees);
   
-  const active = employees.filter((e) => String(e.status ?? '').toLowerCase() === 'active').length;
-  const inactive = employees.filter((e) => {
+  const active = allEmployees.filter((e) => String(e.status ?? '').toLowerCase() === 'active').length;
+  const inactive = allEmployees.filter((e) => {
     const status = String(e.status ?? '').toLowerCase();
-    return status === 'inactive' || status === 'terminated' || status === 'offboarding';
+    return status === 'inactive' || status === 'terminated' || status === 'offboarding' || status === 'separated' || status === 'floating';
   }).length;
   const turnoverRate = active + inactive > 0 ? ((inactive / (active + inactive)) * 100).toFixed(1) + '%' : '0.0%';
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recentHiresCount = employees.filter(emp => {
-    const joinedAt = emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at;
+    const joinedAt = emp.dateHired || emp.date_hired;
     return joinedAt && new Date(joinedAt) >= thirtyDaysAgo;
   }).length;
 

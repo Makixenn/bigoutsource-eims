@@ -675,7 +675,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
       if (statusFilter !== 'All') {
         const normalizedEmpStatus = (emp.status || '').toLowerCase();
         if (statusFilter === 'Separated') {
-          matchesStatus = normalizedEmpStatus === 'separated' || normalizedEmpStatus === 'inactive';
+          matchesStatus = normalizedEmpStatus === 'separated' || normalizedEmpStatus === 'inactive' || normalizedEmpStatus === 'terminated' || normalizedEmpStatus === 'offboarding';
         } else {
           matchesStatus = normalizedEmpStatus === statusFilter.toLowerCase();
         }

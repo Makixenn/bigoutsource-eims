@@ -200,11 +200,7 @@ export default function UserManagement() {
     let result = users.filter((user) => {
       const text = `${user.email} ${user.fullName || ''} ${user.department || ''} ${user.site || ''} ${user.role} ${user.status}`.toLowerCase();
       const matchesSearch = text.includes(search.toLowerCase());
-      const matchesRole = roleFilter
-        ? roleFilter === 'admin'
-          ? ['admin', 'hr_admin', 'it_admin'].includes(user.role)
-          : user.role === roleFilter
-        : true;
+      const matchesRole = roleFilter ? user.role === roleFilter : true;
       const matchesStatus = statusFilter ? user.status === statusFilter : true;
       return matchesSearch && matchesRole && matchesStatus;
     });
@@ -476,9 +472,7 @@ export default function UserManagement() {
                 onChange={setRoleFilter}
                 options={[
                   { value: '', label: 'All Roles' },
-                  { value: 'viewer', label: 'Viewer' },
-                  { value: 'admin', label: 'Admin (All Departments)' },
-                  { value: 'super_admin', label: 'Super Admin' },
+                  ...roles.map((r) => ({ value: r.slug, label: r.name })),
                 ]}
                 className="min-w-[160px]"
               />

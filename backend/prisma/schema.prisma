@@ -49,6 +49,8 @@ model Employee {
   eset              String   @default("inactive")
   activitywatch     String   @default("missing")
   dateHired         String   @default("") @map("date_hired")
+  separationDate    String   @default("") @map("separation_date")
+  separationReason  String   @default("") @map("separation_reason")
   isArchived        Boolean  @default(false) @map("is_archived")
   avatarUrl         String?  @map("avatar_url")
   createdAt         DateTime @default(now()) @map("created_at")
