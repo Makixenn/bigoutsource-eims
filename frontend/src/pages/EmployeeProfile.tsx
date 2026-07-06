@@ -1303,6 +1303,7 @@ export default function EmployeeProfile() {
                           <Input
                             type="date"
                             value={form.dateHired}
+                            max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
                             onChange={(value) => updateForm('dateHired', value)}
                           />
                         </div>
@@ -2040,6 +2041,7 @@ function Input({
   placeholder,
   type = 'text',
   error = false,
+  max,
   onAppendSpecialChar,
 }: {
   value: string;
@@ -2047,6 +2049,7 @@ function Input({
   placeholder?: string;
   type?: string;
   error?: boolean;
+  max?: string;
   onAppendSpecialChar?: () => void;
 }) {
   return (
@@ -2055,6 +2058,7 @@ function Input({
         type={type}
         value={value}
         placeholder={placeholder}
+        max={max}
         onChange={(event) => onChange(event.target.value)}
         className={cn(
           'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
