@@ -222,7 +222,7 @@ export function AccountFilterDropdown({
     );
   };
 
-  const selectedLabel = value === 'All Account' ? 'All DEPARTMENT/CAMPAIGN.' : value;
+  const selectedLabel = value === 'All Account' ? 'All Department/Campaign.' : value;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -239,7 +239,7 @@ export function AccountFilterDropdown({
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
             <div className="max-h-64 overflow-y-auto">
               <div className="py-1 border-b border-[#F3F4F6]">
-                {renderOption('All Account', 'All DEPARTMENT/CAMPAIGN.')}
+                {renderOption('All Account', 'All Department/Campaign.')}
               </div>
               {internalAccounts.length > 0 && (
                 <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
