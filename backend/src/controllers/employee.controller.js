@@ -1,6 +1,7 @@
 import { EmployeeService } from '../services/employee.service.js';
 import { success } from '../utils/apiResponse.js';
 import { redactEmployeeForUser } from '../utils/employeeSecurity.js';
+import { emitTableChange } from '../realtime/accessEvents.js';
 
 export const EmployeeController = {
   async list(req, res, next) {
@@ -31,15 +32,12 @@ export const EmployeeController = {
 
   async create(req, res, next) {
     try {
-      return success(
-        res,
-        await EmployeeService.create(req.body, req.user, {
-          ipAddress: req.ip,
-          userAgent: req.get('user-agent'),
-        }),
-        'Employee created',
-        201
-      );
+      const employee = await EmployeeService.create(req.body, req.user, {
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      emitTableChange('employees', 'INSERT', { id: employee.id });
+      return success(res, employee, 'Employee created', 201);
     } catch (error) {
       return next(error);
     }
@@ -50,14 +48,12 @@ export const EmployeeController = {
       console.log('--- Employee Update Request ---');
       console.log('ID:', req.params.id);
       console.log('Payload:', req.body);
-      return success(
-        res,
-        await EmployeeService.update(req.params.id, req.body, req.user, {
-          ipAddress: req.ip,
-          userAgent: req.get('user-agent'),
-        }),
-        'Employee updated'
-      );
+      const employee = await EmployeeService.update(req.params.id, req.body, req.user, {
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      emitTableChange('employees', 'UPDATE', { id: employee.id });
+      return success(res, employee, 'Employee updated');
     } catch (error) {
       console.error('Update Error:', error);
       return next(error);
@@ -70,6 +66,7 @@ export const EmployeeController = {
         ipAddress: req.ip,
         userAgent: req.get('user-agent'),
       });
+      emitTableChange('employees', 'DELETE', { id: req.params.id });
       return success(res, null, 'Employee deleted');
     } catch (error) {
       return next(error);
@@ -91,6 +88,7 @@ export const EmployeeController = {
           userAgent: req.get('user-agent'),
         }
       );
+      emitTableChange('employees', 'UPDATE', { id: employee.id });
       return success(res, redactEmployeeForUser(employee, req.user), 'Avatar uploaded successfully');
     } catch (error) {
       return next(error);

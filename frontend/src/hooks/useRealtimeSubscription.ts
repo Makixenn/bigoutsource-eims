@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { connectTableSocket } from '../services/realtimeService';
+
 // Types mock to prevent TS errors
 type RealtimePostgresChangesPayload<T> = any;
 
@@ -18,7 +20,20 @@ export function useRealtimeSubscription({
   enabled = true
 }: RealtimeConfig) {
   useEffect(() => {
-    // Supabase Realtime removed in self-hosted migration.
-    // We could implement polling or socket.io rooms here later.
+    if (!enabled) return;
+
+    const unsubscribe = connectTableSocket({
+      onTableChange: (data: any) => {
+        if (data.table === table) {
+          if (event === '*' || data.action === event || data.event === event) {
+            onChange(data);
+          }
+        }
+      }
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [table, schema, event, onChange, enabled]);
 }
