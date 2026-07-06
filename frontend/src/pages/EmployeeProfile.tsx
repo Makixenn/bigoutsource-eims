@@ -1104,7 +1104,7 @@ export default function EmployeeProfile() {
               <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
                 <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
+                    <ProfileField label="Department/Campaign." icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
                         <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
                           <button
@@ -1172,7 +1172,7 @@ export default function EmployeeProfile() {
                       )}
                     </ProfileField>
                     {canViewSecrets && (
-                    <ProfileField label="EMAIL DEFAULT PASSWORD" icon={Key} editing={editingSecrets}>
+                    <ProfileField label="Email Default Password" icon={Key} editing={editingSecrets}>
                       {editingSecrets ? (
                         <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
                       ) : (
@@ -1400,7 +1400,7 @@ export default function EmployeeProfile() {
                       )}
                     </ProfileField>
                     {canViewSecrets && (
-                    <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
+                    <ProfileField label="Remote ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
                       {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
                     </ProfileField>
                     )}
