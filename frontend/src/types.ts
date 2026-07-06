@@ -14,6 +14,7 @@ export interface Employee {
   lmsAccount: string;
   // IT Data
   pcName: string;
+  dateHired: string;
   biosDate: string;
   windowsKey: string;
   rustDeskId: string;

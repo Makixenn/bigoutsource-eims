@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { UserMinus, Download } from 'lucide-react';
 import { BaseDashboardModal } from './BaseDashboardModal';
+import { cn } from '@/src/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell , Legend } from 'recharts';
 
 interface TurnoverRateModalProps {
@@ -24,14 +25,14 @@ export function TurnoverRateModal({ isOpen, onClose, employees, turnoverRate, in
     // Basic mocks for Monthly/Annual based on available data
     const currentRate = parseFloat(turnoverRate);
     const monthlyTurnover = inactiveEmployees.filter(e => {
-        const d = new Date(e.resignationDate || e.resignation_date);
+        const d = new Date(e.separationDate || e.separation_date);
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         return d >= thirtyDaysAgo;
     }).length;
     
     // Mock Annual turnover as something slightly larger
     const annualTurnover = inactiveEmployees.filter(e => {
-        const d = new Date(e.resignationDate || e.resignation_date);
+        const d = new Date(e.separationDate || e.separation_date);
         const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
         return d >= yearAgo;
     }).length;
@@ -43,10 +44,14 @@ export function TurnoverRateModal({ isOpen, onClose, employees, turnoverRate, in
     let voluntary = 0;
     let termination = 0;
     let contractEnd = 0;
+    let floating = 0;
 
     inactiveEmployees.forEach(e => {
-      const reason = (e.resignationReason || e.resignation_reason || '').toLowerCase();
-      if (reason.includes('term') || reason.includes('fired')) termination++;
+      const reason = (e.separationReason || e.separation_reason || '').toLowerCase();
+      const status = (e.status || '').toLowerCase();
+      
+      if (status === 'floating') floating++;
+      else if (reason.includes('term') || reason.includes('fired')) termination++;
       else if (reason.includes('contract') || reason.includes('end')) contractEnd++;
       else voluntary++; // Default to voluntary
     });
@@ -54,13 +59,14 @@ export function TurnoverRateModal({ isOpen, onClose, employees, turnoverRate, in
     return [
       { name: 'Voluntary', value: voluntary },
       { name: 'Termination', value: termination },
-      { name: 'End of Contract', value: contractEnd }
+      { name: 'End of Contract', value: contractEnd },
+      { name: 'Floating', value: floating }
     ];
   }, [inactiveEmployees]);
 
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8,Employee,Department,Exit Date,Reason\n" +
-      inactiveEmployees.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${formatTime(e.resignationDate || e.resignation_date)}","${e.resignationReason || e.resignation_reason || 'Resigned'}"`).join("\n");
+      inactiveEmployees.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${formatTime(e.separationDate || e.separation_date)}","${e.separationReason || e.separation_reason || 'Separated'}"`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -164,11 +170,12 @@ export function TurnoverRateModal({ isOpen, onClose, employees, turnoverRate, in
                 <tr key={emp.id} className="hover:bg-[#F9FAFB]">
                   <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.resignationDate || emp.resignation_date)}</td>
-                  <td className="px-6 py-3">
-                    <span className="px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-gray-100 text-gray-700">
-                        {emp.resignationReason || emp.resignation_reason || 'Voluntary Resignation'}
-                    </span>
+                  <td className="px-6 py-3 text-sm text-[#4B5563]">{String(emp.status).toLowerCase() === 'floating' ? '-' : formatTime(emp.separationDate || emp.separation_date)}</td>
+                  <td className="px-6 py-3 text-sm text-[#4B5563]">
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-1.5 h-1.5 rounded-full", String(emp.status).toLowerCase() === 'floating' ? "bg-orange-500" : "bg-red-500")} />
+                      {String(emp.status).toLowerCase() === 'floating' ? 'Floating' : (emp.separationReason || emp.separation_reason || 'Separated')}
+                    </div>
                   </td>
                 </tr>
               ))}

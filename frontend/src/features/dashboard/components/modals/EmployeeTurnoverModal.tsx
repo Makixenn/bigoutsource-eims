@@ -29,29 +29,27 @@ export function EmployeeTurnoverModal({ isOpen, onClose, inactiveEmployees, attr
   }, [inactiveEmployees]);
 
   const topFactors = useMemo(() => {
-    let resignation = 0;
-    let termination = 0;
+    let voluntary = 0;
+    let involuntary = 0;
     let retirement = 0;
+    let contract = 0;
     let other = 0;
 
     inactiveEmployees.forEach(e => {
-      const reason = (e.resignationReason || e.resignation_reason || '').toLowerCase();
-      if (reason.includes('term') || reason.includes('fired') || reason.includes('performance')) termination++;
+      const reason = (e.separationReason || e.separation_reason || '').toLowerCase();
+      
+      if (reason.includes('voluntary') || reason.includes('resign')) voluntary++;
+      else if (reason.includes('involuntary') || reason.includes('term') || reason.includes('fired')) involuntary++;
       else if (reason.includes('retire')) retirement++;
-      else if (reason.includes('resign') || reason.includes('better')) resignation++;
+      else if (reason.includes('contract')) contract++;
       else other++;
     });
 
-    // Make "other" into resignation if it's empty
-    if (resignation === 0 && other > 0) {
-        resignation = other;
-        other = 0;
-    }
-
     const data = [];
-    if (resignation > 0) data.push({ name: 'Resignation', value: resignation });
+    if (voluntary > 0) data.push({ name: 'Voluntary', value: voluntary });
+    if (involuntary > 0) data.push({ name: 'Involuntary', value: involuntary });
     if (retirement > 0) data.push({ name: 'Retirement', value: retirement });
-    if (termination > 0) data.push({ name: 'Termination', value: termination });
+    if (contract > 0) data.push({ name: 'Contract End', value: contract });
     if (other > 0) data.push({ name: 'Other', value: other });
 
     return data.sort((a, b) => b.value - a.value);
@@ -59,7 +57,7 @@ export function EmployeeTurnoverModal({ isOpen, onClose, inactiveEmployees, attr
 
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8,Employee,Department,Exit Date,Reason\n" +
-      inactiveEmployees.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${formatTime(e.resignationDate || e.resignation_date)}","${e.resignationReason || e.resignation_reason || 'Resigned'}"`).join("\n");
+      inactiveEmployees.map(e => `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${formatTime(e.separationDate || e.separation_date)}","${e.separationReason || e.separation_reason || 'Separated'}"`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -162,9 +160,9 @@ export function EmployeeTurnoverModal({ isOpen, onClose, inactiveEmployees, attr
                 <tr key={emp.id} className="hover:bg-[#F9FAFB]">
                   <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.resignationDate || emp.resignation_date)}</td>
+                  <td className="px-6 py-3 text-sm text-[#4B5563]">{String(emp.status).toLowerCase() === 'floating' ? '-' : formatTime(emp.separationDate || emp.separation_date)}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">
-                    {emp.resignationReason || emp.resignation_reason || 'Voluntary Resignation'}
+                    {String(emp.status).toLowerCase() === 'floating' ? 'Floating' : (emp.separationReason || emp.separation_reason || 'Separated')}
                   </td>
                 </tr>
               ))}

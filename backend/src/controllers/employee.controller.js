@@ -47,6 +47,9 @@ export const EmployeeController = {
 
   async update(req, res, next) {
     try {
+      console.log('--- Employee Update Request ---');
+      console.log('ID:', req.params.id);
+      console.log('Payload:', req.body);
       return success(
         res,
         await EmployeeService.update(req.params.id, req.body, req.user, {
@@ -56,6 +59,7 @@ export const EmployeeController = {
         'Employee updated'
       );
     } catch (error) {
+      console.error('Update Error:', error);
       return next(error);
     }
   },

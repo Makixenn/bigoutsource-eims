@@ -41,6 +41,12 @@ function formatTime(value?: string) {
   }).format(new Date(value));
 }
 
+function getAvatarUrl(url?: string) {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${url}`;
+}
+
 function actionLabel(action: string) {
   return action.replace(/\./g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -130,12 +136,20 @@ export default function Dashboard() {
   const { data: fetchedAccounts = [], isLoading: isAccountsLoading } = useAccountsQuery({ refreshTrigger });
 
   useEffect(() => {
-    setEmployees(fetchedEmployees.filter((emp: any) => !emp.isArchived && !emp.is_archived));
+    setEmployees(fetchedEmployees.filter((emp: any) => {
+      const isArchived = emp.isArchived || emp.is_archived;
+      const isFloating = String(emp.status).toLowerCase() === 'floating';
+      return !isArchived || isFloating;
+    }));
     setEmployeesLoading(isEmployeesLoading);
   }, [fetchedEmployees, isEmployeesLoading]);
 
   useEffect(() => {
-    setDevices(fetchedDevices);
+    setDevices(fetchedDevices.filter((d: any) => {
+      const isArchived = d.isArchived || d.is_archived;
+      const isFloating = String(d.assigneeStatus || d.status || '').toLowerCase() === 'floating';
+      return !isArchived || isFloating;
+    }));
     setDevicesLoading(isDevicesLoading);
   }, [fetchedDevices, isDevicesLoading]);
 
@@ -150,27 +164,27 @@ export default function Dashboard() {
   }, [fetchedAccounts, isAccountsLoading]);
 
   const turnoverStats = useMemo(() => {
-    const active = employees.filter(e => e.status === 'active').length;
-    const inactiveList = employees.filter(e => {
+    const active = fetchedEmployees.filter(e => e.status === 'active').length;
+    const inactiveList = fetchedEmployees.filter(e => {
       const status = String(e.status || '').toLowerCase();
-      return status === 'inactive' || status === 'terminated' || status === 'offboarding';
+      return status === 'inactive' || status === 'terminated' || status === 'offboarding' || status === 'separated' || status === 'floating';
     });
     const inactive = inactiveList.length;
     const rate = active + inactive > 0 ? ((inactive / (active + inactive)) * 100).toFixed(2) : '0.00';
     return { inactive, rate, inactiveList };
-  }, [employees]);
+  }, [fetchedEmployees]);
 
   const recentHires = useMemo(() => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return employees
       .filter(emp => {
-        const dateStr = emp.createdAt || emp.created_at;
+        const dateStr = emp.dateHired || emp.date_hired;
         return dateStr && new Date(dateStr) >= thirtyDaysAgo;
       })
       .sort((a, b) => {
-        const aDate = new Date(a.createdAt || a.created_at).getTime();
-        const bDate = new Date(b.createdAt || b.created_at).getTime();
+        const aDate = new Date(a.dateHired || a.date_hired).getTime();
+        const bDate = new Date(b.dateHired || b.date_hired).getTime();
         return bDate - aDate;
       })
       .slice(0, 4);
@@ -190,7 +204,7 @@ export default function Dashboard() {
         description: 'Comprehensive list of all employees in the directory.',
         insights: [
           { label: 'Active', value: employees.filter(e => e.status === 'active').length, colorClass: 'text-green-600' },
-          { label: 'Inactive', value: employees.filter(e => e.status !== 'active').length, colorClass: 'text-gray-500' },
+          { label: 'Floating', value: employees.filter(e => String(e.status).toLowerCase() === 'floating').length, colorClass: 'text-gray-500' },
           { label: 'HQ Staff', value: employees.filter(e => e.site === 'HQ').length, colorClass: 'text-indigo-600' },
           { label: 'Candelaria Staff', value: employees.filter(e => e.site === 'Candelaria').length, colorClass: 'text-blue-600' }
         ],
@@ -207,22 +221,22 @@ export default function Dashboard() {
         ]
       },
       {
-        label: 'New Hires (30d)',
+        label: 'New Hires',
         value: recentHires.length,
         icon: UserPlus,
         color: 'text-green-600',
         reportData: recentHires,
         viewAllLink: '/reports',
-        description: 'Employees onboarded in the last 30 days.',
+        description: 'Employees onboarded recently.',
         insights: [
           { label: 'Total Hires', value: recentHires.length, colorClass: 'text-green-600' },
-          { label: 'This Week', value: recentHires.filter(e => new Date(e.createdAt || e.created_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length, colorClass: 'text-blue-600' }
+          { label: 'This Week', value: recentHires.filter(e => new Date(e.dateHired || e.date_hired) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length, colorClass: 'text-blue-600' }
         ],
         reportColumns: [
           { key: 'fullName', label: 'Name' },
           { key: 'email', label: 'Email' },
           { key: 'department', label: 'Department', render: (_: any, row: any) => row.accountAssignment || row.account || 'Unassigned' },
-          { key: 'createdAt', label: 'Joined Date', render: (val: any, row: any) => formatTime(val || row.created_at) }
+          { key: 'dateHired', label: 'Joined Date', render: (val: any, row: any) => formatTime(val || row.date_hired) }
         ]
       },
       {
@@ -245,7 +259,7 @@ export default function Dashboard() {
               <span className={`px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-red-100 text-red-700`}>{val}</span>
             )
           },
-          { key: 'resignationDate', label: 'Separation Date', render: (val: any, row: any) => formatTime(val || row.resignation_date) }
+          { key: 'separationDate', label: 'Separation Date', render: (val: any, row: any) => formatTime(val || row.separation_date) }
         ]
       },
       {
@@ -343,7 +357,7 @@ export default function Dashboard() {
       if (!(device.assigneeId || device.userId)) return;
       const emp = employees.find(e => e.id === (device.assigneeId || device.userId));
       if (!emp) return;
-      const dept = emp.accountAssignment || emp.account;
+      const dept = emp.department || emp.accountAssignment || emp.account;
       if (!dept) return;
 
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
@@ -374,15 +388,16 @@ export default function Dashboard() {
 
   const attritionTimeline = useMemo(() => {
     const months = new Map();
-    employees.forEach(emp => {
-      if (emp.createdAt || emp.created_at) {
-        const d = new Date(emp.createdAt || emp.created_at);
+    fetchedEmployees.forEach(emp => {
+      const dateHiredStr = emp.dateHired || emp.date_hired;
+      if (dateHiredStr) {
+        const d = new Date(dateHiredStr);
         const key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
         if (!months.has(key)) months.set(key, { month: key, timestamp: d.getTime(), hires: 0, separations: 0 });
         months.get(key).hires++;
       }
-      if (emp.resignationDate || emp.resignation_date) {
-        const d = new Date(emp.resignationDate || emp.resignation_date);
+      if (emp.separationDate || emp.separation_date) {
+        const d = new Date(emp.separationDate || emp.separation_date);
         const key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
         if (!months.has(key)) months.set(key, { month: key, timestamp: d.getTime(), hires: 0, separations: 0 });
         months.get(key).separations++;
@@ -392,21 +407,21 @@ export default function Dashboard() {
     return Array.from(months.values())
       .sort((a, b) => a.timestamp - b.timestamp)
       .slice(-6);
-  }, [employees]);
+  }, [fetchedEmployees]);
 
   const growthTrend = useMemo(() => {
     const months = new Map<string, number>();
     const sortedEmployees = [...employees]
-      .filter(e => e.createdAt || e.created_at)
+      .filter(e => e.dateHired || e.date_hired || e.createdAt || e.created_at)
       .sort((a, b) => {
-        const aDate = new Date(a.createdAt || a.created_at).getTime();
-        const bDate = new Date(b.createdAt || b.created_at).getTime();
+        const aDate = new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime();
+        const bDate = new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime();
         return aDate - bDate;
       });
 
     let cumulative = 0;
     sortedEmployees.forEach(emp => {
-      const date = new Date(emp.createdAt || emp.created_at);
+      const date = new Date(emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at);
       const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: '2-digit' }).format(date);
       cumulative++;
       months.set(monthYear, cumulative);
@@ -620,23 +635,42 @@ export default function Dashboard() {
 </div>
                       <div className="flex-1 space-y-3">
                         {recentHires.length ? (
-                          recentHires.map((emp) => (
-                            <div key={emp.id} className="flex items-center justify-between p-4 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] hover:border-[#D1D5DB] transition-colors">
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center shrink-0 shadow-sm text-xs font-black text-[#111827]">
-                                  {(emp.fullName || 'UN').substring(0, 2).toUpperCase()}
+                          recentHires.map((emp) => {
+                            const isFuture = new Date(emp.dateHired || emp.date_hired) > new Date();
+                            const statusText = isFuture ? 'Joining Soon' : 'Joined';
+                            const statusColors = isFuture ? 'text-[#EA580C] bg-orange-50' : 'text-[#10B981] bg-green-50';
+                            
+                            return (
+                              <div key={emp.id} className="flex items-center justify-between p-4 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] hover:border-[#D1D5DB] transition-colors">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  <div className="w-12 h-12 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                                    {emp.avatarUrl || emp.avatar_url ? (
+                                      <img 
+                                        src={getAvatarUrl(emp.avatarUrl || emp.avatar_url)} 
+                                        alt={emp.fullName} 
+                                        className="w-full h-full object-cover" 
+                                        style={{ objectFit: 'cover' }} 
+                                      />
+                                    ) : (
+                                      <span className="text-sm font-black text-[#111827]">
+                                        {(emp.fullName || 'UN').substring(0, 2).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-[#111827] truncate">{emp.fullName || 'Unnamed Employee'}</p>
+                                    <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280] truncate mt-0.5">{emp.accountAssignment || emp.account || 'Unassigned Dept'}</p>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-[#111827] truncate">{emp.fullName || 'Unnamed Employee'}</p>
-                                  <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280] truncate mt-0.5">{emp.department || 'Unassigned Dept'}</p>
+                                <div className="text-right shrink-0 ml-3">
+                                  <p className="text-xs font-bold text-[#111827]">{formatTime(emp.dateHired || emp.date_hired)}</p>
+                                  <p className={`text-[0.5625rem] font-black uppercase tracking-wider mt-1 px-2 py-0.5 rounded-full inline-block ${statusColors}`}>
+                                    {statusText}
+                                  </p>
                                 </div>
                               </div>
-                              <div className="text-right shrink-0 ml-3">
-                                <p className="text-xs font-bold text-[#111827]">{formatTime(emp.createdAt || emp.created_at)}</p>
-                                <p className="text-[0.5625rem] font-black uppercase text-[#10B981] tracking-wider mt-1 bg-green-50 px-2 py-0.5 rounded-full inline-block">Joined</p>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#9CA3AF]">
                             <Users className="w-8 h-8 mb-3 opacity-20" />
@@ -971,7 +1005,7 @@ export default function Dashboard() {
       </div>
       <Suspense fallback={null}>
         <TotalPersonnelModal isOpen={activeModal === 'Total Personnel'} onClose={() => setActiveModal(null)} employees={employees} />
-        <NewHiresModal isOpen={activeModal === 'New Hires (30d)'} onClose={() => setActiveModal(null)} recentHires={recentHires} />
+        <NewHiresModal isOpen={activeModal === 'New Hires' || activeModal === 'New Hires (30d)'} onClose={() => setActiveModal(null)} allEmployees={employees} />
         <TurnoverRateModal isOpen={activeModal === 'Turnover Rate'} onClose={() => setActiveModal(null)} employees={employees} turnoverRate={turnoverStats.rate} inactiveEmployees={turnoverStats.inactiveList || []} attritionTimeline={attritionTimeline} />
         <AssignedAssetsModal isOpen={activeModal === 'Assigned Assets'} onClose={() => setActiveModal(null)} devices={devices} employees={employees} />
 

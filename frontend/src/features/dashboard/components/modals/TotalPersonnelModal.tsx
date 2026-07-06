@@ -34,9 +34,9 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
   const stats = useMemo(() => {
     const total = employees.length;
     const active = employees.filter(e => e.status === 'active').length;
-    const inactive = employees.filter(e => e.status !== 'active').length;
+    const floating = employees.filter(e => String(e.status).toLowerCase() === 'floating').length;
     
-    return { total, active, inactive };
+    return { total, active, floating };
   }, [employees]);
 
   // Breakdowns
@@ -112,7 +112,7 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
         {[
           { label: 'Total', value: stats.total, color: 'text-[#111827]' },
           { label: 'Active', value: stats.active, color: 'text-green-600' },
-          { label: 'Inactive', value: stats.inactive, color: 'text-[#EF4444]' },
+          { label: 'Floating', value: stats.floating, color: 'text-[#EF4444]' },
         ].map((s, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-center items-center text-center">
             <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">{s.label}</p>

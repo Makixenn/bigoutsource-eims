@@ -222,7 +222,7 @@ export function AccountFilterDropdown({
     );
   };
 
-  const selectedLabel = value === 'All Account' ? 'All Accounts' : value;
+  const selectedLabel = value === 'All Account' ? 'All DEPARTMENT/CAMPAIGN.' : value;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -239,7 +239,7 @@ export function AccountFilterDropdown({
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
             <div className="max-h-64 overflow-y-auto">
               <div className="py-1 border-b border-[#F3F4F6]">
-                {renderOption('All Account', 'All Accounts')}
+                {renderOption('All Account', 'All DEPARTMENT/CAMPAIGN.')}
               </div>
               {internalAccounts.length > 0 && (
                 <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
@@ -272,6 +272,7 @@ export function Input({
   type = 'text',
   error = false,
   max,
+  onAppendSpecialChar,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -279,19 +280,38 @@ export function Input({
   type?: string;
   error?: boolean;
   max?: string;
+  onAppendSpecialChar?: () => void;
 }) {
   return (
-    <input
-      type={type}
-      value={value}
-      placeholder={placeholder}
-      max={max}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn(
-        'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all placeholder:text-[#9CA3AF] focus:ring-2 focus:ring-[#2563EB]',
-        error ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB] dark:border-[#3A4257]'
+    <div className="relative w-full">
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        max={max}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(
+          'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all placeholder:text-[#9CA3AF] focus:ring-2 focus:ring-[#2563EB]',
+          error ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB] dark:border-[#3A4257]',
+          onAppendSpecialChar ? 'pr-10' : ''
+        )}
+      />
+      {onAppendSpecialChar && (
+        <button
+          type="button"
+          onClick={onAppendSpecialChar}
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold transition-colors",
+            error 
+              ? "border-red-200 bg-red-100 text-red-600 hover:bg-red-200" 
+              : "border-[#D1D5DB] bg-white text-[#4B5563] hover:bg-[#F9FAFB] dark:border-[#3A4257] dark:bg-transparent dark:text-gray-300"
+          )}
+          title="Insert ñ"
+        >
+          ñ
+        </button>
       )}
-    />
+    </div>
   );
 }
 

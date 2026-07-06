@@ -14,6 +14,13 @@ class UserService extends BaseService<AppUser> {
     });
   }
 
+  async updatePassword(id: string, newPassword: string) {
+    return apiRequest(`${this.endpoint}/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ newPassword })
+    });
+  }
+
   async approve(id: string) {
     return apiRequest(`${this.endpoint}/${id}/approve`, { method: 'PUT' });
   }

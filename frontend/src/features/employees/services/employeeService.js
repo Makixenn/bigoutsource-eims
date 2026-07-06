@@ -1,7 +1,7 @@
 import { apiRequest } from '@/src/lib/api';
 
 export const employeeService = {
-  list: () => apiRequest('/employees'),
+  list: (params) => apiRequest('/employees' + (params ? '?' + new URLSearchParams(params).toString() : '')),
   summary: () => apiRequest('/employees/summary'),
   get: (id) => apiRequest(`/employees/${id}`),
   create: (input) => apiRequest('/employees', { method: 'POST', body: JSON.stringify(input) }),

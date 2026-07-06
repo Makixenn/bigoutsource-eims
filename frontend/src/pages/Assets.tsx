@@ -22,9 +22,7 @@ export type AssetFieldKey = 'assigneeName' | 'pcName' | 'biosDate' | 'windowsKey
 export const assetFields: Array<{ key: AssetFieldKey; label: string; width: string }> = [
   { key: 'assigneeName', label: 'Assignee', width: 'w-[16%]' },
   { key: 'pcName', label: 'PC Name', width: 'w-[12%]' },
-  { key: 'biosDate', label: 'BIOS Date', width: 'w-[11%]' },
-  { key: 'windowsKey', label: 'Windows License Key', width: 'w-[21%]' },
-  { key: 'rustdeskId', label: 'RustDesk ID', width: 'w-[12%]' },
+  { key: 'rustdeskId', label: 'REMOTE ID', width: 'w-[12%]' },
   { key: 'activityWatchStatus', label: 'Activity Watch', width: 'w-[10%]' },
   { key: 'esetStatus', label: 'ESET Status', width: 'w-[10%]' },
 ];
@@ -312,7 +310,7 @@ export default function Assets() {
                   type="text"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search by PC Name, RustDesk ID, or License..."
+                  placeholder="Search by PC Name or REMOTE ID..."
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] outline-none"
                 />
               </div>
@@ -523,10 +521,6 @@ export default function Assets() {
                                 </div>
                               ) : field.key === 'pcName' ? (
                                 <p className="text-sm font-black text-[#111827] font-mono px-2 py-1">{device.pcName || 'Unassigned'}</p>
-                              ) : field.key === 'biosDate' ? (
-                                <input type="date" value={drafts[device.id]?.biosDate ?? (device.biosDate || '')} onChange={(e) => handleUpdateDraft(device.id, 'biosDate', e.target.value)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" />
-                              ) : field.key === 'windowsKey' ? (
-                                <input type="text" value={drafts[device.id]?.windowsKey ?? (device.windowsKey || '')} onChange={(e) => handleUpdateDraft(device.id, 'windowsKey', formatWindowsLicenseKey(e.target.value))} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
                               ) : field.key === 'rustdeskId' ? (
                                 <input type="text" value={drafts[device.id]?.rustdeskId ?? (device.rustdeskId || '')} onChange={(e) => handleUpdateDraft(device.id, 'rustdeskId', formatRustdeskId(e.target.value))} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="123 456 789" />
                               ) : field.key === 'activityWatchStatus' ? (
@@ -549,21 +543,9 @@ export default function Assets() {
                                 </div>
                               ) : field.key === 'pcName' ? (
                                 <p className="text-sm font-black text-[#111827] font-mono">{device.pcName || 'Unassigned'}</p>
-                              ) : field.key === 'biosDate' ? (
-                                <p className="text-xs font-bold text-[#111827]">{device.biosDate || 'Not set'}</p>
-                              ) : field.key === 'windowsKey' ? (
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <Key className="w-3.5 h-3.5 text-[#9CA3AF] shrink-0" />
-                                    <span className="text-xs font-bold text-[#111827] uppercase">{device.windowsKey ? 'Windows / Assigned' : 'No Key'}</span>
-                                  </div>
-                                  {device.windowsKey && (
-                                    <p className="text-[0.625rem] text-[#9CA3AF] font-bold uppercase tracking-tighter mt-0.5 ml-[22px]">{device.windowsKey}</p>
-                                  )}
-                                </div>
                               ) : field.key === 'rustdeskId' ? (
                                 <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
-                                  <p className="text-xs font-black text-[#111827] font-mono">{device.rustdeskId || 'No RustDesk ID'}</p>
+                                  <p className="text-xs font-black text-[#111827] font-mono">{device.rustdeskId || 'No REMOTE ID'}</p>
                                 </div>
                               ) : field.key === 'activityWatchStatus' ? (
                                 <span className={cn(
@@ -652,9 +634,7 @@ export default function Assets() {
                               const originalVal = devices.find(d => d.id === preview.id)?.[field as keyof typeof devices[0]];
                               const formatVal = (v: any) => v || <span className="italic text-[#9CA3AF]">Empty</span>;
                               const fieldLabels: Record<string, string> = {
-                                biosDate: 'BIOS Date',
-                                windowsKey: 'Windows License',
-                                rustdeskId: 'RustDesk ID'
+                                rustdeskId: 'REMOTE ID'
                               };
                               return (
                                 <div key={field} className="flex items-center gap-3 text-xs bg-white border border-[#E5E7EB] rounded-lg p-2 shadow-sm">

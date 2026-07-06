@@ -34,6 +34,18 @@ export const UserController = {
     }
   },
 
+  async changeUserPassword(req, res, next) {
+    try {
+      if (!req.body.newPassword) {
+        const { AppError } = await import('../utils/apiResponse.js');
+        throw new AppError('Password is required', 400);
+      }
+      return success(res, await UserService.updatePassword(req.params.id, req.body.newPassword), 'Password updated');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async setCapabilities(req, res, next) {
     try {
       const value = req.body?.capabilities;

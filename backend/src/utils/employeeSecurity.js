@@ -20,7 +20,8 @@ const HR_WRITE_FIELDS = [
   'account', 'accountAssignment', 'internalDepartmentId', 'externalDepartmentId',
   'phone', 'phoneNumber', 'address',
   'boEmail', 'bigoutsourceEmail', 'lmsAccount',
-  'status', 'site', 'siteId', 'siteName', 'avatarUrl',
+  'status', 'site', 'siteId', 'siteName', 'avatarUrl', 'dateHired',
+  'separationDate', 'separation_date', 'separationReason', 'separation_reason'
 ];
 const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];

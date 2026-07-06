@@ -1,7 +1,7 @@
 import { apiRequest } from '@/src/lib/api';
 
 export const deviceService = {
-  list: () => apiRequest('/devices'),
+  list: (params) => apiRequest('/devices' + (params ? '?' + new URLSearchParams(params).toString() : '')),
   get: (id) => apiRequest(`/devices/${id}`),
   create: (input) => apiRequest('/devices', { method: 'POST', body: JSON.stringify(input) }),
   update: (id, input) => apiRequest(`/devices/${id}`, { method: 'PUT', body: JSON.stringify(input) }),

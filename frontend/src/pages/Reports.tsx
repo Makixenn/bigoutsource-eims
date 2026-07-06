@@ -119,16 +119,14 @@ async function generateEmployeeMasterList(params?: any): Promise<ReportData> {
     'Full Name': e.fullName ?? '',
     'Status': capitalize(e.status),
     'Site': e.site ?? '',
-    'Account': e.accountAssignment ?? '',
+    'DEPARTMENT/CAMPAIGN.': e.accountAssignment ?? '',
     'BO Email': e.boEmail ?? '',
     'Email Password': e.emailPassword ?? '',
     'LMS Account': e.lmsAccount ?? '',
     'Phone': e.phone ?? '',
     'Address': e.address ?? '',
     'PC Name': e.pcName ?? '',
-    'BIOS Date': e.biosDate ?? '',
-    'Windows License Key': e.windowsKey ?? '',
-    'Rust Desk ID': e.rustDeskId ?? '',
+    'REMOTE ID': e.rustDeskId ?? '',
     'ESET Status': capitalize(e.esetStatus),
     'Activity Watch': capitalize(e.activityWatchStatus),
     'Archived': e.isArchived ? 'Yes' : 'No',
@@ -178,9 +176,7 @@ async function generateITAssetReport(params?: any): Promise<ReportData> {
     'Full Name': e.fullName ?? '',
     'Site': e.site ?? '',
     'PC Name': e.pcName ?? '',
-    'BIOS Date': e.biosDate ?? '',
-    'Windows License Key': e.windowsKey ?? '',
-    'Rust Desk ID': e.rustDeskId ?? '',
+    'REMOTE ID': e.rustDeskId ?? '',
     'ESET Status': capitalize(e.esetStatus),
     'Activity Watch': capitalize(e.activityWatchStatus),
   }));
@@ -365,18 +361,22 @@ async function generateTerminationsReport(): Promise<ReportData> {
 // ─── Report 6: Workforce Analytics ───────────────────────────────────────────
 
 async function generateWorkforceAnalytics(): Promise<ReportData> {
-  const employees = excludeArchivedEmployees(asArray(await employeeService.list()));
+  const allEmployees = asArray(await employeeService.list());
+  const employees = excludeArchivedEmployees(allEmployees);
   
-  const active = employees.filter((e) => String(e.status ?? '').toLowerCase() === 'active').length;
-  const inactive = employees.filter((e) => {
+  const active = allEmployees.filter((e) => String(e.status ?? '').toLowerCase() === 'active').length;
+  const inactive = allEmployees.filter((e) => {
     const status = String(e.status ?? '').toLowerCase();
-    return status === 'inactive' || status === 'terminated' || status === 'offboarding';
+    return status === 'inactive' || status === 'terminated' || status === 'offboarding' || status === 'separated' || status === 'floating';
   }).length;
   const turnoverRate = active + inactive > 0 ? ((inactive / (active + inactive)) * 100).toFixed(1) + '%' : '0.0%';
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentHiresCount = employees.filter(emp => emp.joinedAt && new Date(emp.joinedAt) >= thirtyDaysAgo).length;
+  const recentHiresCount = employees.filter(emp => {
+    const joinedAt = emp.dateHired || emp.date_hired;
+    return joinedAt && new Date(joinedAt) >= thirtyDaysAgo;
+  }).length;
 
   const kpiRows = [
     { 'Metric': 'Total Personnel', 'Value': employees.length },
@@ -411,12 +411,12 @@ async function generateWorkforceAnalytics(): Promise<ReportData> {
 
   const months = new Map<string, number>();
   const sortedEmployees = [...employees]
-    .filter(e => e.joinedAt)
-    .sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
+    .filter(e => e.dateHired || e.date_hired || e.createdAt || e.created_at)
+    .sort((a, b) => new Date(a.dateHired || a.date_hired || a.createdAt || a.created_at).getTime() - new Date(b.dateHired || b.date_hired || b.createdAt || b.created_at).getTime());
   
   let cumulative = 0;
   sortedEmployees.forEach(emp => {
-    const date = new Date(emp.joinedAt);
+    const date = new Date(emp.dateHired || emp.date_hired || emp.createdAt || emp.created_at);
     const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(date);
     cumulative++;
     months.set(monthYear, cumulative);

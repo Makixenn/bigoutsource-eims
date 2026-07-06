@@ -89,6 +89,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   }
   if (data?.esetStatus !== undefined) payload.eset = normalizeEset(data.esetStatus);
   if (data?.biosDate !== undefined) payload.bios_date = stringOrEmpty(data.biosDate);
+  if (data?.dateHired !== undefined) payload.date_hired = stringOrEmpty(data.dateHired);
+  if (valueFrom(data, 'separationDate', 'separation_date') !== undefined) payload.separation_date = stringOrEmpty(valueFrom(data, 'separationDate', 'separation_date'));
+  if (valueFrom(data, 'separationReason', 'separation_reason') !== undefined) payload.separation_reason = stringOrEmpty(valueFrom(data, 'separationReason', 'separation_reason'));
   if (data?.activityWatchStatus !== undefined) {
     payload.activitywatch = canonical(data.activityWatchStatus, ACTIVITY_WATCH_OPTIONS, data.activityWatchStatus);
   }
@@ -125,6 +128,9 @@ function normalize(row) {
     site: row.site || '',
     pcName: row.pcName || row.pc_name || '',
     biosDate: row.biosDate || row.bios_date || '',
+    dateHired: row.dateHired || row.date_hired || '',
+    separationDate: row.separationDate || row.separation_date || '',
+    separationReason: row.separationReason || row.separation_reason || '',
     windowsKey: row.windowsLicenseKey || row.windows_license_key || '',
     windowsLicenseKey: row.windowsLicenseKey || row.windows_license_key || '',
     rustdeskId: row.rustdeskId || row.rustdesk_id || '',
@@ -221,6 +227,9 @@ export const EmployeeModel = {
       rustdeskId: payload.rustdesk_id,
       eset: payload.eset,
       biosDate: payload.bios_date,
+      dateHired: payload.date_hired,
+      separationDate: payload.separation_date,
+      separationReason: payload.separation_reason,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       isArchived: payload.is_archived,
@@ -255,6 +264,9 @@ export const EmployeeModel = {
         rustdeskId: payload.rustdesk_id,
         eset: payload.eset,
         biosDate: payload.bios_date,
+        dateHired: payload.date_hired,
+        separationDate: payload.separation_date,
+        separationReason: payload.separation_reason,
         activitywatch: payload.activitywatch,
         windowsLicenseKey: payload.windows_license_key,
         isArchived: payload.is_archived,
@@ -277,6 +289,7 @@ export const EmployeeModel = {
 
   async update(id, data) {
     const payload = toDatabasePayload(data);
+    console.log('--- EmployeeModel Update Payload ---', payload);
     const updateData = {
       name: payload.name,
       account: payload.account,
@@ -291,6 +304,9 @@ export const EmployeeModel = {
       rustdeskId: payload.rustdesk_id,
       eset: payload.eset,
       biosDate: payload.bios_date,
+      dateHired: payload.date_hired,
+      separationDate: payload.separation_date,
+      separationReason: payload.separation_reason,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       isArchived: payload.is_archived,

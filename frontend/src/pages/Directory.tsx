@@ -28,7 +28,7 @@ import { ResizableHeader } from '@/src/components/ResizableHeader';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
-import { cn } from '@/src/lib/utils';
+import { applySpecialShortcodes, cn } from '@/src/lib/utils';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
@@ -92,6 +92,7 @@ type AddEmployeeForm = {
   biosDate: string;
   activityWatchStatus: 'installed' | 'missing';
   windowsKey: string;
+  dateHired?: string;
   isArchived?: boolean;
 };
 
@@ -107,7 +108,8 @@ type DirectoryFieldKey =
   | 'emailPassword'
   | 'lmsAccount'
   | 'status'
-  | 'site';
+  | 'site'
+  | 'remoteId';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -120,10 +122,11 @@ const defaultVisibleFieldKeys: DirectoryFieldKey[] = [
   'fullName',
   'employeeId',
   'accountAssignment',
-  'site',
+  'boEmail',
+  'remoteId',
 ];
 const requiredVisibleFieldKeys: DirectoryFieldKey[] = ['fullName'];
-const maxVisibleFieldCount = 4;
+const maxVisibleFieldCount = 5;
 const recordsPerPage = 10;
 const tableRowHeightClass = 'h-16';
 const actionColumnWidth = '10rem';
@@ -132,6 +135,13 @@ const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
   fullName: 1.6,
   employeeId: 1,
   accountAssignment: 1.35,
+  boEmail: 1.6,
+  remoteId: 1.1,
+  phone: 1.1,
+  address: 2.0,
+  emailPassword: 1.0,
+  lmsAccount: 1.2,
+  status: 0.8,
   site: 0.8,
 };
 
@@ -201,24 +211,24 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     },
   },
   { key: 'employeeId', label: 'Employee ID', render: (emp) => emp.employeeId || '-' },
-  { key: 'accountAssignment', label: 'Account', render: (emp) => emp.accountAssignment || '-' },
+  { key: 'accountAssignment', label: 'DEPARTMENT/CAMPAIGN.', render: (emp) => emp.accountAssignment || '-' },
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
   { key: 'boEmail', label: 'Bigoutsource Email', render: (emp) => emp.boEmail || '-' },
-  { key: 'emailPassword', label: 'Password', render: (emp) => emp.emailPassword || '-' },
+  { key: 'emailPassword', label: 'EMAIL DEFAULT PASSWORD', render: (emp) => emp.emailPassword || '-' },
   { key: 'lmsAccount', label: 'LMS Account', render: (emp) => emp.lmsAccount || '-' },
   {
     key: 'status',
     label: 'Status',
     render: (emp) => {
       const normalizedStatus = (emp.status || '').toLowerCase();
-      let statusStr = emp.status;
+      let statusStr: string = emp.status || 'Unknown';
       let colors = 'bg-gray-100 text-gray-700';
       if (normalizedStatus === 'active') colors = 'bg-green-50 text-green-700';
       else if (normalizedStatus === 'floating') colors = 'bg-orange-50 text-orange-700';
       else {
         colors = 'bg-red-50 text-red-700';
-        statusStr = 'Separated'; // Fallback for old inactive statuses
+        statusStr = emp.status && emp.status.toLowerCase() !== 'active' ? emp.status : 'Separated'; // Fallback for old inactive statuses
       }
 
       return (
@@ -234,6 +244,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     },
   },
   { key: 'site', label: 'Site', render: (emp) => emp.site || 'Unassigned' },
+  { key: 'remoteId', label: 'REMOTE ID', render: (emp) => emp.rustdeskId || '-' },
 ];
 
 const sortableFieldKeys: DirectoryFieldKey[] = directoryFields.map((field) => field.key);
@@ -260,6 +271,7 @@ const initialForm: AddEmployeeForm = {
   biosDate: '',
   activityWatchStatus: 'missing',
   windowsKey: '',
+  dateHired: '',
   isArchived: false,
 };
 
@@ -312,6 +324,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     rustdeskId: formatRustdeskId(emp.rustdeskId || emp.rustDeskId || ''),
     esetStatus: titleEsetStatus(emp.esetStatus || emp.eset) as Employee['esetStatus'],
     activityWatchStatus: titleActivityWatchStatus(emp.activityWatchStatus || emp.activitywatch) as Employee['activityWatchStatus'],
+    dateHired: emp.dateHired || '',
     updatedAt: emp.updatedAt || '',
     updatedBy: emp.updatedBy || '',
     isArchived: emp.isArchived ?? emp.is_archived ?? false,
@@ -662,7 +675,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
       if (statusFilter !== 'All') {
         const normalizedEmpStatus = (emp.status || '').toLowerCase();
         if (statusFilter === 'Separated') {
-          matchesStatus = normalizedEmpStatus === 'separated' || normalizedEmpStatus === 'inactive';
+          matchesStatus = normalizedEmpStatus === 'separated' || normalizedEmpStatus === 'inactive' || normalizedEmpStatus === 'terminated' || normalizedEmpStatus === 'offboarding';
         } else {
           matchesStatus = normalizedEmpStatus === statusFilter.toLowerCase();
         }
@@ -702,7 +715,8 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
 
   const updateForm = (field: keyof AddEmployeeForm, value: string) => {
     if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
-      if (/[^a-zA-Z\-\'\s]/.test(value)) {
+      value = applySpecialShortcodes(value);
+      if (/[^\p{L}\-'\s\[\]`]/u.test(value)) {
         return;
       }
     }
@@ -852,7 +866,10 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   const visibleFieldKeys = selectedFields ?? defaultVisibleFieldKeys;
   const visibleFields = directoryFields.filter((field) => visibleFieldKeys.includes(field.key));
   const visibleFieldWeightTotal = visibleFields.reduce((total, field) => total + (columnWeights[field.key] || 1), 0);
-  const isCustomFieldView = selectedFields !== null;
+  const isCustomFieldView = selectedFields !== null && (
+    selectedFields.length !== defaultVisibleFieldKeys.length ||
+    !selectedFields.every((field) => defaultVisibleFieldKeys.includes(field))
+  );
   const maxSelectableFieldCount = maxVisibleFieldCount - requiredVisibleFieldKeys.length;
   const selectedSelectableFieldCount = visibleFieldKeys.filter((field) => !requiredVisibleFieldKeys.includes(field)).length;
   const canSelectMoreFields = visibleFieldKeys.length < maxVisibleFieldCount;
@@ -985,11 +1002,16 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
     if ((requireAll || step === 0) && !form.employeeNumber.trim()) {
       errors.employeeNumber = 'Employee ID is required for HR and payroll matching.';
     }
-    if ((requireAll || step === 0) && !form.firstName.trim()) {
-      errors.firstName = 'Enter the employee first name.';
+    if ((requireAll || step === 0)) {
+      if (!form.firstName.trim()) errors.firstName = 'Enter the employee first name.';
+      else if (/[[\]`]/u.test(form.firstName)) errors.firstName = 'First name contains incomplete shortcodes.';
     }
-    if ((requireAll || step === 0) && !form.lastName.trim()) {
-      errors.lastName = 'Enter the employee last name.';
+    if ((requireAll || step === 0)) {
+      if (!form.lastName.trim()) errors.lastName = 'Enter the employee last name.';
+      else if (/[[\]`]/u.test(form.lastName)) errors.lastName = 'Last name contains incomplete shortcodes.';
+    }
+    if ((requireAll || step === 0) && form.middleName) {
+      if (/[[\]`]/u.test(form.middleName)) errors.middleName = 'Middle name contains incomplete shortcodes.';
     }
     if ((requireAll || step === 0) && form.phone && form.phone.length !== 11) {
       errors.phone = 'Phone number must be exactly 11 digits.';
@@ -1127,6 +1149,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
         biosDate: form.biosDate || undefined,
         activityWatchStatus: form.activityWatchStatus,
         windowsKey: form.windowsKey.trim() || undefined,
+        dateHired: form.dateHired || undefined,
       });
 
       const createdEmployee = normalizeEmployee(created);
@@ -1205,9 +1228,9 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                     checked={checked}
                     disabled={disabled}
                     onChange={() => toggleField(field.key)}
-                    className="mt-0.5 h-4 w-4 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
                   />
-                  <span className="leading-snug">{field.label}</span>
+                  <span className="leading-snug flex-1 min-w-0 truncate" title={field.label}>{field.label}</span>
                 </label>
               );
             })}
@@ -1313,7 +1336,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
           <AnimatePresence mode="wait" initial={false}>
             {isLoading ? (
               <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-                <table className={cn("min-w-[920px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
+                <table className={cn("min-w-[1024px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <colgroup>
                     {visibleFields.map((field) => (
                       <col key={field.key} style={{ width: colWidths[field.key] ? `${colWidths[field.key]}px` : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
@@ -1365,7 +1388,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
               </motion.div>
             ) : (
               <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-                <table className={cn("min-w-[920px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
+                <table className={cn("min-w-[1024px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <colgroup>
                     {visibleFields.map((field) => (
                       <col key={field.key} style={{ width: colWidths[field.key] ? `${colWidths[field.key]}px` : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
@@ -1424,7 +1447,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                           <td
                             key={field.key}
                             className={cn(
-                              'py-0 align-middle text-sm font-bold text-[#111827] cursor-default select-none',
+                              'py-0 align-middle text-sm font-bold text-[#111827]',
                               field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
                             )}
                           >
@@ -1653,7 +1676,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Password">
+                            <Field label="EMAIL DEFAULT PASSWORD">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
                           </div>
@@ -1791,6 +1814,9 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                             <Field label="Address">
                               <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
                             </Field>
+                            <Field label="Date Hired">
+                              <Input type="date" value={form.dateHired || ''} onChange={(value) => updateForm('dateHired', value)} />
+                            </Field>
                           </div>
                         </SectionCard>
                         <SectionCard title="Accounts" eyebrow="Review" status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
@@ -1824,7 +1850,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Password">
+                            <Field label="EMAIL DEFAULT PASSWORD">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
                             <Field label="Bigoutsource Email" error={formErrors.boEmail}>

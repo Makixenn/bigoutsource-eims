@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from 'react';
 import type { ElementType, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import {
   Archive,
@@ -15,6 +16,7 @@ import {
   EyeOff,
   Globe,
   Key,
+  Info,
   Laptop,
   Loader2,
   Mail,
@@ -34,7 +36,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
-import { cn } from '@/src/lib/utils';
+import { applySpecialShortcodes, cn } from '@/src/lib/utils';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
 import { siteService } from '@/src/services/siteService';
@@ -75,6 +77,9 @@ type EmployeeForm = {
   rustdeskId: string;
   esetStatus: 'active' | 'inactive';
   activityWatchStatus: 'installed' | 'missing';
+  dateHired: string;
+  separationDate: string;
+  separationReason: string;
   isArchived?: boolean;
   avatarUrl?: string;
 };
@@ -101,6 +106,9 @@ const emptyEmployee: EmployeeForm = {
   rustdeskId: '',
   esetStatus: 'inactive',
   activityWatchStatus: 'missing',
+  dateHired: '',
+  separationDate: '',
+  separationReason: '',
   isArchived: false,
   avatarUrl: '',
 };
@@ -124,6 +132,9 @@ const editableFields: Array<keyof EmployeeForm> = [
   'rustdeskId',
   'esetStatus',
   'activityWatchStatus',
+  'dateHired',
+  'separationDate',
+  'separationReason'
 ];
 
 const suffixOptions = ['Sr.', 'Jr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -257,7 +268,7 @@ function applyCharacterLimit(field: keyof EmployeeForm, value: string) {
 }
 
 function sanitizeNamePart(value = '') {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function generatedPreview(fullName = '', account?: AccountOption) {
@@ -374,6 +385,9 @@ function normalizeEmployee(emp: any): EmployeeForm {
     rustdeskId: formatRustdeskId(emp?.rustdeskId || emp?.rustDeskId || ''),
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
     activityWatchStatus: normalizeActivityWatch(emp?.activityWatchStatus),
+    dateHired: emp?.dateHired || emp?.date_hired || '',
+    separationDate: emp?.separationDate || emp?.separation_date || '',
+    separationReason: emp?.separationReason || emp?.separation_reason || '',
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
   };
@@ -381,6 +395,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
 
 export default function EmployeeProfile() {
   const { id } = useParams();
+  const queryClient = useQueryClient();
   const { user, can } = useAuth();
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
   const [form, setForm] = useState<EmployeeForm>(emptyEmployee);
@@ -394,6 +409,9 @@ export default function EmployeeProfile() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveIntent, setArchiveIntent] = useState<'archive' | 'unarchive' | null>(null);
   const [archiveStatusReason, setArchiveStatusReason] = useState<'separated' | 'floating'>('separated');
+  const [archiveSeparationReason, setArchiveSeparationReason] = useState<string>('Voluntary Separation (Resignation)');
+  const [archiveSeparationReasonOther, setArchiveSeparationReasonOther] = useState<string>('');
+  const [archiveSeparationDate, setArchiveSeparationDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -566,6 +584,7 @@ export default function EmployeeProfile() {
     try {
       const updated = await employeeService.uploadAvatar(id, file);
       const normalized = normalizeEmployee(updated);
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
       setEmployee(normalized);
       setForm(normalized);
       toast.success('Avatar uploaded successfully', { id: loadingToast });
@@ -585,7 +604,10 @@ export default function EmployeeProfile() {
 
   const updateForm = (field: keyof EmployeeForm, value: any) => {
     if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
-      if (/[^a-zA-Z\-\'\s]/.test(value)) {
+      if (typeof value === 'string') {
+        value = applySpecialShortcodes(value);
+      }
+      if (/[^\p{L}\-'\s\[\]`]/u.test(value)) {
         return;
       }
     } else if (field === 'phone') {
@@ -676,6 +698,11 @@ export default function EmployeeProfile() {
       return;
     }
 
+    if (/[[\]`]/u.test(form.firstName) || /[[\]`]/u.test(form.lastName) || (form.middleName && /[[\]`]/u.test(form.middleName))) {
+      toast.error('Name contains incomplete shortcodes');
+      return;
+    }
+
     if (form.phone && form.phone.length !== 11) {
       setFormErrors((current) => ({ ...current, phone: 'Phone number must be exactly 11 digits.' }));
       toast.error('Please resolve the highlighted fields before saving');
@@ -701,24 +728,30 @@ export default function EmployeeProfile() {
         lastName: form.lastName.trim(),
         suffix: form.suffix?.trim() || '',
         accountAssignment: form.accountAssignment.trim(),
-        phone: form.phone.trim() || undefined,
-        address: form.address.trim() || undefined,
-        boEmail: form.boEmail.trim() || undefined,
-        lmsAccount: form.lmsAccount.trim() || undefined,
-        pcName: form.pcName.trim() || undefined,
-        emailPassword: form.emailPassword.trim() || undefined,
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        boEmail: form.boEmail.trim(),
+        lmsAccount: form.lmsAccount.trim(),
+        pcName: form.pcName.trim(),
+        emailPassword: form.emailPassword.trim(),
         status: form.status,
         siteId: selectedSite?.id,
         siteName: selectedSite?.name,
-        biosDate: form.biosDate || undefined,
-        windowsKey: form.windowsKey.trim() || undefined,
-        rustdeskId: form.rustdeskId.trim() || undefined,
+        biosDate: form.biosDate || '',
+        windowsKey: form.windowsKey.trim(),
+        rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
         activityWatchStatus: form.activityWatchStatus,
+        dateHired: form.dateHired,
+        separationDate: form.separationDate,
+        separationReason: form.separationReason
       });
 
       const normalized = normalizeEmployee(updated);
       const refreshedLogs = await auditLogService.list({ entityType: 'employees', entityId: id, limit: 50 }).catch(() => auditLogs);
+      
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      
       setEmployee(normalized);
       setForm(normalized);
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
@@ -742,7 +775,14 @@ export default function EmployeeProfile() {
 
       const updated = await employeeService.update(id, { 
         is_archived: newValue,
-        status: newValue ? archiveStatusReason : 'active'
+        status: newValue ? archiveStatusReason : 'active',
+        ...(newValue && archiveStatusReason === 'separated' ? { 
+          separation_reason: archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason, 
+          separation_date: archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : new Date().toISOString()
+        } : {
+          separation_reason: null,
+          separation_date: null
+        })
       });
 
       const normalized = normalizeEmployee(updated);
@@ -846,7 +886,12 @@ export default function EmployeeProfile() {
                 <div className="absolute -top-16 left-8">
                   <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter relative group overflow-hidden">
                     {employee.avatarUrl ? (
-                      <img src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} alt={employee.fullName} className="w-full h-full object-cover" />
+                      <img 
+                        src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} 
+                        alt={employee.fullName} 
+                        className="w-full h-full object-cover" 
+                        style={{ objectFit: 'cover' }}
+                      />
                     ) : (
                       employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'
                     )}
@@ -1004,6 +1049,30 @@ export default function EmployeeProfile() {
                           type="button"
                           onClick={() => {
                             setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
+                            setArchiveStatusReason((form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated');
+                            
+                            const predefinedReasons = ['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract'];
+                            const currentReason = form.separationReason || employee.separationReason;
+                            if (currentReason) {
+                              if (predefinedReasons.includes(currentReason)) {
+                                setArchiveSeparationReason(currentReason);
+                                setArchiveSeparationReasonOther('');
+                              } else {
+                                setArchiveSeparationReason('Other');
+                                setArchiveSeparationReasonOther(currentReason);
+                              }
+                            } else {
+                              setArchiveSeparationReason('Voluntary Separation (Resignation)');
+                              setArchiveSeparationReasonOther('');
+                            }
+
+                            const currentDate = form.separationDate || employee.separationDate;
+                            if (currentDate) {
+                              setArchiveSeparationDate(currentDate.split('T')[0]);
+                            } else {
+                              setArchiveSeparationDate('');
+                            }
+                            
                             setShowArchiveModal(true);
                           }}
                           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${employee.isArchived
@@ -1033,9 +1102,9 @@ export default function EmployeeProfile() {
 
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
-                <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
+                <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="Department/Account Type" icon={Briefcase} editing={editingHR}>
+                    <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
                         <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
                           <button
@@ -1103,7 +1172,7 @@ export default function EmployeeProfile() {
                       )}
                     </ProfileField>
                     {canViewSecrets && (
-                    <ProfileField label="Email Password" icon={Key} editing={editingSecrets}>
+                    <ProfileField label="EMAIL DEFAULT PASSWORD" icon={Key} editing={editingSecrets}>
                       {editingSecrets ? (
                         <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
                       ) : (
@@ -1228,6 +1297,76 @@ export default function EmployeeProfile() {
                         employee.site || <span className="text-red-500 font-black">Unassigned</span>
                       )}
                     </ProfileField>
+                    <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
+                      {editingHR ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <Input
+                            type="date"
+                            value={form.dateHired}
+                            onChange={(value) => updateForm('dateHired', value)}
+                          />
+                        </div>
+                      ) : (
+                        employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
+                      )}
+                    </ProfileField>
+
+                    {(form.status === 'inactive' || form.status === 'separated' || form.status === 'floating') && (
+                      <>
+                        <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
+                          {editingHR ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <Input
+                                type="date"
+                                value={form.separationDate}
+                                onChange={(value) => updateForm('separationDate', value)}
+                              />
+                            </div>
+                          ) : (
+                            employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
+                          )}
+                        </ProfileField>
+                        <ProfileField label="Separation Reason" icon={Info} editing={editingHR}>
+                          {editingHR ? (
+                            <div className="flex flex-col gap-2 w-full">
+                              <select
+                                value={
+                                  ['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract'].includes(form.separationReason)
+                                    ? form.separationReason
+                                    : form.separationReason ? 'Other' : ''
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== 'Other') {
+                                    updateForm('separationReason', val);
+                                  } else {
+                                    // Set to a placeholder or leave as current if they choose Other
+                                    updateForm('separationReason', 'Other (Please specify)');
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-[#111827] outline-none appearance-none"
+                              >
+                                <option value="" disabled>Select Reason</option>
+                                <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
+                                <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
+                                <option value="Retirement">Retirement</option>
+                                <option value="End of Contract">End of Contract</option>
+                                <option value="Other">Other</option>
+                              </select>
+                              {(!['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract', ''].includes(form.separationReason)) && (
+                                <Input
+                                  value={form.separationReason === 'Other (Please specify)' ? '' : form.separationReason}
+                                  onChange={(value) => updateForm('separationReason', value)}
+                                  placeholder="Please specify the reason..."
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            employee.separationReason || <span className="text-[#6B7280] font-medium">Not Assigned</span>
+                          )}
+                        </ProfileField>
+                      </>
+                    )}
                   </div>
                 </ProfileSection>
 
@@ -1259,77 +1398,13 @@ export default function EmployeeProfile() {
                         employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
-                    <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
-                      {editingIT ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-red-500 font-black">Not Set</span>}
-                    </ProfileField>
                     {canViewSecrets && (
-                    <ProfileField label="RustDesk ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
+                    <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
                       {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
                     </ProfileField>
                     )}
                   </div>
 
-                  {canViewSecrets && (
-                  <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
-                      <AnimatePresence mode="popLayout" initial={false}>
-                        {editingSecrets ? (
-                          <motion.div
-                            key="edit-windows"
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          >
-                            <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" error={Boolean(formErrors.windowsKey)} />
-                            {formErrors.windowsKey && <span className="mt-1.5 block text-xs font-bold text-red-600">{formErrors.windowsKey}</span>}
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="view-windows"
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          >
-                            <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit overflow-hidden flex items-center">
-                              <AnimatePresence mode="popLayout" initial={false}>
-                                <motion.span
-                                  key={showSensitive ? 'visible' : 'hidden'}
-                                  initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
-                                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                  exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
-                                  transition={{ duration: 0.2 }}
-                                  className="inline-block"
-                                >
-                                  {showSensitive ? (employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>) : (employee.windowsKey ? '*****-*****-*****-*****-*****' : <span className="text-red-500 font-black">Not Assigned</span>)}
-                                </motion.span>
-                              </AnimatePresence>
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <AnimatePresence mode="popLayout" initial={false}>
-                      {!isEditing && employee.windowsKey && (
-                        <motion.button
-                          key="reveal-button"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          type="button"
-                          onClick={handleReveal}
-                          className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-xl text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                        >
-                          {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          {showSensitive ? 'Hide' : 'Reveal Key'}
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  )}
                 </ProfileSection>
                 )}
               </motion.div>
@@ -1664,6 +1739,43 @@ export default function EmployeeProfile() {
                         <option value="separated">SEPARATED</option>
                         <option value="floating">FLOATING</option>
                       </select>
+
+                      {archiveStatusReason === 'separated' && (
+                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Separation</label>
+                          <select
+                            value={archiveSeparationReason}
+                            onChange={(e) => setArchiveSeparationReason(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                          >
+                            <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
+                            <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
+                            <option value="Retirement">Retirement</option>
+                            <option value="End of Contract">End of Contract</option>
+                            <option value="Other">Other</option>
+                          </select>
+
+                          {archiveSeparationReason === 'Other' && (
+                            <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                              <input
+                                type="text"
+                                placeholder="Please specify the reason..."
+                                value={archiveSeparationReasonOther}
+                                onChange={(e) => setArchiveSeparationReasonOther(e.target.value)}
+                                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                              />
+                            </div>
+                          )}
+
+                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Exit Date</label>
+                          <input
+                            type="date"
+                            value={archiveSeparationDate}
+                            onChange={(e) => setArchiveSeparationDate(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1928,24 +2040,44 @@ function Input({
   placeholder,
   type = 'text',
   error = false,
+  onAppendSpecialChar,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
   error?: boolean;
+  onAppendSpecialChar?: () => void;
 }) {
   return (
-    <input
-      type={type}
-      value={value}
-      placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn(
-        'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
-        error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]'
+    <div className="relative w-full">
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(
+          'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
+          error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]',
+          onAppendSpecialChar ? "pr-10" : ""
+        )}
+      />
+      {onAppendSpecialChar && (
+        <button
+          type="button"
+          onClick={onAppendSpecialChar}
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold transition-colors",
+            error 
+              ? "border-red-200 bg-red-100 text-red-600 hover:bg-red-200" 
+              : "border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]"
+          )}
+          title="Insert ñ"
+        >
+          ñ
+        </button>
       )}
-    />
+    </div>
   );
 }
 

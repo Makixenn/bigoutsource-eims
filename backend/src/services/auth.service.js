@@ -117,6 +117,15 @@ export const AuthService = {
       }
     }
 
+    // if (profile.role === 'super_admin') {
+    //   const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+    //     expiresIn: '30m',
+    //   });
+    //   // Super admins don't need MFA, so we also generate a trusted device token just in case the client expects one, 
+    //   // or we can just return the token directly.
+    //   return { token, user: await publicUser(profile) };
+    // }
+
     const code = generateRandomCode();
     const codeHash = await bcrypt.hash(code, 10);
     

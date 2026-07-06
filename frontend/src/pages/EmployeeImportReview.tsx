@@ -110,7 +110,7 @@ const importReviewCache: {
 const fieldLabels: Array<[string, string]> = [
   ['employeeNumber', 'ID'],
   ['fullName', 'Name'],
-  ['accountAssignment', 'Account'],
+  ['accountAssignment', 'DEPARTMENT/CAMPAIGN.'],
   ['phone', 'Phone'],
   ['address', 'Address'],
   ['boEmail', 'Email'],
@@ -119,11 +119,10 @@ const fieldLabels: Array<[string, string]> = [
   ['status', 'Status'],
   ['siteName', 'Site'],
   ['pcName', 'PC Name'],
-  ['rustdeskId', 'RustDesk ID'],
+  ['rustdeskId', 'REMOTE ID'],
   ['esetStatus', 'ESET'],
-  ['biosDate', 'BIOS Date'],
   ['activityWatchStatus', 'Activity Watch'],
-  ['windowsKey', 'Windows Key'],
+  ['dateHired', 'Date Hired'],
   ['is_archived', 'Archived'],
 ];
 
@@ -1002,7 +1001,7 @@ function MergeRowsModal({
               <Field label="PC Name">
                 <Input value={form.pcName || ''} onChange={(value) => onChange('pcName', value)} />
               </Field>
-              <Field label="RustDesk ID">
+              <Field label="REMOTE ID">
                 <Input value={form.rustdeskId || ''} onChange={(value) => onChange('rustdeskId', value)} />
               </Field>
               <SelectDropdown
@@ -1022,6 +1021,9 @@ function MergeRowsModal({
               />
               <Field label="Windows Key">
                 <Input value={form.windowsKey || ''} onChange={(value) => onChange('windowsKey', value)} />
+              </Field>
+              <Field label="Date Hired">
+                <Input type="date" value={form.dateHired || ''} onChange={(value) => onChange('dateHired', value)} />
               </Field>
               <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 hover:bg-[#F3F4F6] transition-colors cursor-pointer shadow-xs">
                 <input
@@ -1439,9 +1441,9 @@ function EditRowModal({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto p-6 bg-[#F9FAFB]">
-          {/* Column 1: Work & Account Info */}
-          <div className="space-y-6">
-            <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50">
+          {/* Column 1: EMPLOYEE INFORMATION */}
+          <div className="space-y-8">
+            <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectDropdown
                   label="Department/Account"
@@ -1502,10 +1504,8 @@ function EditRowModal({
                 <Field label="PC Name">
                   <Input value={form.pcName || ''} onChange={(val) => onChange('pcName', val)} placeholder="e.g. PC-JOHN" />
                 </Field>
-                <Field label="BIOS Date">
-                  <Input type="date" value={form.biosDate || ''} onChange={(val) => onChange('biosDate', val)} />
-                </Field>
-                <Field label="RustDesk ID">
+
+                <Field label="REMOTE ID">
                   <Input value={form.rustdeskId || ''} onChange={(val) => onChange('rustdeskId', val)} placeholder="e.g. 123 456 789" />
                 </Field>
               </div>
@@ -1526,9 +1526,7 @@ function EditRowModal({
                   onSelect={(val) => onChange('activityWatchStatus', val)}
                 />
                 <div className="sm:col-span-2">
-                  <Field label="Windows Key">
-                    <Input value={form.windowsKey || ''} onChange={(val) => onChange('windowsKey', val)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX" />
-                  </Field>
+  
                 </div>
                 <div className="sm:col-span-2">
                   <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 hover:bg-[#F9FAFB] transition-colors cursor-pointer shadow-xs">
