@@ -323,6 +323,7 @@ export function EditableGeneratedValue({
   isEdited,
   placeholder,
   error,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -331,6 +332,7 @@ export function EditableGeneratedValue({
   isEdited: boolean;
   placeholder?: string;
   error?: string;
+  disabled?: boolean;
 }) {
   const isReady = Boolean(value);
 
@@ -351,17 +353,17 @@ export function EditableGeneratedValue({
           <p className="truncate text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
         </div>
         <div className="flex items-center gap-1.5">
-          {isEdited && (
+          {isEdited && !disabled && (
             <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-amber-700 dark:text-amber-500 animate-fade-in">
               Modified
             </span>
           )}
-          {isReady && !isEdited && (
+          {isReady && !isEdited && !disabled && (
             <span className="rounded-full bg-white dark:bg-gray-800 px-2 py-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-[#2563EB] dark:text-blue-400">
               Suggested
             </span>
           )}
-          {isEdited && (
+          {isEdited && !disabled && (
             <button
               type="button"
               onClick={onRegenerate}
@@ -379,9 +381,11 @@ export function EditableGeneratedValue({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder || 'Pending generation'}
+          disabled={disabled}
           className={cn(
             'w-full min-h-11 rounded-xl border px-3 py-2.5 text-sm font-bold bg-white text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#2563EB]',
-            error ? 'border-red-300 focus:ring-red-500' : 'border-[#D1D5DB] dark:border-[#3A4257] focus:border-[#2563EB]'
+            error ? 'border-red-300 focus:ring-red-500' : 'border-[#D1D5DB] dark:border-[#3A4257] focus:border-[#2563EB]',
+            disabled && 'opacity-70 cursor-not-allowed bg-gray-50 text-gray-500'
           )}
         />
       </div>

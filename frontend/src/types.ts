@@ -22,6 +22,13 @@ export interface Employee {
   activityWatchStatus: 'Installed' | 'Missing';
   updatedAt: string;
   updatedBy: string;
+  jobTitle?: string;
+  birthdate?: string;
+  floatDate?: string;
+  outlookEmail?: string;
+  mattermostAccount?: string;
+  teamsAccount?: string;
+  googleAccount?: string;
 }
 
 export interface AppUser {

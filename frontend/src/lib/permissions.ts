@@ -13,6 +13,8 @@ export type Capability =
   | 'employees.delete'
   | 'employees.it.view'
   | 'employees.it.edit'
+  | 'employees.fields.hr'
+  | 'employees.fields.it'
   | 'employees.secrets.view'
   | 'employees.secrets.edit'
   | 'assets.view'
