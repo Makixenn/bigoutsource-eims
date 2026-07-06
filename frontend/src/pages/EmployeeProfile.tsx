@@ -776,7 +776,7 @@ export default function EmployeeProfile() {
       const updated = await employeeService.update(id, { 
         is_archived: newValue,
         status: newValue ? archiveStatusReason : 'active',
-        ...(newValue && archiveStatusReason === 'separated' ? { 
+        ...(newValue ? { 
           separation_reason: archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason, 
           separation_date: archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : new Date().toISOString()
         } : {
@@ -1051,7 +1051,7 @@ export default function EmployeeProfile() {
                             setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
                             setArchiveStatusReason((form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated');
                             
-                            const predefinedReasons = ['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract'];
+                            const predefinedReasons = ['The Department/Campaign. has been removed', 'Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'AWOL', 'Retirement', 'End of Contract'];
                             const currentReason = form.separationReason || employee.separationReason;
                             if (currentReason) {
                               if (predefinedReasons.includes(currentReason)) {
@@ -1062,7 +1062,8 @@ export default function EmployeeProfile() {
                                 setArchiveSeparationReasonOther(currentReason);
                               }
                             } else {
-                              setArchiveSeparationReason('Voluntary Separation (Resignation)');
+                              const initialStatus = (form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated';
+                              setArchiveSeparationReason(initialStatus === 'floating' ? 'The Department/Campaign. has been removed' : 'Voluntary Separation (Resignation)');
                               setArchiveSeparationReasonOther('');
                             }
 
@@ -1416,7 +1417,7 @@ export default function EmployeeProfile() {
                   <div className="space-y-4">
                     <ComplianceField
                       label="ESET Status"
-                      value={formatStatus(employee.esetStatus)}
+                      value={employee.esetStatus === 'active' ? 'Active' : 'Inactive'}
                       editing={editingIT}
                       status={employee.esetStatus === 'active'}
                     >
@@ -1429,7 +1430,7 @@ export default function EmployeeProfile() {
                             'border-[#E5E7EB]'
                           )}
                         >
-                          <span className="truncate">{formatStatus(form.esetStatus)}</span>
+                          <span className="truncate">{form.esetStatus === 'active' ? 'Active' : 'Inactive'}</span>
                           <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isEsetDropdownOpen && 'rotate-90')} />
                         </button>
                         <AnimatePresence>
@@ -1731,7 +1732,16 @@ export default function EmployeeProfile() {
                     <div className="mt-4">
                       <select
                         value={archiveStatusReason}
-                        onChange={(e) => setArchiveStatusReason(e.target.value as 'separated' | 'floating')}
+                        onChange={(e) => {
+                          const newStatus = e.target.value as 'separated' | 'floating';
+                          setArchiveStatusReason(newStatus);
+                          if (newStatus === 'separated') {
+                            setArchiveSeparationReason('Voluntary Separation (Resignation)');
+                          } else {
+                            setArchiveSeparationReason('The Department/Campaign. has been removed');
+                          }
+                          setArchiveSeparationReasonOther('');
+                        }}
                         className={cn(
                           "w-full px-3 py-2.5 bg-white border rounded-xl text-sm font-bold outline-none focus:ring-2 transition-all",
                           archiveStatusReason === 'separated' ? "border-red-300 focus:ring-red-500 text-red-600" : "border-orange-300 focus:ring-orange-500 text-orange-600"
@@ -1741,19 +1751,28 @@ export default function EmployeeProfile() {
                         <option value="floating">FLOATING</option>
                       </select>
 
-                      {archiveStatusReason === 'separated' && (
                         <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Separation</label>
+                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Archiving</label>
                           <select
                             value={archiveSeparationReason}
                             onChange={(e) => setArchiveSeparationReason(e.target.value)}
                             className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
                           >
-                            <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
-                            <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
-                            <option value="Retirement">Retirement</option>
-                            <option value="End of Contract">End of Contract</option>
-                            <option value="Other">Other</option>
+                            {archiveStatusReason === 'separated' ? (
+                              <>
+                                <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
+                                <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
+                                <option value="AWOL">AWOL</option>
+                                <option value="Retirement">Retirement</option>
+                                <option value="End of Contract">End of Contract</option>
+                                <option value="Other">Other</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="The Department/Campaign. has been removed">The Department/Campaign. has been removed</option>
+                                <option value="Other">Other</option>
+                              </>
+                            )}
                           </select>
 
                           {archiveSeparationReason === 'Other' && (
@@ -1768,7 +1787,7 @@ export default function EmployeeProfile() {
                             </div>
                           )}
 
-                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Exit Date</label>
+                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Date</label>
                           <input
                             type="date"
                             value={archiveSeparationDate}
@@ -1776,7 +1795,6 @@ export default function EmployeeProfile() {
                             className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
                           />
                         </div>
-                      )}
                     </div>
                   )}
                 </div>

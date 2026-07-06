@@ -99,3 +99,15 @@ export function connectPresenceSocket({ onSync, onJoin, onLeave }) {
     releaseSocket();
   };
 }
+
+export function connectTableSocket({ onTableChange }) {
+  const socket = retainSocket();
+  if (!socket) return () => {};
+
+  socket.on('db_change', onTableChange);
+
+  return () => {
+    socket.off('db_change', onTableChange);
+    releaseSocket();
+  };
+}

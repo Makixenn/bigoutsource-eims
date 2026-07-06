@@ -174,12 +174,18 @@ export const EmployeeService = {
     const actor = auditActor(user);
     data = filterEmployeeWritePayload(data, user, true);
 
-    if (!data.employeeNumber && !data.employeeId && !data.id) {
+    const targetId = data.employeeNumber || data.employeeId || data.id;
+    if (!targetId) {
       throw new AppError('id is required', 400);
     }
 
     if (!data.siteId && !data.siteName && !data.site) {
       throw new AppError('site is required', 400);
+    }
+
+    const existing = await EmployeeModel.findById(targetId);
+    if (existing) {
+      throw new AppError(`Employee with ID "${targetId}" already exists.`, 409);
     }
 
     const employee = await EmployeeModel.create(await withGeneratedIdentity(data));

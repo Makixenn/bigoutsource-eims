@@ -30,3 +30,13 @@ export function emitUserAccessRevoked(userId, reason = 'access.revoked') {
     io?.in(userRoom(userId)).disconnectSockets(true);
   }, 250);
 }
+
+export function emitTableChange(table, action = 'UPDATE', payload = {}) {
+  if (!io) return;
+  io.emit('db_change', {
+    table,
+    action,
+    payload,
+    emittedAt: new Date().toISOString(),
+  });
+}
