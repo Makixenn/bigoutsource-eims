@@ -110,7 +110,7 @@ const importReviewCache: {
 const fieldLabels: Array<[string, string]> = [
   ['employeeNumber', 'ID'],
   ['fullName', 'Name'],
-  ['accountAssignment', 'DEPARTMENT/CAMPAIGN.'],
+  ['accountAssignment', 'Department/Campaign.'],
   ['phone', 'Phone'],
   ['address', 'Address'],
   ['boEmail', 'Email'],
@@ -119,7 +119,7 @@ const fieldLabels: Array<[string, string]> = [
   ['status', 'Status'],
   ['siteName', 'Site'],
   ['pcName', 'PC Name'],
-  ['rustdeskId', 'REMOTE ID'],
+  ['rustdeskId', 'Remote ID'],
   ['esetStatus', 'ESET'],
   ['activityWatchStatus', 'Activity Watch'],
   ['dateHired', 'Date Hired'],
@@ -1001,7 +1001,7 @@ function MergeRowsModal({
               <Field label="PC Name">
                 <Input value={form.pcName || ''} onChange={(value) => onChange('pcName', value)} />
               </Field>
-              <Field label="REMOTE ID">
+              <Field label="Remote ID">
                 <Input value={form.rustdeskId || ''} onChange={(value) => onChange('rustdeskId', value)} />
               </Field>
               <SelectDropdown
@@ -1505,7 +1505,7 @@ function EditRowModal({
                   <Input value={form.pcName || ''} onChange={(val) => onChange('pcName', val)} placeholder="e.g. PC-JOHN" />
                 </Field>
 
-                <Field label="REMOTE ID">
+                <Field label="Remote ID">
                   <Input value={form.rustdeskId || ''} onChange={(val) => onChange('rustdeskId', val)} placeholder="e.g. 123 456 789" />
                 </Field>
               </div>

@@ -211,11 +211,11 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     },
   },
   { key: 'employeeId', label: 'Employee ID', render: (emp) => emp.employeeId || '-' },
-  { key: 'accountAssignment', label: 'DEPARTMENT/CAMPAIGN.', render: (emp) => emp.accountAssignment || '-' },
+  { key: 'accountAssignment', label: 'Department/Campaign.', render: (emp) => emp.accountAssignment || '-' },
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
   { key: 'boEmail', label: 'Bigoutsource Email', render: (emp) => emp.boEmail || '-' },
-  { key: 'emailPassword', label: 'EMAIL DEFAULT PASSWORD', render: (emp) => emp.emailPassword || '-' },
+  { key: 'emailPassword', label: 'Email Default Password', render: (emp) => emp.emailPassword || '-' },
   { key: 'lmsAccount', label: 'LMS Account', render: (emp) => emp.lmsAccount || '-' },
   {
     key: 'status',
@@ -244,7 +244,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     },
   },
   { key: 'site', label: 'Site', render: (emp) => emp.site || 'Unassigned' },
-  { key: 'remoteId', label: 'REMOTE ID', render: (emp) => emp.rustdeskId || '-' },
+  { key: 'remoteId', label: 'Remote ID', render: (emp) => emp.rustdeskId || '-' },
 ];
 
 const sortableFieldKeys: DirectoryFieldKey[] = directoryFields.map((field) => field.key);
@@ -1676,7 +1676,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="EMAIL DEFAULT PASSWORD">
+                            <Field label="Email Default Password">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
                           </div>
@@ -1850,7 +1850,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="EMAIL DEFAULT PASSWORD">
+                            <Field label="Email Default Password">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
                             <Field label="Bigoutsource Email" error={formErrors.boEmail}>
