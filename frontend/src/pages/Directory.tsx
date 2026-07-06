@@ -271,7 +271,7 @@ const initialForm: AddEmployeeForm = {
   biosDate: '',
   activityWatchStatus: 'missing',
   windowsKey: '',
-  dateHired: '',
+  dateHired: getTodayDateInputValue(),
   isArchived: false,
 };
 
@@ -1768,6 +1768,14 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 Active
                               </div>
                             </Field>
+                            <Field label="Date Hired">
+                              <Input
+                                type="date"
+                                value={form.dateHired || ''}
+                                max={getTodayDateInputValue()}
+                                onChange={(value) => updateForm('dateHired', value)}
+                              />
+                            </Field>
                           </div>
                         </SectionCard>
 
@@ -1813,9 +1821,6 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                             </Field>
                             <Field label="Address">
                               <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
-                            </Field>
-                            <Field label="Date Hired">
-                              <Input type="date" value={form.dateHired || ''} onChange={(value) => updateForm('dateHired', value)} />
                             </Field>
                           </div>
                         </SectionCard>
@@ -1944,6 +1949,14 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] dark:border-[#3A4257] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
                                 Active
                               </div>
+                            </Field>
+                            <Field label="Date Hired">
+                              <Input
+                                type="date"
+                                value={form.dateHired || ''}
+                                max={getTodayDateInputValue()}
+                                onChange={(value) => updateForm('dateHired', value)}
+                              />
                             </Field>
                           </div>
                         </SectionCard>
