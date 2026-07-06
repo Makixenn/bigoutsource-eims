@@ -1,5 +1,5 @@
 export const createEmployeeValidator = {
-  employeeNumber: { required: true, type: 'string' },
+  employeeNumber: { required: false, type: 'string' },
   fullName: { required: false, type: 'string' },
   firstName: { required: false, type: 'string' },
   middleName: { required: false, type: 'string' },
@@ -8,7 +8,7 @@ export const createEmployeeValidator = {
   emailPassword: { required: false, type: 'string' },
   phone: { required: false, type: 'string' },
   address: { required: false, type: 'string' },
-  accountAssignment: { required: true, type: 'string' },
+  accountAssignment: { required: false, type: 'string' },
   lmsAccount: { required: false, type: 'string' },
   siteId: { required: false, type: 'string' },
   siteName: { required: false, type: 'string' },
@@ -20,6 +20,13 @@ export const createEmployeeValidator = {
   rustDeskId: { required: false, type: 'string' },
   esetStatus: { required: false, type: 'string', enum: ['active', 'inactive'] },
   activityWatchStatus: { required: false, type: 'string', enum: ['installed', 'missing'] },
+  jobTitle: { required: false, type: 'string' },
+  birthdate: { required: false, type: 'string' },
+  floatDate: { required: false, type: 'string' },
+  outlookEmail: { required: false, type: 'string' },
+  mattermostAccount: { required: false, type: 'string' },
+  teamsAccount: { required: false, type: 'string' },
+  googleAccount: { required: false, type: 'string' },
 };
 
 export const updateEmployeeValidator = {
@@ -44,4 +51,11 @@ export const updateEmployeeValidator = {
   rustDeskId: { required: false, type: 'string' },
   esetStatus: { required: false, type: 'string', enum: ['active', 'inactive'] },
   activityWatchStatus: { required: false, type: 'string', enum: ['installed', 'missing'] },
+  jobTitle: { required: false, type: 'string' },
+  birthdate: { required: false, type: 'string' },
+  floatDate: { required: false, type: 'string' },
+  outlookEmail: { required: false, type: 'string' },
+  mattermostAccount: { required: false, type: 'string' },
+  teamsAccount: { required: false, type: 'string' },
+  googleAccount: { required: false, type: 'string' },
 };

@@ -16,6 +16,8 @@ export const CAPABILITIES = {
   'employees.delete': 'Archive Employees',
   'employees.it.view': 'View employee IT fields',
   'employees.it.edit': 'Edit employee IT fields',
+  'employees.fields.hr': 'View & edit HR fields in employee forms',
+  'employees.fields.it': 'View & edit IT fields in employee forms',
   'employees.secrets.view': 'View employee secrets (passwords, keys, remote IDs)',
   'employees.secrets.edit': 'Edit employee secrets',
   'assets.view': 'View IT assets',
@@ -43,7 +45,7 @@ export const ROLE_CAPABILITIES = {
   super_admin: ALL_CAPABILITIES,
   admin: [
     'employees.view', 'employees.create', 'employees.edit', 'employees.delete',
-    'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
+    'employees.it.view', 'employees.it.edit', 'employees.fields.hr', 'employees.fields.it', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view', 'departments.edit',
     'imports.manage',
@@ -52,7 +54,7 @@ export const ROLE_CAPABILITIES = {
     'notifications.employee_added',
   ],
   hr_admin: [
-    'employees.view', 'employees.create', 'employees.edit', 'employees.delete',
+    'employees.view', 'employees.create', 'employees.edit', 'employees.delete', 'employees.fields.hr',
     'departments.view', 'departments.edit',
     'imports.manage',
     'reports.view', 'reports.export',
@@ -60,8 +62,8 @@ export const ROLE_CAPABILITIES = {
     'notifications.employee_added',
   ],
   it_admin: [
-    'employees.view',
-    'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
+    'employees.view', 'employees.create',
+    'employees.it.view', 'employees.it.edit', 'employees.fields.it', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view',
     'imports.manage',

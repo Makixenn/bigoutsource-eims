@@ -82,6 +82,13 @@ type EmployeeForm = {
   separationReason: string;
   isArchived?: boolean;
   avatarUrl?: string;
+  jobTitle: string;
+  birthdate: string;
+  floatDate: string;
+  outlookEmail: string;
+  mattermostAccount: string;
+  teamsAccount: string;
+  googleAccount: string;
 };
 
 const emptyEmployee: EmployeeForm = {
@@ -111,6 +118,13 @@ const emptyEmployee: EmployeeForm = {
   separationReason: '',
   isArchived: false,
   avatarUrl: '',
+  jobTitle: '',
+  birthdate: '',
+  floatDate: '',
+  outlookEmail: '',
+  mattermostAccount: '',
+  teamsAccount: '',
+  googleAccount: '',
 };
 
 const editableFields: Array<keyof EmployeeForm> = [
@@ -134,7 +148,14 @@ const editableFields: Array<keyof EmployeeForm> = [
   'activityWatchStatus',
   'dateHired',
   'separationDate',
-  'separationReason'
+  'separationReason',
+  'jobTitle',
+  'birthdate',
+  'floatDate',
+  'outlookEmail',
+  'mattermostAccount',
+  'teamsAccount',
+  'googleAccount'
 ];
 
 const suffixOptions = ['Sr.', 'Jr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -315,7 +336,7 @@ function actionLabel(action: string) {
 }
 
 function formatFieldName(field: string) {
-  if (field === 'boEmail') return 'Big Outsource Email';
+  if (field === 'boEmail') return 'Snappy Email';
   if (field === 'pcName') return 'PC Name';
   return field
     .replace(/([A-Z])/g, ' $1')
@@ -390,6 +411,13 @@ function normalizeEmployee(emp: any): EmployeeForm {
     separationReason: emp?.separationReason || emp?.separation_reason || '',
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
+    jobTitle: emp?.jobTitle || '',
+    birthdate: emp?.birthdate || '',
+    floatDate: emp?.floatDate || '',
+    outlookEmail: emp?.outlookEmail || '',
+    mattermostAccount: emp?.mattermostAccount || '',
+    teamsAccount: emp?.teamsAccount || '',
+    googleAccount: emp?.googleAccount || '',
   };
 }
 
@@ -744,7 +772,14 @@ export default function EmployeeProfile() {
         activityWatchStatus: form.activityWatchStatus,
         dateHired: form.dateHired,
         separationDate: form.separationDate,
-        separationReason: form.separationReason
+        separationReason: form.separationReason,
+        jobTitle: form.jobTitle.trim(),
+        birthdate: form.birthdate,
+        floatDate: form.floatDate,
+        outlookEmail: form.outlookEmail.trim(),
+        googleAccount: form.googleAccount.trim(),
+        teamsAccount: form.teamsAccount.trim(),
+        mattermostAccount: form.mattermostAccount.trim()
       });
 
       const normalized = normalizeEmployee(updated);
@@ -1105,6 +1140,13 @@ export default function EmployeeProfile() {
               <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
                 <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <ProfileField label="Job Title" icon={Briefcase} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
+                      ) : (
+                        employee.jobTitle || <span className="text-red-500 font-black">Not Assigned</span>
+                      )}
+                    </ProfileField>
                     <ProfileField label="Department/Campaign." icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
                         <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
@@ -1147,8 +1189,8 @@ export default function EmployeeProfile() {
                         employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
-                    <ProfileField label="BigOutsource Email" icon={Mail} editing={editingHR}>
-                      {editingHR ? (
+                    <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
+                      {editingIT ? (
                         <div className="flex items-center gap-2 w-full">
                           <div className="flex-1">
                             <Input
@@ -1312,6 +1354,22 @@ export default function EmployeeProfile() {
                         employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
                       )}
                     </ProfileField>
+                    {(form.status === 'floating' || employee.status === 'floating') && (
+                      <ProfileField label="Float Date" icon={Calendar} editing={editingHR}>
+                        {editingHR ? (
+                          <div className="flex items-center gap-2 w-full">
+                            <Input
+                              type="date"
+                              value={form.floatDate}
+                              max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
+                              onChange={(value) => updateForm('floatDate', value)}
+                            />
+                          </div>
+                        ) : (
+                          employee.floatDate ? new Date(employee.floatDate).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
+                        )}
+                      </ProfileField>
+                    )}
 
                     {(form.status === 'inactive' || form.status === 'separated' || form.status === 'floating') && (
                       <>
@@ -1371,6 +1429,25 @@ export default function EmployeeProfile() {
                     )}
                   </div>
                 </ProfileSection>
+
+                {canViewIT && (
+                <ProfileSection icon={Globe} title="External Accounts" iconColorClass="text-emerald-600 bg-emerald-50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
+                      {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" /> : employee.outlookEmail || <span className="text-red-500 font-black">Not Assigned</span>}
+                    </ProfileField>
+                    <ProfileField label="Google Account" icon={Mail} editing={editingIT}>
+                      {editingIT ? <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" /> : employee.googleAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                    </ProfileField>
+                    <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
+                      {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" /> : employee.teamsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                    </ProfileField>
+                    <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
+                      {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" /> : employee.mattermostAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                    </ProfileField>
+                  </div>
+                </ProfileSection>
+                )}
 
                 {canViewIT && (
                 <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
@@ -1535,6 +1612,17 @@ export default function EmployeeProfile() {
 
                 <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
                   <div className="space-y-6">
+                    <ProfileField label="Birthdate" icon={Calendar} editing={editingHR} error={formErrors.birthdate as string}>
+                      {editingHR ? (
+                        <Input
+                          type="date"
+                          value={form.birthdate}
+                          max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
+                          onChange={(value) => updateForm('birthdate', value)}
+                          error={Boolean(formErrors.birthdate)}
+                        />
+                      ) : employee.birthdate ? new Date(employee.birthdate).toLocaleDateString() : 'Not Assigned'}
+                    </ProfileField>
                     <ProfileField label="Phone Number" editing={editingHR} error={formErrors.phone}>
                       {editingHR ? (
                         <Input

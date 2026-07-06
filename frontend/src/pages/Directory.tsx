@@ -83,7 +83,7 @@ type AddEmployeeForm = {
   boEmail: string;
   emailPassword: string;
   lmsAccount: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'floating' | 'separated';
   siteId: string;
   siteName: string;
   pcName: string;
@@ -94,6 +94,13 @@ type AddEmployeeForm = {
   windowsKey: string;
   dateHired?: string;
   isArchived?: boolean;
+  jobTitle: string;
+  birthdate: string;
+  floatDate: string;
+  outlookEmail: string;
+  mattermostAccount: string;
+  teamsAccount: string;
+  googleAccount: string;
 };
 
 type FormErrors = Partial<Record<keyof AddEmployeeForm, string>>;
@@ -156,6 +163,9 @@ function calculateIncompleteData(employee: EmployeeRecord) {
 
   if (!employee.phone) mildCount++;
   if (!employee.address) mildCount++;
+  if (!employee.jobTitle) mildCount++;
+  if (!employee.birthdate) mildCount++;
+  if (!employee.dateHired) mildCount++;
   if (!employee.pcName) mildCount++;
   if (!employee.biosDate) mildCount++;
   if (!employee.rustdeskId && !employee.rustDeskId) mildCount++;
@@ -214,7 +224,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
   { key: 'accountAssignment', label: 'Department/Campaign.', render: (emp) => emp.accountAssignment || '-' },
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
-  { key: 'boEmail', label: 'Bigoutsource Email', render: (emp) => emp.boEmail || '-' },
+  { key: 'boEmail', label: 'Snappy Email', render: (emp) => emp.boEmail || '-' },
   { key: 'emailPassword', label: 'Email Default Password', render: (emp) => emp.emailPassword || '-' },
   { key: 'lmsAccount', label: 'LMS Account', render: (emp) => emp.lmsAccount || '-' },
   {
@@ -273,6 +283,13 @@ const initialForm: AddEmployeeForm = {
   windowsKey: '',
   dateHired: getTodayDateInputValue(),
   isArchived: false,
+  jobTitle: '',
+  birthdate: '',
+  floatDate: '',
+  outlookEmail: '',
+  mattermostAccount: '',
+  teamsAccount: '',
+  googleAccount: '',
 };
 
 const wizardSteps = [
@@ -495,6 +512,8 @@ export default function Directory() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { can } = useAuth();
+  const showHRFields = can('employees.fields.hr');
+  const showITFields = can('employees.fields.it');
   const canManageRecords =
     can('employees.create') || can('employees.edit') || can('employees.it.edit') || can('employees.secrets.edit');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -999,7 +1018,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   const validationForStep = (step: number, requireAll = false): FormErrors => {
     const errors: FormErrors = {};
 
-    if ((requireAll || step === 0) && !form.employeeNumber.trim()) {
+    if (showHRFields && (requireAll || step === 0) && !form.employeeNumber.trim()) {
       errors.employeeNumber = 'Employee ID is required for HR and payroll matching.';
     }
     if ((requireAll || step === 0)) {
@@ -1013,10 +1032,10 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
     if ((requireAll || step === 0) && form.middleName) {
       if (/[[\]`]/u.test(form.middleName)) errors.middleName = 'Middle name contains incomplete shortcodes.';
     }
-    if ((requireAll || step === 0) && form.phone && form.phone.length !== 11) {
+    if (showHRFields && (requireAll || step === 0) && form.phone && form.phone.length !== 11) {
       errors.phone = 'Phone number must be exactly 11 digits.';
     }
-    if ((requireAll || step === 1) && !form.accountAssignment.trim()) {
+    if (showHRFields && (requireAll || step === 1) && !form.accountAssignment.trim()) {
       errors.accountAssignment = 'Select an account or department before generating access.';
     }
     if ((requireAll || step === 2) && !form.siteId) {
@@ -1150,6 +1169,13 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
         activityWatchStatus: form.activityWatchStatus,
         windowsKey: form.windowsKey.trim() || undefined,
         dateHired: form.dateHired || undefined,
+        jobTitle: form.jobTitle.trim() || undefined,
+        birthdate: form.birthdate || undefined,
+        floatDate: form.status === 'floating' ? form.floatDate || undefined : undefined,
+        outlookEmail: form.outlookEmail.trim() || undefined,
+        mattermostAccount: form.mattermostAccount.trim() || undefined,
+        teamsAccount: form.teamsAccount.trim() || undefined,
+        googleAccount: form.googleAccount.trim() || undefined,
       });
 
       const createdEmployee = normalizeEmployee(created);
@@ -1578,21 +1604,23 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                           <div className="flex flex-col gap-4">
                             <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                               <div className="md:w-[48%]">
-                                <Field label="Employee ID" required error={formErrors.employeeNumber}>
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex-1">
-                                      <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                                {showHRFields && (
+                                  <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1">
+                                        <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={generateTempEmployeeId}
+                                        className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                        title="Generate Temporary ID"
+                                      >
+                                        <Sparkles className="w-4 h-4" />
+                                      </button>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={generateTempEmployeeId}
-                                      className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                      title="Generate Temporary ID"
-                                    >
-                                      <Sparkles className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </Field>
+                                  </Field>
+                                )}
                               </div>
                               <div className="md:w-[48%]">
                                 <Field label="First Name" required error={formErrors.firstName}>
@@ -1622,94 +1650,134 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </Field>
                               </div>
                             </div>
+                            {showHRFields && (
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[48%] mt-[1px]">
+                                  <Field label="Job Title" error={formErrors.jobTitle as string}>
+                                    <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
+                                  </Field>
+                                </div>
+                                <div className="md:w-[48%]">
+                                  <Field label="Birthdate" error={formErrors.birthdate as string}>
+                                    <Input type="date" value={form.birthdate} onChange={(value) => updateForm('birthdate', value)} max={getTodayDateInputValue()} />
+                                  </Field>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </SectionCard>
 
-                        <SectionCard title="Contact Details" eyebrow="Optional">
-                          <div className="grid grid-cols-1 gap-4">
-                            <Field label="Phone Number" error={formErrors.phone}>
-                              <Input
-                                value={form.phone}
-                                onChange={(value) => updateForm('phone', value)}
-                                placeholder="e.g. 09123456789"
-                                error={Boolean(formErrors.phone)}
-                              />
-                            </Field>
-                            <Field label="Address">
-                              <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
-                            </Field>
-                          </div>
-                        </SectionCard>
+                        {showHRFields && (
+                          <SectionCard title="Contact Details" eyebrow="Optional">
+                            <div className="grid grid-cols-1 gap-4">
+                              <Field label="Phone Number" error={formErrors.phone}>
+                                <Input
+                                  value={form.phone}
+                                  onChange={(value) => updateForm('phone', value)}
+                                  placeholder="e.g. 09123456789"
+                                  error={Boolean(formErrors.phone)}
+                                />
+                              </Field>
+                              <Field label="Address">
+                                <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
+                              </Field>
+                            </div>
+                          </SectionCard>
+                        )}
                       </div>
                     )}
 
                     {activeStep === 1 && (
                       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        <SectionCard title="Accounts" eyebrow="Manual">
-                          <div className="grid grid-cols-1 gap-4">
-                            <Field label="Account / Department" required error={formErrors.accountAssignment}>
-                              <div className="relative">
-                                <button
-                                  type="button"
-                                  onClick={() => setIsAccountDropdownOpen((current) => !current)}
-                                  className={cn(
-                                    'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
-                                    formErrors.accountAssignment ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB] dark:border-[#3A4257]'
-                                  )}
-                                >
-                                  <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
-                                  <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
-                                </button>
-                                <AnimatePresence>
-                                  {isAccountDropdownOpen && (
-                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                      {accounts.length ? (
-                                        <div className="max-h-64 overflow-y-auto">
-                                          <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
-                                          <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
-                                        </div>
-                                      ) : (
-                                        <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
-                                      )}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                            </Field>
-                            <Field label="Email Default Password">
-                              <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
-                            </Field>
-                          </div>
-                        </SectionCard>
-
-                        <SectionCard title="Generated Access" eyebrow="Auto">
-                          <div className="flex flex-col gap-4">
-                            <EditableGeneratedValue
-                              label="Bigoutsource Email"
-                              value={form.boEmail}
-                              onChange={(value) => updateForm('boEmail', value)}
-                              onRegenerate={() => regenerateField('boEmail')}
-                              isEdited={isBoEmailEdited}
-                              placeholder="Pending generation"
-                              error={formErrors.boEmail}
-                            />
-
-                            <EditableGeneratedValue
-                              label="LMS Account"
-                              value={form.lmsAccount}
-                              onChange={(value) => updateForm('lmsAccount', value)}
-                              onRegenerate={() => regenerateField('lmsAccount')}
-                              isEdited={isLmsAccountEdited}
-                              placeholder="Pending generation"
-                              error={formErrors.lmsAccount}
-                            />
-                          </div>
-                          {selectedAccountMissingCode && (
-                            <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-500">
-                              This preview uses the suggested account code. Add a stored department code to this account before saving.
+                        {showHRFields && (
+                          <SectionCard title="Accounts" eyebrow="Manual">
+                            <div className="grid grid-cols-1 gap-4">
+                              <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                                <div className="relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                                    className={cn(
+                                      'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                      formErrors.accountAssignment ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB] dark:border-[#3A4257]'
+                                    )}
+                                  >
+                                    <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
+                                    <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
+                                  </button>
+                                  <AnimatePresence>
+                                    {isAccountDropdownOpen && (
+                                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                        {accounts.length ? (
+                                          <div className="max-h-64 overflow-y-auto">
+                                            <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                            <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                          </div>
+                                        ) : (
+                                          <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                        )}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              </Field>
+                              <Field label="Email Default Password">
+                                <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
+                              </Field>
                             </div>
-                          )}
-                        </SectionCard>
+                          </SectionCard>
+                        )}
+
+                        {showHRFields && (
+                          <SectionCard title="Generated Access" eyebrow="Auto">
+                            <div className="flex flex-col gap-4">
+                              <EditableGeneratedValue
+                                label="Snappy Email"
+                                value={form.boEmail}
+                                onChange={(value) => updateForm('boEmail', value)}
+                                onRegenerate={() => regenerateField('boEmail')}
+                                isEdited={isBoEmailEdited}
+                                placeholder="Pending generation"
+                                error={formErrors.boEmail}
+                                disabled={!can('employees.it.edit')}
+                              />
+
+                              <EditableGeneratedValue
+                                label="LMS Account"
+                                value={form.lmsAccount}
+                                onChange={(value) => updateForm('lmsAccount', value)}
+                                onRegenerate={() => regenerateField('lmsAccount')}
+                                isEdited={isLmsAccountEdited}
+                                placeholder="Pending generation"
+                                error={formErrors.lmsAccount}
+                              />
+                            </div>
+                            {selectedAccountMissingCode && (
+                              <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-500">
+                                This preview uses the suggested account code. Add a stored department code to this account before saving.
+                              </div>
+                            )}
+                          </SectionCard>
+                        )}
+
+                        {showITFields && (
+                          <SectionCard title="External Accounts" eyebrow="Manual">
+                            <div className="grid grid-cols-1 gap-4">
+                              <Field label="Outlook Email">
+                                <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" />
+                              </Field>
+                              <Field label="Google Account">
+                                <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" />
+                              </Field>
+                              <Field label="Teams Account">
+                                <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" />
+                              </Field>
+                              <Field label="Mattermost Account">
+                                <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" />
+                              </Field>
+                            </div>
+                          </SectionCard>
+                        )}
                       </div>
                     )}
 
@@ -1764,41 +1832,90 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               </div>
                             </Field>
                             <Field label="Status">
-                              <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] dark:border-[#3A4257] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
-                                Active
-                              </div>
+                              <Select value={form.status} onChange={(value) => updateForm('status', value as 'active' | 'inactive' | 'floating' | 'separated')}>
+                                <option value="active">Active</option>
+                                <option value="floating">Floating</option>
+                                <option value="separated">Separated</option>
+                              </Select>
                             </Field>
-                            <Field label="Date Hired">
-                              <Input
-                                type="date"
-                                value={form.dateHired || ''}
-                                max={getTodayDateInputValue()}
-                                onChange={(value) => updateForm('dateHired', value)}
-                              />
-                            </Field>
+                            {showHRFields && (
+                              <Field label="Date Hired">
+                                <Input
+                                  type="date"
+                                  value={form.dateHired || ''}
+                                  max={getTodayDateInputValue()}
+                                  onChange={(value) => updateForm('dateHired', value)}
+                                />
+                              </Field>
+                            )}
+                            {showHRFields && form.status === 'floating' && (
+                              <Field label="Float Date">
+                                <Input
+                                  type="date"
+                                  value={form.floatDate || ''}
+                                  max={getTodayDateInputValue()}
+                                  onChange={(value) => updateForm('floatDate', value)}
+                                />
+                              </Field>
+                            )}
                           </div>
                         </SectionCard>
 
-                        <SectionCard title="Snapshot" eyebrow="Status">
-                          <ReviewGrid
-                            items={[
-                              ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
-                              ['Employee ID', form.employeeNumber || 'Not entered'],
-                              ['Account', form.accountAssignment || 'Not selected'],
-                              ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
-                            ]}
-                          />
-                        </SectionCard>
+                        {showHRFields && (
+                          <SectionCard title="Snapshot" eyebrow="Status">
+                            <ReviewGrid
+                              items={[
+                                ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
+                                ['Employee ID', form.employeeNumber || 'Not entered'],
+                                ['Account', form.accountAssignment || 'Not selected'],
+                                ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
+                              ]}
+                            />
+                          </SectionCard>
+                        )}
+
+                        {showITFields && (
+                          <SectionCard title="Device Information" eyebrow="Manual">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <Field label="PC Name">
+                                <Input value={form.pcName} onChange={(v) => updateForm('pcName', v)} placeholder="e.g. IT-DEV-01" />
+                              </Field>
+                              <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
+                                <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="e.g. 123 456 789" />
+                              </Field>
+                              <Field label="Windows License Key" error={formErrors.windowsKey}>
+                                <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                              </Field>
+                              <Field label="BIOS Date">
+                                <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} max={getTodayDateInputValue()} />
+                              </Field>
+                              <Field label="ESET Status">
+                                <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v as any)}>
+                                  <option value="active">Active</option>
+                                  <option value="inactive">Inactive</option>
+                                </Select>
+                              </Field>
+                              <Field label="ActivityWatch">
+                                <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v as any)}>
+                                  <option value="installed">Installed</option>
+                                  <option value="missing">Missing</option>
+                                </Select>
+                              </Field>
+                            </div>
+                          </SectionCard>
+                        )}
                       </div>
                     )}
 
                     {activeStep === 3 && (
                       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        <SectionCard title="Employee Information" eyebrow="Review" status={!validationForStep(0).employeeNumber && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
+                        <SectionCard title="Employee Information" eyebrow="Review" status={(!showHRFields || !validationForStep(0).employeeNumber) && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <Field label="Employee ID" required error={formErrors.employeeNumber}>
-                              <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
-                            </Field>
+                            {showHRFields && (
+                              <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                                <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                              </Field>
+                            )}
                             <Field label="First Name" required error={formErrors.firstName}>
                               <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
                             </Field>
@@ -1816,94 +1933,106 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 ))}
                               </Select>
                             </Field>
-                            <Field label="Phone Number" error={formErrors.phone}>
-                              <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" error={Boolean(formErrors.phone)} />
-                            </Field>
-                            <Field label="Address">
-                              <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
-                            </Field>
+                            {showHRFields && (
+                              <>
+                                <Field label="Job Title" error={formErrors.jobTitle as string}>
+                                  <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
+                                </Field>
+                                <Field label="Birthdate" error={formErrors.birthdate as string}>
+                                  <Input type="date" value={form.birthdate} onChange={(value) => updateForm('birthdate', value)} max={getTodayDateInputValue()} />
+                                </Field>
+                                <Field label="Phone Number" error={formErrors.phone}>
+                                  <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" error={Boolean(formErrors.phone)} />
+                                </Field>
+                                <Field label="Address">
+                                  <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
+                                </Field>
+                              </>
+                            )}
                           </div>
                         </SectionCard>
-                        <SectionCard title="Accounts" eyebrow="Review" status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
-                          <div className="grid grid-cols-1 gap-4">
-                            <Field label="Account / Department" required error={formErrors.accountAssignment}>
-                              <div className="relative">
-                                <button
-                                  type="button"
-                                  onClick={() => setIsAccountDropdownOpen((current) => !current)}
-                                  className={cn(
-                                    'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
-                                    formErrors.accountAssignment ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB] dark:border-[#3A4257]'
-                                  )}
-                                >
-                                  <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
-                                  <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
-                                </button>
-                                <AnimatePresence>
-                                  {isAccountDropdownOpen && (
-                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                      {accounts.length ? (
-                                        <div className="max-h-64 overflow-y-auto">
-                                          <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
-                                          <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
-                                        </div>
-                                      ) : (
-                                        <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
-                                      )}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                            </Field>
-                            <Field label="Email Default Password">
-                              <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
-                            </Field>
-                            <Field label="Bigoutsource Email" error={formErrors.boEmail}>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1">
-                                  <Input
-                                    value={form.boEmail}
-                                    onChange={(value) => updateForm('boEmail', value)}
-                                    placeholder="Pending generation"
-                                    error={Boolean(formErrors.boEmail)}
-                                  />
-                                </div>
-                                {isBoEmailEdited && (
+                        {showHRFields && (
+                          <SectionCard title="Accounts" eyebrow="Review" status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
+                            <div className="grid grid-cols-1 gap-4">
+                              <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                                <div className="relative">
                                   <button
                                     type="button"
-                                    onClick={() => regenerateField('boEmail')}
-                                    className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                    title="Reset to generated default"
+                                    onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                                    className={cn(
+                                      'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                      formErrors.accountAssignment ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB] dark:border-[#3A4257]'
+                                    )}
                                   >
-                                    <RotateCcw className="w-4 h-4" />
+                                    <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
+                                    <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
                                   </button>
-                                )}
-                              </div>
-                            </Field>
-                            <Field label="LMS Account" error={formErrors.lmsAccount}>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1">
-                                  <Input
-                                    value={form.lmsAccount}
-                                    onChange={(value) => updateForm('lmsAccount', value)}
-                                    placeholder="Pending generation"
-                                    error={Boolean(formErrors.lmsAccount)}
-                                  />
+                                  <AnimatePresence>
+                                    {isAccountDropdownOpen && (
+                                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                        {accounts.length ? (
+                                          <div className="max-h-64 overflow-y-auto">
+                                            <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                            <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                          </div>
+                                        ) : (
+                                          <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                        )}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
-                                {isLmsAccountEdited && (
-                                  <button
-                                    type="button"
-                                    onClick={() => regenerateField('lmsAccount')}
-                                    className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                    title="Reset to generated default"
-                                  >
-                                    <RotateCcw className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </Field>
-                          </div>
-                        </SectionCard>
+                              </Field>
+                              <Field label="Email Default Password">
+                                <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
+                              </Field>
+                              <Field label="Snappy Email" error={formErrors.boEmail}>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1">
+                                    <Input
+                                      value={form.boEmail}
+                                      onChange={(value) => updateForm('boEmail', value)}
+                                      placeholder="Pending generation"
+                                      error={Boolean(formErrors.boEmail)}
+                                    />
+                                  </div>
+                                  {isBoEmailEdited && (
+                                    <button
+                                      type="button"
+                                      onClick={() => regenerateField('boEmail')}
+                                      className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                      title="Reset to generated default"
+                                    >
+                                      <RotateCcw className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </Field>
+                              <Field label="LMS Account" error={formErrors.lmsAccount}>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1">
+                                    <Input
+                                      value={form.lmsAccount}
+                                      onChange={(value) => updateForm('lmsAccount', value)}
+                                      placeholder="Pending generation"
+                                      error={Boolean(formErrors.lmsAccount)}
+                                    />
+                                  </div>
+                                  {isLmsAccountEdited && (
+                                    <button
+                                      type="button"
+                                      onClick={() => regenerateField('lmsAccount')}
+                                      className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                      title="Reset to generated default"
+                                    >
+                                      <RotateCcw className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </Field>
+                            </div>
+                          </SectionCard>
+                        )}
                         <SectionCard title="Assignment" eyebrow="Review" status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <Field label="Site" required error={formErrors.siteId}>
@@ -1946,20 +2075,70 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               </div>
                             </Field>
                             <Field label="Status">
-                              <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] dark:border-[#3A4257] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
-                                Active
-                              </div>
+                              <Select value={form.status} onChange={(value) => updateForm('status', value as 'active' | 'inactive' | 'floating' | 'separated')}>
+                                <option value="active">Active</option>
+                                <option value="floating">Floating</option>
+                                <option value="separated">Separated</option>
+                              </Select>
                             </Field>
-                            <Field label="Date Hired">
-                              <Input
-                                type="date"
-                                value={form.dateHired || ''}
-                                max={getTodayDateInputValue()}
-                                onChange={(value) => updateForm('dateHired', value)}
-                              />
-                            </Field>
+                            {showHRFields && (
+                              <Field label="Date Hired">
+                                <Input
+                                  type="date"
+                                  value={form.dateHired || ''}
+                                  max={getTodayDateInputValue()}
+                                  onChange={(value) => updateForm('dateHired', value)}
+                                />
+                              </Field>
+                            )}
+                            {showHRFields && form.status === 'floating' && (
+                              <Field label="Float Date">
+                                <Input
+                                  type="date"
+                                  value={form.floatDate || ''}
+                                  max={getTodayDateInputValue()}
+                                  onChange={(value) => updateForm('floatDate', value)}
+                                />
+                              </Field>
+                            )}
                           </div>
                         </SectionCard>
+                        {showITFields && (
+                          <SectionCard title="Device Information" eyebrow="Review">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <Field label="PC Name">
+                                <Input value={form.pcName} onChange={(v) => updateForm('pcName', v)} />
+                              </Field>
+                              <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
+                                <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} />
+                              </Field>
+                              <Field label="Windows License Key" error={formErrors.windowsKey}>
+                                <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} />
+                              </Field>
+                              <Field label="BIOS Date">
+                                <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} max={getTodayDateInputValue()} />
+                              </Field>
+                            </div>
+                          </SectionCard>
+                        )}
+                        {showITFields && (
+                          <SectionCard title="External Accounts" eyebrow="Review">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <Field label="Outlook Email">
+                                <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} />
+                              </Field>
+                              <Field label="Google Account">
+                                <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} />
+                              </Field>
+                              <Field label="Teams Account">
+                                <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} />
+                              </Field>
+                              <Field label="Mattermost Account">
+                                <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} />
+                              </Field>
+                            </div>
+                          </SectionCard>
+                        )}
                         <div className="md:col-span-2 rounded-2xl border border-[#D1D5DB] dark:border-[#3A4257] bg-white p-5 shadow-lg shadow-[#1118270D]">
                           <label className="flex items-start gap-3">
                             <input
