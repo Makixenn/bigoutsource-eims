@@ -62,6 +62,11 @@ export function sanitizeCapabilities(input) {
       throw new AppError(`"${cap}" is reserved for Super Admin and cannot be granted`, 400);
     }
     if (!GRANTABLE_CAPABILITIES.includes(cap)) {
+      const baseCap = cap.replace(/\.(optional|required)$/, '');
+      if (GRANTABLE_CAPABILITIES.includes(baseCap) && baseCap.startsWith('employees.create.')) {
+        set.add(cap);
+        continue;
+      }
       throw new AppError(`Unknown capability "${cap}"`, 400);
     }
     set.add(cap);

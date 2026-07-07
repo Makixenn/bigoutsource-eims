@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { EmployeeModel } from '../models/employee.model.js';
 import { AccountModel } from '../models/account.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
@@ -66,7 +67,9 @@ function generatedFieldsChanged(data = {}) {
 
 async function resolveAccount(data, existing) {
   const accountName = data.accountAssignment || data.account || existing?.accountAssignment || existing?.account;
-  if (!accountName) throw new AppError('accountAssignment is required', 400);
+  if (!accountName) {
+    return { name: '', type: 'external', code: 'UNASSIGNED' };
+  }
 
   const account = await AccountModel.findByName(accountName);
   if (!account) throw new AppError(`Department/account "${accountName}" was not found`, 400);
@@ -174,14 +177,14 @@ export const EmployeeService = {
     const actor = auditActor(user);
     data = filterEmployeeWritePayload(data, user, true);
 
-    const targetId = data.employeeNumber || data.employeeId || data.id;
+    let targetId = data.employeeNumber || data.employeeId || data.id;
     if (!targetId) {
-      throw new AppError('id is required', 400);
+      targetId = crypto.randomUUID();
+      data.id = targetId;
+      data.employeeNumber = targetId;
     }
 
-    if (!data.siteId && !data.siteName && !data.site) {
-      throw new AppError('site is required', 400);
-    }
+
 
     const existing = await EmployeeModel.findById(targetId);
     if (existing) {

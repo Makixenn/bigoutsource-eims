@@ -28,7 +28,7 @@ import { ResizableHeader } from '@/src/components/ResizableHeader';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
-import { applySpecialShortcodes, cn } from '@/src/lib/utils';
+import { applySpecialShortcodes, cn, isUUID } from '@/src/lib/utils';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
@@ -220,7 +220,21 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
       );
     },
   },
-  { key: 'employeeId', label: 'Employee ID', render: (emp) => emp.employeeId || '-' },
+  {
+    key: 'employeeId',
+    label: 'Employee ID',
+    render: (emp) => {
+      const val = emp.employeeId;
+      if (!val) return '-';
+      return isUUID(val) ? (
+        <span className="text-[0.625rem] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 whitespace-nowrap">
+          Pending HR
+        </span>
+      ) : (
+        val
+      );
+    },
+  },
   { key: 'accountAssignment', label: 'Department/Campaign.', render: (emp) => emp.accountAssignment || '-' },
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
@@ -512,8 +526,16 @@ export default function Directory() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { can } = useAuth();
-  const showHRFields = can('employees.fields.hr');
-  const showITFields = can('employees.fields.it');
+  const canViewHR = can('employees.edit');
+  const canViewIT = can('employees.it.edit');
+
+  const reqHRFields = can('employees.create.hr_fields.required');
+  const optHRFields = can('employees.create.hr_fields.optional');
+  const showHRFields = reqHRFields || optHRFields || canViewHR;
+
+  const reqITFields = can('employees.create.it_fields.required');
+  const optITFields = can('employees.create.it_fields.optional');
+  const showITFields = reqITFields || optITFields || canViewIT;
   const canManageRecords =
     can('employees.create') || can('employees.edit') || can('employees.it.edit') || can('employees.secrets.edit');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1019,7 +1041,8 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
     const errors: FormErrors = {};
 
     if (showHRFields && (requireAll || step === 0) && !form.employeeNumber.trim()) {
-      errors.employeeNumber = 'Employee ID is required for HR and payroll matching.';
+      // Employee ID is mandatory if HR Identity is required
+      if (reqHRFields || canViewHR) errors.employeeNumber = 'Employee ID is required for HR and payroll matching.';
     }
     if ((requireAll || step === 0)) {
       if (!form.firstName.trim()) errors.firstName = 'Enter the employee first name.';
@@ -1036,12 +1059,12 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
       errors.phone = 'Phone number must be exactly 11 digits.';
     }
     if (showHRFields && (requireAll || step === 1) && !form.accountAssignment.trim()) {
-      errors.accountAssignment = 'Select an account or department before generating access.';
+      if (reqHRFields || canViewHR) errors.accountAssignment = 'Select an account or department before generating access.';
     }
     if ((requireAll || step === 2) && !form.siteId) {
       errors.siteId = 'Select the employee work site.';
     }
-    if (requireAll && form.windowsKey && !isCompleteWindowsLicenseKey(form.windowsKey)) {
+    if (showITFields && requireAll && form.windowsKey && !isCompleteWindowsLicenseKey(form.windowsKey)) {
       errors.windowsKey = 'Windows license key must be 25 characters in 5 groups of 5.';
     }
     return errors;
@@ -1602,54 +1625,56 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <SectionCard title="Employee Information" eyebrow="Manual">
                           <div className="flex flex-col gap-4">
-                            <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
-                              <div className="md:w-[48%]">
-                                {showHRFields && (
-                                  <Field label="Employee ID" required error={formErrors.employeeNumber}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex-1">
-                                        <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                              {showHRFields && (
+                                <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                  <div className="md:w-full">
+                                    <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex-1">
+                                          <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={generateTempEmployeeId}
+                                          className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                          title="Generate Temporary ID"
+                                        >
+                                          <Sparkles className="w-4 h-4" />
+                                        </button>
                                       </div>
-                                      <button
-                                        type="button"
-                                        onClick={generateTempEmployeeId}
-                                        className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                        title="Generate Temporary ID"
-                                      >
-                                        <Sparkles className="w-4 h-4" />
-                                      </button>
-                                    </div>
+                                    </Field>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[48%]">
+                                  <Field label="First Name" required error={formErrors.firstName}>
+                                    <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
                                   </Field>
-                                )}
+                                </div>
+                                <div className="md:w-[48%] mt-[1px]">
+                                  <Field label="Middle Name" error={formErrors.middleName}>
+                                    <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" error={Boolean(formErrors.middleName)} />
+                                  </Field>
+                                </div>
                               </div>
-                              <div className="md:w-[48%]">
-                                <Field label="First Name" required error={formErrors.firstName}>
-                                  <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
-                                </Field>
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[70%]">
+                                  <Field label="Last Name" required error={formErrors.lastName}>
+                                    <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
+                                  </Field>
+                                </div>
+                                <div className="md:w-[26%] mt-[1px]">
+                                  <Field label="Suffix">
+                                    <Select value={form.suffix || ''} onChange={(value) => updateForm('suffix', value)}>
+                                      <option value="">None</option>
+                                      {suffixOptions.map((suffix) => (
+                                        <option key={suffix} value={suffix}>{suffix}</option>
+                                      ))}
+                                    </Select>
+                                  </Field>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
-                              <div className="md:w-[38%] mt-[1px]">
-                                <Field label="Middle Name" error={formErrors.middleName}>
-                                  <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" error={Boolean(formErrors.middleName)} />
-                                </Field>
-                              </div>
-                              <div className="md:w-[38%]">
-                                <Field label="Last Name" required error={formErrors.lastName}>
-                                  <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
-                                </Field>
-                              </div>
-                              <div className="md:w-[18%] mt-[1px]">
-                                <Field label="Suffix">
-                                  <Select value={form.suffix || ''} onChange={(value) => updateForm('suffix', value)}>
-                                    <option value="">None</option>
-                                    {suffixOptions.map((suffix) => (
-                                      <option key={suffix} value={suffix}>{suffix}</option>
-                                    ))}
-                                  </Select>
-                                </Field>
-                              </div>
-                            </div>
                             {showHRFields && (
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%] mt-[1px]">
@@ -1728,7 +1753,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                           </SectionCard>
                         )}
 
-                        {showHRFields && (
+                        {showHRFields && !showITFields && (
                           <SectionCard title="Generated Access" eyebrow="Auto">
                             <div className="flex flex-col gap-4">
                               <EditableGeneratedValue
@@ -1761,22 +1786,61 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         )}
 
                         {showITFields && (
-                          <SectionCard title="External Accounts" eyebrow="Manual">
-                            <div className="grid grid-cols-1 gap-4">
-                              <Field label="Outlook Email">
-                                <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" />
-                              </Field>
-                              <Field label="Google Account">
-                                <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" />
-                              </Field>
-                              <Field label="Teams Account">
-                                <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" />
-                              </Field>
-                              <Field label="Mattermost Account">
-                                <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" />
-                              </Field>
-                            </div>
-                          </SectionCard>
+                          <>
+                            <SectionCard title="Required Accounts" eyebrow="Manual">
+                              <div className="flex flex-col gap-4">
+                                <EditableGeneratedValue
+                                  label="Snappy Email"
+                                  value={form.boEmail}
+                                  onChange={(value) => updateForm('boEmail', value)}
+                                  onRegenerate={() => regenerateField('boEmail')}
+                                  isEdited={isBoEmailEdited}
+                                  placeholder="Pending generation"
+                                  error={formErrors.boEmail}
+                                  disabled={!can('employees.it.edit')}
+                                  required
+                                />
+
+                                <EditableGeneratedValue
+                                  label="LMS Account"
+                                  value={form.lmsAccount}
+                                  onChange={(value) => updateForm('lmsAccount', value)}
+                                  onRegenerate={() => regenerateField('lmsAccount')}
+                                  isEdited={isLmsAccountEdited}
+                                  placeholder="Pending generation"
+                                  error={formErrors.lmsAccount}
+                                  disabled={!can('employees.it.edit')}
+                                  required
+                                />
+
+                                <Field label="Email Default Password">
+                                  <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
+                                </Field>
+                              </div>
+                              {selectedAccountMissingCode && (
+                                <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-500">
+                                  This preview uses the suggested account code. Add a stored department code to this account before saving.
+                                </div>
+                              )}
+                            </SectionCard>
+
+                            <SectionCard title="Optional Accounts" eyebrow="Manual">
+                              <div className="grid grid-cols-1 gap-4">
+                                <Field label="Outlook Email (if applicable)">
+                                  <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" />
+                                </Field>
+                                <Field label="Google Account (if applicable)">
+                                  <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" />
+                                </Field>
+                                <Field label="Teams Account (if applicable)">
+                                  <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" />
+                                </Field>
+                                <Field label="Mattermost Account (if applicable)">
+                                  <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" />
+                                </Field>
+                              </div>
+                            </SectionCard>
+                          </>
                         )}
                       </div>
                     )}

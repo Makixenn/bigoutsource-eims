@@ -324,6 +324,7 @@ export function EditableGeneratedValue({
   placeholder,
   error,
   disabled,
+  required,
 }: {
   label: string;
   value: string;
@@ -333,6 +334,7 @@ export function EditableGeneratedValue({
   placeholder?: string;
   error?: string;
   disabled?: boolean;
+  required?: boolean;
 }) {
   const isReady = Boolean(value);
 
@@ -350,7 +352,10 @@ export function EditableGeneratedValue({
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Sparkles className={cn('h-3.5 w-3.5 shrink-0', isReady ? 'text-[#2563EB]' : 'text-[#9CA3AF]')} />
-          <p className="truncate text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
+          <p className="truncate text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">
+            {label}
+            {required && <span className="ml-1 text-red-500">*</span>}
+          </p>
         </div>
         <div className="flex items-center gap-1.5">
           {isEdited && !disabled && (

@@ -98,6 +98,13 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (valueFrom(data, 'windowsKey', 'windowsLicenseKey') !== undefined) {
     payload.windows_license_key = stringOrEmpty(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
   }
+  if (data?.outlookEmail !== undefined) payload.outlook_email = stringOrEmpty(data.outlookEmail);
+  if (data?.googleAccount !== undefined) payload.google_account = stringOrEmpty(data.googleAccount);
+  if (data?.teamsAccount !== undefined) payload.teams_account = stringOrEmpty(data.teamsAccount);
+  if (data?.mattermostAccount !== undefined) payload.mattermost_account = stringOrEmpty(data.mattermostAccount);
+  if (data?.jobTitle !== undefined) payload.job_title = stringOrEmpty(data.jobTitle);
+  if (data?.birthdate !== undefined) payload.birthdate = stringOrEmpty(data.birthdate);
+  if (data?.floatDate !== undefined) payload.float_date = stringOrEmpty(data.floatDate);
   const isArchived = valueFrom(data, 'is_archived', 'isArchived');
   if (isArchived !== undefined) {
     payload.is_archived = toBoolean(isArchived);
@@ -139,6 +146,13 @@ function normalize(row) {
     eset: row.eset || 'inactive',
     activityWatchStatus: row.activitywatch || 'missing',
     activitywatch: row.activitywatch || 'missing',
+    outlookEmail: row.outlookEmail || row.outlook_email || '',
+    googleAccount: row.googleAccount || row.google_account || '',
+    teamsAccount: row.teamsAccount || row.teams_account || '',
+    mattermostAccount: row.mattermostAccount || row.mattermost_account || '',
+    jobTitle: row.jobTitle || row.job_title || '',
+    birthdate: row.birthdate || '',
+    floatDate: row.floatDate || row.float_date || '',
     isArchived: row.isArchived ?? row.is_archived ?? false,
     avatarUrl: row.avatarUrl || row.avatar_url || null,
     createdAt: row.createdAt || row.created_at || '',
@@ -232,6 +246,13 @@ export const EmployeeModel = {
       separationReason: payload.separation_reason,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
+      outlookEmail: payload.outlook_email,
+      googleAccount: payload.google_account,
+      teamsAccount: payload.teams_account,
+      mattermostAccount: payload.mattermost_account,
+      jobTitle: payload.job_title,
+      birthdate: payload.birthdate,
+      floatDate: payload.float_date,
       isArchived: payload.is_archived,
       avatarUrl: payload.avatar_url,
     };
@@ -268,6 +289,13 @@ export const EmployeeModel = {
         separationDate: payload.separation_date,
         separationReason: payload.separation_reason,
         activitywatch: payload.activitywatch,
+        outlookEmail: payload.outlook_email,
+        googleAccount: payload.google_account,
+        teamsAccount: payload.teams_account,
+        mattermostAccount: payload.mattermost_account,
+        jobTitle: payload.job_title,
+        birthdate: payload.birthdate,
+        floatDate: payload.float_date,
         windowsLicenseKey: payload.windows_license_key,
         isArchived: payload.is_archived,
         avatarUrl: payload.avatar_url,
@@ -309,6 +337,13 @@ export const EmployeeModel = {
       separationReason: payload.separation_reason,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
+      outlookEmail: payload.outlook_email,
+      googleAccount: payload.google_account,
+      teamsAccount: payload.teams_account,
+      mattermostAccount: payload.mattermost_account,
+      jobTitle: payload.job_title,
+      birthdate: payload.birthdate,
+      floatDate: payload.float_date,
       isArchived: payload.is_archived,
       avatarUrl: payload.avatar_url,
     };

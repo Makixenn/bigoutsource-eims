@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from 'clsx';
+﻿import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -8,16 +8,21 @@ export function cn(...inputs: ClassValue[]) {
 export function applySpecialShortcodes(value: string): string {
   if (typeof value !== 'string') return value;
   return value
-    .replace(/\[`a\]/g, 'á')
-    .replace(/\[`A\]/g, 'Á')
-    .replace(/\[`e\]/g, 'é')
-    .replace(/\[`E\]/g, 'É')
-    .replace(/\[`i\]/g, 'í')
-    .replace(/\[`I\]/g, 'Í')
-    .replace(/\[`o\]/g, 'ó')
-    .replace(/\[`O\]/g, 'Ó')
-    .replace(/\[`u\]/g, 'ú')
-    .replace(/\[`U\]/g, 'Ú')
-    .replace(/\[`n\]/g, 'ñ')
-    .replace(/\[`N\]/g, 'Ñ');
+    .replace(/\[`a\]/g, 'Ã¡')
+    .replace(/\[`A\]/g, 'Ã')
+    .replace(/\[`e\]/g, 'Ã©')
+    .replace(/\[`E\]/g, 'Ã‰')
+    .replace(/\[`i\]/g, 'Ã­')
+    .replace(/\[`I\]/g, 'Ã')
+    .replace(/\[`o\]/g, 'Ã³')
+    .replace(/\[`O\]/g, 'Ã“')
+    .replace(/\[`u\]/g, 'Ãº')
+    .replace(/\[`U\]/g, 'Ãš')
+    .replace(/\[`n\]/g, 'Ã±')
+    .replace(/\[`N\]/g, 'Ã‘');
+}
+
+export function isUUID(id: string): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }

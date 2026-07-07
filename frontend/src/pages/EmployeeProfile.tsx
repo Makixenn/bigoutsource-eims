@@ -36,7 +36,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
-import { applySpecialShortcodes, cn } from '@/src/lib/utils';
+import { applySpecialShortcodes, cn, isUUID } from '@/src/lib/utils';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
 import { siteService } from '@/src/services/siteService';
@@ -721,7 +721,9 @@ export default function EmployeeProfile() {
 
     if (!hasChanges) return;
 
-    if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
+    const missingCore = !form.firstName.trim() || !form.lastName.trim();
+    const missingHR = canEditHR && (!form.employeeNumber.trim() || !form.accountAssignment.trim() || !form.siteId);
+    if (missingCore || missingHR) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -1023,7 +1025,7 @@ export default function EmployeeProfile() {
                         </div>
 
                         <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
-                          {employee.employeeNumber || <span className="text-red-500 font-black">No ID</span>} | {employee.site || <span className="text-red-500 font-black">Unassigned</span>}
+                          {isUUID(employee.employeeNumber) ? <span className="text-[0.625rem] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Pending HR</span> : (employee.employeeNumber || <span className="text-red-500 font-black">No ID</span>)} | {employee.site || <span className="text-red-500 font-black">Unassigned</span>}
                         </p>
                       </motion.div>
                     )}
@@ -1189,65 +1191,7 @@ export default function EmployeeProfile() {
                         employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
-                    <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
-                      {editingIT ? (
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="flex-1">
-                            <Input
-                              value={form.boEmail}
-                              onChange={(value) => updateForm('boEmail', value)}
-                              placeholder={accountBasedPreviewPlaceholder}
-                            />
-                          </div>
-                          {isBoEmailEdited && (
-                            <button
-                              type="button"
-                              onClick={() => regenerateField('boEmail')}
-                              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                              title="Reset to generated default"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>
-                      )}
-                    </ProfileField>
-                    {canViewSecrets && (
-                    <ProfileField label="Email Default Password" icon={Key} editing={editingSecrets}>
-                      {editingSecrets ? (
-                        <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
-                      ) : (
-                        <div className="flex items-center justify-between gap-4 w-full">
-                          <span className="truncate overflow-hidden flex items-center">
-                            <AnimatePresence mode="popLayout" initial={false}>
-                              <motion.span
-                                key={showPassword ? 'visible' : 'hidden'}
-                                initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
-                                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
-                                transition={{ duration: 0.2 }}
-                                className="inline-block"
-                              >
-                                {showPassword ? employee.emailPassword || <span className="text-red-500 font-black">Not Assigned</span> : (employee.emailPassword ? '********' : <span className="text-red-500 font-black">Not Assigned</span>)}
-                              </motion.span>
-                            </AnimatePresence>
-                          </span>
-                          {employee.emailPassword && (
-                            <button
-                              type="button"
-                              onClick={togglePassword}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#4B5563] bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg hover:bg-[#F3F4F6] transition-colors shrink-0"
-                            >
-                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              {showPassword ? 'Hide' : 'Reveal'}
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </ProfileField>
-                    )}
+
                     <ProfileField label="LMS Account" icon={User} editing={editingHR}>
                       {editingHR ? (
                         <div className="flex items-center gap-2 w-full">
@@ -1431,64 +1375,158 @@ export default function EmployeeProfile() {
                 </ProfileSection>
 
                 {canViewIT && (
-                <ProfileSection icon={Globe} title="External Accounts" iconColorClass="text-emerald-600 bg-emerald-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
-                      {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" /> : employee.outlookEmail || <span className="text-red-500 font-black">Not Assigned</span>}
-                    </ProfileField>
-                    <ProfileField label="Google Account" icon={Mail} editing={editingIT}>
-                      {editingIT ? <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" /> : employee.googleAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                    </ProfileField>
-                    <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
-                      {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" /> : employee.teamsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                    </ProfileField>
-                    <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
-                      {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" /> : employee.mattermostAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                    </ProfileField>
-                  </div>
-                </ProfileSection>
-                )}
-
-                {canViewIT && (
-                <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
-                      {editingIT ? (
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="flex-1">
-                            <Input
-                              value={form.pcName}
-                              onChange={(value) => updateForm('pcName', value)}
-                              placeholder={accountBasedPreviewPlaceholder}
-                            />
-                          </div>
-                          {isPcNameEdited && (
-                            <button
-                              type="button"
-                              onClick={() => regenerateField('pcName')}
-                              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                              title="Reset to generated default"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
+                <ProfileSection icon={Laptop} title="IT INFORMATION" iconColorClass="text-purple-600 bg-purple-50" className="relative z-50">
+                  <div className="space-y-8">
+                    {/* Accounts */}
+                    <div>
+                      <h4 className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-4 pb-2 border-b border-[#F3F4F6]">Accounts</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
+                          {editingIT ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <div className="flex-1">
+                                <Input
+                                  value={form.boEmail}
+                                  onChange={(value) => updateForm('boEmail', value)}
+                                  placeholder={accountBasedPreviewPlaceholder}
+                                />
+                              </div>
+                              {isBoEmailEdited && (
+                                <button
+                                  type="button"
+                                  onClick={() => regenerateField('boEmail')}
+                                  className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                  title="Reset to generated default"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>
                           )}
-                        </div>
-                      ) : (
-                        employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
-                      )}
-                    </ProfileField>
-                    {canViewSecrets && (
-                    <ProfileField label="Remote ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
-                      {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
-                    </ProfileField>
-                    )}
-                  </div>
+                        </ProfileField>
+                        {canViewSecrets && (
+                        <ProfileField label="Email Default Password" icon={Key} editing={editingSecrets}>
+                          {editingSecrets ? (
+                            <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
+                          ) : (
+                            <div className="flex items-center justify-between gap-4 w-full">
+                              <span className="truncate overflow-hidden flex items-center">
+                                <AnimatePresence mode="popLayout" initial={false}>
+                                  <motion.span
+                                    key={showPassword ? 'visible' : 'hidden'}
+                                    initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
+                                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                    exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
+                                    transition={{ duration: 0.2 }}
+                                    className="inline-block"
+                                  >
+                                    {showPassword ? employee.emailPassword || <span className="text-red-500 font-black">Not Assigned</span> : (employee.emailPassword ? '********' : <span className="text-red-500 font-black">Not Assigned</span>)}
+                                  </motion.span>
+                                </AnimatePresence>
+                              </span>
+                              {employee.emailPassword && (
+                                <button
+                                  type="button"
+                                  onClick={togglePassword}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#4B5563] bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg hover:bg-[#F3F4F6] transition-colors shrink-0"
+                                >
+                                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  {showPassword ? 'Hide' : 'Reveal'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </ProfileField>
+                        )}
 
+                        <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
+                          {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" /> : employee.outlookEmail || <span className="text-red-500 font-black">Not Assigned</span>}
+                        </ProfileField>
+                        <ProfileField label="Google Account" icon={Mail} editing={editingIT}>
+                          {editingIT ? <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" /> : employee.googleAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                        </ProfileField>
+                        <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
+                          {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" /> : employee.teamsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                        </ProfileField>
+                        <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
+                          {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" /> : employee.mattermostAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                        </ProfileField>
+                      </div>
+                    </div>
+
+                    {/* Device Assets */}
+                    <div>
+                      <h4 className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-4 pb-2 border-b border-[#F3F4F6]">Device Assets</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
+                          {editingIT ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <div className="flex-1">
+                                <Input
+                                  value={form.pcName}
+                                  onChange={(value) => updateForm('pcName', value)}
+                                  placeholder={accountBasedPreviewPlaceholder}
+                                />
+                              </div>
+                              {isPcNameEdited && (
+                                <button
+                                  type="button"
+                                  onClick={() => regenerateField('pcName')}
+                                  className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                  title="Reset to generated default"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
+                          )}
+                        </ProfileField>
+                        {canViewSecrets && (
+                        <ProfileField label="Remote ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
+                          {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
+                        </ProfileField>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </ProfileSection>
                 )}
               </motion.div>
 
               <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8 relative z-50">
+                <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
+                  <div className="space-y-6">
+                    <ProfileField label="Birthdate" icon={Calendar} editing={editingHR} error={formErrors.birthdate as string}>
+                      {editingHR ? (
+                        <Input
+                          type="date"
+                          value={form.birthdate}
+                          max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
+                          onChange={(value) => updateForm('birthdate', value)}
+                          error={Boolean(formErrors.birthdate)}
+                        />
+                      ) : employee.birthdate ? new Date(employee.birthdate).toLocaleDateString() : 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="Phone Number" editing={editingHR} error={formErrors.phone}>
+                      {editingHR ? (
+                        <Input
+                          value={form.phone}
+                          onChange={(value) => updateForm('phone', value)}
+                          placeholder="e.g. 09123456789"
+                          error={Boolean(formErrors.phone)}
+                        />
+                      ) : employee.phone || 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="Address" editing={editingHR}>
+                      {editingHR ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
+                    </ProfileField>
+                  </div>
+                </ProfileSection>
+
                 {canViewIT && (
                 <ProfileSection icon={ShieldAlert} title="Security Compliance" compact iconColorClass="text-amber-600 bg-amber-50" className="relative z-50">
                   <div className="space-y-4">
@@ -1609,35 +1647,6 @@ export default function EmployeeProfile() {
                   </div>
                 </ProfileSection>
                 )}
-
-                <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
-                  <div className="space-y-6">
-                    <ProfileField label="Birthdate" icon={Calendar} editing={editingHR} error={formErrors.birthdate as string}>
-                      {editingHR ? (
-                        <Input
-                          type="date"
-                          value={form.birthdate}
-                          max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
-                          onChange={(value) => updateForm('birthdate', value)}
-                          error={Boolean(formErrors.birthdate)}
-                        />
-                      ) : employee.birthdate ? new Date(employee.birthdate).toLocaleDateString() : 'Not Assigned'}
-                    </ProfileField>
-                    <ProfileField label="Phone Number" editing={editingHR} error={formErrors.phone}>
-                      {editingHR ? (
-                        <Input
-                          value={form.phone}
-                          onChange={(value) => updateForm('phone', value)}
-                          placeholder="e.g. 09123456789"
-                          error={Boolean(formErrors.phone)}
-                        />
-                      ) : employee.phone || 'Not Assigned'}
-                    </ProfileField>
-                    <ProfileField label="Address" editing={editingHR}>
-                      {editingHR ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
-                    </ProfileField>
-                  </div>
-                </ProfileSection>
               </motion.div>
 
               {can('auditlogs.view') && (
