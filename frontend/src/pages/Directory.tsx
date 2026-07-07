@@ -1759,7 +1759,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
 
 
 
-                        {showITFields && (
+                        {showITFields && showHRFields && (
                           <div className="flex flex-col gap-5 max-h-[500px] overflow-y-auto pr-2">
                             <SectionCard title="Required Accounts" eyebrow="Manual">
                               <div className="flex flex-col gap-4">
@@ -1815,6 +1815,64 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               </div>
                             </SectionCard>
                           </div>
+                        )}
+
+                        {showITFields && !showHRFields && (
+                          <>
+                            <SectionCard title="Required Accounts" eyebrow="Manual">
+                              <div className="flex flex-col gap-4">
+                                <EditableGeneratedValue
+                                  label="Snappy Email"
+                                  value={form.boEmail}
+                                  onChange={(value) => updateForm('boEmail', value)}
+                                  onRegenerate={() => regenerateField('boEmail')}
+                                  isEdited={isBoEmailEdited}
+                                  placeholder="Pending generation"
+                                  error={formErrors.boEmail}
+                                  disabled={!can('employees.it.edit')}
+                                  required
+                                />
+
+                                <EditableGeneratedValue
+                                  label="LMS Account"
+                                  value={form.lmsAccount}
+                                  onChange={(value) => updateForm('lmsAccount', value)}
+                                  onRegenerate={() => regenerateField('lmsAccount')}
+                                  isEdited={isLmsAccountEdited}
+                                  placeholder="Pending generation"
+                                  error={formErrors.lmsAccount}
+                                  disabled={!can('employees.it.edit')}
+                                  required
+                                />
+
+                                <Field label="Email Default Password">
+                                  <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
+                                </Field>
+                              </div>
+                              {selectedAccountMissingCode && (
+                                <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-500">
+                                  This preview uses the suggested account code. Add a stored department code to this account before saving.
+                                </div>
+                              )}
+                            </SectionCard>
+
+                            <SectionCard title="Optional Accounts" eyebrow="Manual">
+                              <div className="grid grid-cols-1 gap-4">
+                                <Field label="Outlook Email (if applicable)">
+                                  <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" />
+                                </Field>
+                                <Field label="Google Account (if applicable)">
+                                  <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" />
+                                </Field>
+                                <Field label="Teams Account (if applicable)">
+                                  <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" />
+                                </Field>
+                                <Field label="Mattermost Account (if applicable)">
+                                  <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" />
+                                </Field>
+                              </div>
+                            </SectionCard>
+                          </>
                         )}
                       </div>
                     )}
@@ -1899,7 +1957,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                           </div>
                         </SectionCard>
 
-                        <div className="flex flex-col gap-5 max-h-[500px] overflow-y-auto pr-2">
+                        <div className={cn("flex flex-col gap-5", showHRFields && showITFields && "max-h-[500px] overflow-y-auto pr-2")}>
                           {showHRFields && (
                             <SectionCard title="Snapshot" eyebrow="Status">
                               <ReviewGrid
