@@ -11,33 +11,21 @@ export function sanitizeDepartmentCode(value = '') {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z]/g, '');
+    .replace(/[^a-z]/g, '')
+    .slice(0, 1);
 }
 
 export function suggestDepartmentCode(name = '') {
-  const words = String(name)
+  const clean = String(name)
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!words.length) return '';
-
-  // Try initials (capped at 4)
-  const initials = words
-    .map((w) => w.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
-    .join('');
-
-  if (initials.length >= 2) return initials.slice(0, 4);
-
-  // Fallback: first 2-4 letters of first word
-  const base = words[0].replace(/[^a-zA-Z]/g, '').toLowerCase();
-  return base.slice(0, Math.max(2, Math.min(4, base.length)));
+    .replace(/[^a-zA-Z]/g, '')
+    .toLowerCase();
+  return clean.charAt(0);
 }
 
 export function isValidDepartmentCode(code = '') {
-  return /^[a-z]{2,3}$/.test(String(code));
+  return /^[a-z]{1}$/.test(String(code));
 }
 
 const KNOWN_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', 'md', 'm.d.', 'phd', 'ph.d.', 'esq', 'esq.']);

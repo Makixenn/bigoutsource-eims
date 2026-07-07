@@ -59,9 +59,10 @@ function getRegistrationErrors({
   } else if (
     !normalizedEmail.endsWith('@bigoutsource.com') && 
     !normalizedEmail.endsWith('@outlook.com') && 
-    !normalizedEmail.endsWith('@bigoutsource.ph')
+    !normalizedEmail.endsWith('@bigoutsource.ph') &&
+    !normalizedEmail.endsWith('@outlook.ph')
   ) {
-    errors.email = 'Only @bigoutsource.com, @outlook.com, and @bigoutsource.ph emails are allowed.';
+    errors.email = 'Only @bigoutsource.com, @outlook.com, @bigoutsource.ph, and @outlook.ph emails are allowed.';
   }
 
   const missingPasswordRules = PASSWORD_RULES.filter((rule) => !rule.test(password)).map((rule) => rule.label.toLowerCase());

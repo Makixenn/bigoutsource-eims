@@ -466,10 +466,8 @@ function formatDraftTimestamp(value?: string | null) {
 }
 
 function suggestDepartmentCode(name = '') {
-  return name
-    .split(/\s+/)
-    .map((word) => word.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
-    .join('');
+  const clean = name.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  return clean.charAt(0);
 }
 
 const getCachedEmployeeCount = () => {

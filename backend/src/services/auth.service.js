@@ -60,9 +60,10 @@ export const AuthService = {
     if (
       !normalizedEmail.endsWith('@bigoutsource.com') && 
       !normalizedEmail.endsWith('@outlook.com') && 
-      !normalizedEmail.endsWith('@bigoutsource.ph')
+      !normalizedEmail.endsWith('@bigoutsource.ph') &&
+      !normalizedEmail.endsWith('@outlook.ph')
     ) {
-      throw new AppError('Only @bigoutsource.com, @outlook.com, and @bigoutsource.ph email addresses are allowed.', 400);
+      throw new AppError('Only @bigoutsource.com, @outlook.com, @bigoutsource.ph, and @outlook.ph email addresses are allowed.', 400);
     }
 
     const existingProfile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
