@@ -1055,8 +1055,15 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
     if ((requireAll || step === 0) && form.middleName) {
       if (/[[\]`]/u.test(form.middleName)) errors.middleName = 'Middle name contains incomplete shortcodes.';
     }
-    if (showHRFields && (requireAll || step === 0) && form.phone && form.phone.length !== 11) {
-      errors.phone = 'Phone number must be exactly 11 digits.';
+    if (showHRFields && (requireAll || step === 0)) {
+      if (!form.phone.trim()) {
+        errors.phone = 'Enter the employee phone number.';
+      } else if (form.phone.length !== 11) {
+        errors.phone = 'Phone number must be exactly 11 digits.';
+      }
+      if (!form.address.trim()) errors.address = 'Enter the employee address.';
+      if (!form.jobTitle.trim()) errors.jobTitle = 'Enter the employee job title.';
+      if (!form.birthdate) errors.birthdate = 'Enter the employee birthdate.';
     }
     if (showHRFields && (requireAll || step === 1) && !form.accountAssignment.trim()) {
       if (reqHRFields || canViewHR) errors.accountAssignment = 'Select an account or department before generating access.';
@@ -1678,12 +1685,12 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                             {showHRFields && (
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%] mt-[1px]">
-                                  <Field label="Job Title" error={formErrors.jobTitle as string}>
+                                  <Field label="Job Title" required error={formErrors.jobTitle as string}>
                                     <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
                                   </Field>
                                 </div>
                                 <div className="md:w-[48%]">
-                                  <Field label="Birthdate" error={formErrors.birthdate as string}>
+                                  <Field label="Birthdate" required error={formErrors.birthdate as string}>
                                     <Input type="date" value={form.birthdate} onChange={(value) => updateForm('birthdate', value)} max={getTodayDateInputValue()} />
                                   </Field>
                                 </div>
@@ -1693,9 +1700,9 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         </SectionCard>
 
                         {showHRFields && (
-                          <SectionCard title="Contact Details" eyebrow="Optional">
+                          <SectionCard title="Contact Details" eyebrow="Manual">
                             <div className="grid grid-cols-1 gap-4">
-                              <Field label="Phone Number" error={formErrors.phone}>
+                              <Field label="Phone Number" required error={formErrors.phone}>
                                 <Input
                                   value={form.phone}
                                   onChange={(value) => updateForm('phone', value)}
@@ -1703,8 +1710,8 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                   error={Boolean(formErrors.phone)}
                                 />
                               </Field>
-                              <Field label="Address">
-                                <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
+                              <Field label="Address" required error={formErrors.address}>
+                                <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" error={Boolean(formErrors.address)} />
                               </Field>
                             </div>
                           </SectionCard>
@@ -1746,47 +1753,14 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                   </AnimatePresence>
                                 </div>
                               </Field>
-                              <Field label="Email Default Password">
-                                <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
-                              </Field>
                             </div>
                           </SectionCard>
                         )}
 
-                        {showHRFields && !showITFields && (
-                          <SectionCard title="Generated Access" eyebrow="Auto">
-                            <div className="flex flex-col gap-4">
-                              <EditableGeneratedValue
-                                label="Snappy Email"
-                                value={form.boEmail}
-                                onChange={(value) => updateForm('boEmail', value)}
-                                onRegenerate={() => regenerateField('boEmail')}
-                                isEdited={isBoEmailEdited}
-                                placeholder="Pending generation"
-                                error={formErrors.boEmail}
-                                disabled={!can('employees.it.edit')}
-                              />
 
-                              <EditableGeneratedValue
-                                label="LMS Account"
-                                value={form.lmsAccount}
-                                onChange={(value) => updateForm('lmsAccount', value)}
-                                onRegenerate={() => regenerateField('lmsAccount')}
-                                isEdited={isLmsAccountEdited}
-                                placeholder="Pending generation"
-                                error={formErrors.lmsAccount}
-                              />
-                            </div>
-                            {selectedAccountMissingCode && (
-                              <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-500">
-                                This preview uses the suggested account code. Add a stored department code to this account before saving.
-                              </div>
-                            )}
-                          </SectionCard>
-                        )}
 
                         {showITFields && (
-                          <>
+                          <div className="flex flex-col gap-5 max-h-[500px] overflow-y-auto pr-2">
                             <SectionCard title="Required Accounts" eyebrow="Manual">
                               <div className="flex flex-col gap-4">
                                 <EditableGeneratedValue
@@ -1840,7 +1814,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </Field>
                               </div>
                             </SectionCard>
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
@@ -1925,49 +1899,51 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                           </div>
                         </SectionCard>
 
-                        {showHRFields && (
-                          <SectionCard title="Snapshot" eyebrow="Status">
-                            <ReviewGrid
-                              items={[
-                                ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
-                                ['Employee ID', form.employeeNumber || 'Not entered'],
-                                ['Account', form.accountAssignment || 'Not selected'],
-                                ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
-                              ]}
-                            />
-                          </SectionCard>
-                        )}
+                        <div className="flex flex-col gap-5 max-h-[500px] overflow-y-auto pr-2">
+                          {showHRFields && (
+                            <SectionCard title="Snapshot" eyebrow="Status">
+                              <ReviewGrid
+                                items={[
+                                  ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
+                                  ['Employee ID', form.employeeNumber || 'Not entered'],
+                                  ['Account', form.accountAssignment || 'Not selected'],
+                                  ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
+                                ]}
+                              />
+                            </SectionCard>
+                          )}
 
-                        {showITFields && (
-                          <SectionCard title="Device Information" eyebrow="Manual">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                              <Field label="PC Name">
-                                <Input value={form.pcName} onChange={(v) => updateForm('pcName', v)} placeholder="e.g. IT-DEV-01" />
-                              </Field>
-                              <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
-                                <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="e.g. 123 456 789" />
-                              </Field>
-                              <Field label="Windows License Key" error={formErrors.windowsKey}>
-                                <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                              </Field>
-                              <Field label="BIOS Date">
-                                <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} max={getTodayDateInputValue()} />
-                              </Field>
-                              <Field label="ESET Status">
-                                <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v as any)}>
-                                  <option value="active">Active</option>
-                                  <option value="inactive">Inactive</option>
-                                </Select>
-                              </Field>
-                              <Field label="ActivityWatch">
-                                <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v as any)}>
-                                  <option value="installed">Installed</option>
-                                  <option value="missing">Missing</option>
-                                </Select>
-                              </Field>
-                            </div>
-                          </SectionCard>
-                        )}
+                          {showITFields && (
+                            <SectionCard title="Device Information" eyebrow="Manual">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <Field label="PC Name">
+                                  <Input value={form.pcName} onChange={(v) => updateForm('pcName', v)} placeholder="e.g. IT-DEV-01" />
+                                </Field>
+                                <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
+                                  <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="e.g. 123 456 789" />
+                                </Field>
+                                <Field label="Windows License Key" error={formErrors.windowsKey}>
+                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                                </Field>
+                                <Field label="BIOS Date">
+                                  <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} max={getTodayDateInputValue()} />
+                                </Field>
+                                <Field label="ESET Status">
+                                  <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v as any)}>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                  </Select>
+                                </Field>
+                                <Field label="ActivityWatch">
+                                  <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v as any)}>
+                                    <option value="installed">Installed</option>
+                                    <option value="missing">Missing</option>
+                                  </Select>
+                                </Field>
+                              </div>
+                            </SectionCard>
+                          )}
+                        </div>
                       </div>
                     )}
 
