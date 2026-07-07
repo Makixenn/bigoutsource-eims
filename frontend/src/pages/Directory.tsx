@@ -1055,14 +1055,15 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
       if (/[[\]`]/u.test(form.middleName)) errors.middleName = 'Middle name contains incomplete shortcodes.';
     }
     if (showHRFields && (requireAll || step === 0)) {
-      if (!form.phone.trim()) {
-        errors.phone = 'Enter the employee phone number.';
-      } else if (form.phone.length !== 11) {
+      if (reqHRFields) {
+        if (!form.phone.trim()) errors.phone = 'Enter the employee phone number.';
+        if (!form.address.trim()) errors.address = 'Enter the employee address.';
+        if (!form.jobTitle.trim()) errors.jobTitle = 'Enter the employee job title.';
+        if (!form.birthdate) errors.birthdate = 'Enter the employee birthdate.';
+      }
+      if (form.phone.trim() && form.phone.length !== 11) {
         errors.phone = 'Phone number must be exactly 11 digits.';
       }
-      if (!form.address.trim()) errors.address = 'Enter the employee address.';
-      if (!form.jobTitle.trim()) errors.jobTitle = 'Enter the employee job title.';
-      if (!form.birthdate) errors.birthdate = 'Enter the employee birthdate.';
     }
     if (showHRFields && (requireAll || step === 1) && !form.accountAssignment.trim()) {
       if (reqHRFields || canViewHR) errors.accountAssignment = 'Select an account or department before generating access.';
@@ -1684,12 +1685,12 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                             {showHRFields && (
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%] mt-[1px]">
-                                  <Field label="Job Title" required error={formErrors.jobTitle as string}>
+                                  <Field label="Job Title" required={reqHRFields} error={formErrors.jobTitle as string}>
                                     <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
                                   </Field>
                                 </div>
                                 <div className="md:w-[48%]">
-                                  <Field label="Birthdate" required error={formErrors.birthdate as string}>
+                                  <Field label="Birthdate" required={reqHRFields} error={formErrors.birthdate as string}>
                                     <Input type="date" value={form.birthdate} onChange={(value) => updateForm('birthdate', value)} max={getTodayDateInputValue()} />
                                   </Field>
                                 </div>
@@ -1701,7 +1702,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         {showHRFields && (
                           <SectionCard title="Contact Details" eyebrow="Manual">
                             <div className="grid grid-cols-1 gap-4">
-                              <Field label="Phone Number" required error={formErrors.phone}>
+                              <Field label="Phone Number" required={reqHRFields} error={formErrors.phone}>
                                 <Input
                                   value={form.phone}
                                   onChange={(value) => updateForm('phone', value)}
@@ -1709,7 +1710,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                   error={Boolean(formErrors.phone)}
                                 />
                               </Field>
-                              <Field label="Address" required error={formErrors.address}>
+                              <Field label="Address" required={reqHRFields} error={formErrors.address}>
                                 <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" error={Boolean(formErrors.address)} />
                               </Field>
                             </div>

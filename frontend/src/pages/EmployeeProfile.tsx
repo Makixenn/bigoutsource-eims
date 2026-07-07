@@ -1200,31 +1200,6 @@ export default function EmployeeProfile() {
                       )}
                     </ProfileField>
 
-                    <ProfileField label="LMS Account" icon={User} editing={editingHR}>
-                      {editingHR ? (
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="flex-1">
-                            <Input
-                              value={form.lmsAccount}
-                              onChange={(value) => updateForm('lmsAccount', value)}
-                              placeholder="Generated after name is entered"
-                            />
-                          </div>
-                          {isLmsAccountEdited && (
-                            <button
-                              type="button"
-                              onClick={() => regenerateField('lmsAccount')}
-                              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                              title="Reset to generated default"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>
-                      )}
-                    </ProfileField>
                     <ProfileField label="Employee Status" icon={ShieldCheck} editing={editingHR}>
                       {editingHR ? (
                         <select
@@ -1457,6 +1432,32 @@ export default function EmployeeProfile() {
                           )}
                         </ProfileField>
                         )}
+
+                        <ProfileField label="LMS Account" icon={User} editing={editingIT}>
+                          {editingIT ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <div className="flex-1">
+                                <Input
+                                  value={form.lmsAccount}
+                                  onChange={(value) => updateForm('lmsAccount', value)}
+                                  placeholder="Generated after name is entered"
+                                />
+                              </div>
+                              {isLmsAccountEdited && (
+                                <button
+                                  type="button"
+                                  onClick={() => regenerateField('lmsAccount')}
+                                  className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                  title="Reset to generated default"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>
+                          )}
+                        </ProfileField>
 
                         <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
                           {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" /> : employee.outlookEmail || <span className="text-red-500 font-black">Not Assigned</span>}
