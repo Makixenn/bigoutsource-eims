@@ -9,6 +9,7 @@ export interface Employee {
   address: string;
   site: string;
   status: EmployeeStatus;
+  employeeStatus?: 'Regular' | 'Probationary' | 'Fix-Term' | string;
   accountAssignment: string;
   boEmail: string;
   lmsAccount: string;

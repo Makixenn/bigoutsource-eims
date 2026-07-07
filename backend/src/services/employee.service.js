@@ -27,6 +27,7 @@ const trackedFields = [
   'lmsAccount',
   'site',
   'status',
+  'employeeStatus',
   'pcName',
   'dateHired',
   'biosDate',

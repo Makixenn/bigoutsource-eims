@@ -84,6 +84,7 @@ type AddEmployeeForm = {
   emailPassword: string;
   lmsAccount: string;
   status: 'active' | 'inactive' | 'floating' | 'separated';
+  employeeStatus: 'Regular' | 'Probationary' | 'Fix-Term' | string;
   siteId: string;
   siteName: string;
   pcName: string;
@@ -1895,11 +1896,14 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Status">
-                              <Select value={form.status} onChange={(value) => updateForm('status', value as 'active' | 'inactive' | 'floating' | 'separated')}>
-                                <option value="active">Active</option>
-                                <option value="floating">Floating</option>
-                                <option value="separated">Separated</option>
+                            <Field label="Employee Status">
+                              <Select value={form.employeeStatus || 'Regular'} onChange={(value) => {
+                                updateForm('employeeStatus', value);
+                                updateForm('status', 'active');
+                              }}>
+                                <option value="Regular">Regular</option>
+                                <option value="Probationary">Probationary</option>
+                                <option value="Fix-Term">Fix-Term</option>
                               </Select>
                             </Field>
                             {showHRFields && (
@@ -2138,11 +2142,14 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Status">
-                              <Select value={form.status} onChange={(value) => updateForm('status', value as 'active' | 'inactive' | 'floating' | 'separated')}>
-                                <option value="active">Active</option>
-                                <option value="floating">Floating</option>
-                                <option value="separated">Separated</option>
+                            <Field label="Employee Status">
+                              <Select value={form.employeeStatus || 'Regular'} onChange={(value) => {
+                                updateForm('employeeStatus', value);
+                                updateForm('status', 'active');
+                              }}>
+                                <option value="Regular">Regular</option>
+                                <option value="Probationary">Probationary</option>
+                                <option value="Fix-Term">Fix-Term</option>
                               </Select>
                             </Field>
                             {showHRFields && (
