@@ -35,7 +35,7 @@ export const AccountService = {
 
     if (!departmentCode) throw new AppError('departmentCode is required', 400);
     if (!isValidDepartmentCode(departmentCode)) {
-      throw new AppError('Department code must be 2–3 lowercase letters only', 400);
+      throw new AppError('Department code must be 1 lowercase letter only', 400);
     }
 
     const existingCode = await AccountModel.findByDepartmentCode(departmentCode);
@@ -80,7 +80,7 @@ export const AccountService = {
 
     if (!departmentCode) throw new AppError('departmentCode is required', 400);
     if (!isValidDepartmentCode(departmentCode)) {
-      throw new AppError('Department code must be 2–3 lowercase letters only', 400);
+      throw new AppError('Department code must be 1 lowercase letter only', 400);
     }
 
     const existingCode = await AccountModel.findByDepartmentCode(departmentCode);

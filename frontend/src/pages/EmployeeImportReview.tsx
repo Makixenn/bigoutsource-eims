@@ -73,26 +73,16 @@ type DeleteIntent = {
 const siteOptions = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
 
 function suggestDepartmentCode(name = ''): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return '';
-
-  const initials = words
-    .map((w) => w.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
-    .filter(Boolean)
-    .join('');
-
-  if (initials.length >= 2) return initials.slice(0, 3);
-
-  const base = (words[0].replace(/[^a-zA-Z]/g, '') || '').toLowerCase();
-  return base.slice(0, Math.max(2, Math.min(3, base.length)));
+  const clean = name.trim().replace(/[^a-zA-Z]/g, '').toLowerCase();
+  return clean.charAt(0);
 }
 
 function sanitizeDepartmentCode(value = ''): string {
-  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3);
+  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 1);
 }
 
 function isValidDepartmentCode(code: string): boolean {
-  return /^[a-z]{2,3}$/.test(code);
+  return /^[a-z]{1}$/.test(code);
 }
 
 const importReviewCache: {
