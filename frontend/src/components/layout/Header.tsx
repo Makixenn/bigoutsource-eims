@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Bell, Loader2, ShieldAlert, UserPlus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { settingsService } from '@/src/features/settings/services/settingsService';
@@ -96,6 +97,7 @@ export function Header({ title, backFallback }: { title: string, backFallback?: 
 }
 
 function NotificationBell() {
+  const queryClient = useQueryClient();
   const { can } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -153,7 +155,13 @@ function NotificationBell() {
           unreadIds.has(String(notification.id)) ? { ...notification, readAt: notification.readAt || new Date().toISOString() } : notification
         )
       );
-      notificationService.markAllRead().catch(() => {});
+      notificationService.markAllRead().then(() => {
+        queryClient.setQueryData(['notifications', { limit: 30, refreshTrigger }], (old: any[]) => {
+          if (!old) return [];
+          return old.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() }));
+        });
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      }).catch(() => {});
     } else {
       setActiveEmployeeNotificationIds(new Set());
     }
@@ -169,6 +177,8 @@ function NotificationBell() {
 
     try {
       await notificationService.clearAll();
+      queryClient.setQueryData(['notifications', { limit: 30, refreshTrigger }], () => []);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     } catch (error) {
       setEmployeeNotifications(previousNotifications);
     } finally {
@@ -178,14 +188,18 @@ function NotificationBell() {
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const handleRealtimeChange = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   useRealtimeSubscription({
     table: 'notifications',
-    onChange: () => setRefreshTrigger(prev => prev + 1)
+    onChange: handleRealtimeChange
   });
 
   useRealtimeSubscription({
     table: 'user_profiles',
-    onChange: () => setRefreshTrigger(prev => prev + 1)
+    onChange: handleRealtimeChange
   });
 
   const { data: fetchedUsers = [], isLoading: isUsersLoading } = useUsersQuery({ refreshTrigger });
