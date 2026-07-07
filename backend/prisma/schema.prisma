@@ -41,6 +41,7 @@ model Employee {
   emailPassword     String   @default("") @map("email_password")
   lmsAccount        String   @default("") @map("lms_account")
   status            String   @default("active")
+  employeeStatus    String   @default("Regular") @map("employee_status")
   site              String   @default("")
   pcName            String   @default("") @map("pc_name")
   biosDate          String   @default("") @map("bios_date")

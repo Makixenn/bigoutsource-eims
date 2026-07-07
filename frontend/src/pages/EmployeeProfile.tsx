@@ -69,6 +69,7 @@ type EmployeeForm = {
   emailPassword: string;
   lmsAccount: string;
   status: 'active' | 'inactive' | 'separated' | 'floating';
+  employeeStatus: 'Regular' | 'Probationary' | 'Fix-Term' | string;
   siteId: string;
   site: string;
   pcName: string;
@@ -105,6 +106,7 @@ const emptyEmployee: EmployeeForm = {
   emailPassword: '',
   lmsAccount: '',
   status: 'active',
+  employeeStatus: 'Regular',
   siteId: '',
   site: '',
   pcName: '',
@@ -139,6 +141,7 @@ const editableFields: Array<keyof EmployeeForm> = [
   'boEmail',
   'emailPassword',
   'status',
+  'employeeStatus',
   'siteId',
   'pcName',
   'biosDate',
@@ -398,6 +401,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     emailPassword: emp?.emailPassword || '',
     lmsAccount: emp?.lmsAccount || generateLmsAccount(formatEmployeeName(nameParts.firstName, nameParts.middleName, nameParts.lastName, '')) || '',
     status: emp?.status || 'active',
+    employeeStatus: emp?.employeeStatus || 'Regular',
     siteId: emp?.siteId === 'HQ' ? 'HQ' : emp?.siteId || '',
     site: emp?.site === 'HQ' ? 'HQ' : emp?.site || '',
     pcName: emp?.pcName || '',
@@ -809,16 +813,20 @@ export default function EmployeeProfile() {
 
     try {
       const newValue = !employee.isArchived;
-
+      const isFloating = newValue && archiveStatusReason === 'floating';
+      const isSeparated = newValue && archiveStatusReason === 'separated';
+      
       const updated = await employeeService.update(id, { 
         is_archived: newValue,
         status: newValue ? archiveStatusReason : 'active',
         ...(newValue ? { 
           separation_reason: archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason, 
-          separation_date: archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : new Date().toISOString()
+          separation_date: isSeparated && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null,
+          floatDate: isFloating && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null,
         } : {
           separation_reason: null,
-          separation_date: null
+          separation_date: null,
+          floatDate: null,
         })
       });
 
@@ -1088,19 +1096,19 @@ export default function EmployeeProfile() {
                             setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
                             setArchiveStatusReason((form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated');
                             
-                            const predefinedReasons = ['The Department/Campaign. has been removed', 'Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'AWOL', 'Retirement', 'End of Contract'];
+                            const predefinedReasons = ['Resigned', 'AWOL', 'Terminated'];
                             const currentReason = form.separationReason || employee.separationReason;
-                            if (currentReason) {
-                              if (predefinedReasons.includes(currentReason)) {
+                            const initialStatus = (form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated';
+                            
+                            if (initialStatus === 'separated') {
+                              if (currentReason && predefinedReasons.includes(currentReason)) {
                                 setArchiveSeparationReason(currentReason);
-                                setArchiveSeparationReasonOther('');
                               } else {
-                                setArchiveSeparationReason('Other');
-                                setArchiveSeparationReasonOther(currentReason);
+                                setArchiveSeparationReason('Resigned');
                               }
+                              setArchiveSeparationReasonOther('');
                             } else {
-                              const initialStatus = (form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated';
-                              setArchiveSeparationReason(initialStatus === 'floating' ? 'The Department/Campaign. has been removed' : 'Voluntary Separation (Resignation)');
+                              setArchiveSeparationReason(currentReason || '');
                               setArchiveSeparationReasonOther('');
                             }
 
@@ -1217,13 +1225,19 @@ export default function EmployeeProfile() {
                         employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
-                    <ProfileField label="Status" icon={ShieldCheck} editing={editingHR}>
+                    <ProfileField label="Employee Status" icon={ShieldCheck} editing={editingHR}>
                       {editingHR ? (
-                        <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] cursor-not-allowed opacity-70">
-                          {formatStatus(form.status)}
-                        </div>
+                        <select
+                          value={form.employeeStatus || 'Regular'}
+                          onChange={(e) => updateForm('employeeStatus', e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all appearance-none cursor-pointer"
+                        >
+                          <option value="Regular">Regular</option>
+                          <option value="Probationary">Probationary</option>
+                          <option value="Fix-Term">Fix-Term</option>
+                        </select>
                       ) : (
-                        formatStatus(employee.status)
+                        employee.employeeStatus || 'Regular'
                       )}
                     </ProfileField>
                     <ProfileField label="Site" icon={MapPin} editing={editingHR}>
@@ -1315,7 +1329,7 @@ export default function EmployeeProfile() {
                       </ProfileField>
                     )}
 
-                    {(form.status === 'inactive' || form.status === 'separated' || form.status === 'floating') && (
+                    {(form.status === 'inactive' || form.status === 'separated') && (
                       <>
                         <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
                           {editingHR ? (
@@ -1330,12 +1344,17 @@ export default function EmployeeProfile() {
                             employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
                           )}
                         </ProfileField>
-                        <ProfileField label="Separation Reason" icon={Info} editing={editingHR}>
+                      </>
+                    )}
+                    
+                    {(form.status === 'inactive' || form.status === 'separated' || form.status === 'floating') && (
+                      <>
+                        <ProfileField label={form.status === 'floating' ? "Float Reason" : "Separation Reason"} icon={Info} editing={editingHR}>
                           {editingHR ? (
                             <div className="flex flex-col gap-2 w-full">
                               <select
                                 value={
-                                  ['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract'].includes(form.separationReason)
+                                  ['Resigned', 'AWOL', 'Terminated'].includes(form.separationReason)
                                     ? form.separationReason
                                     : form.separationReason ? 'Other' : ''
                                 }
@@ -1344,20 +1363,18 @@ export default function EmployeeProfile() {
                                   if (val !== 'Other') {
                                     updateForm('separationReason', val);
                                   } else {
-                                    // Set to a placeholder or leave as current if they choose Other
                                     updateForm('separationReason', 'Other (Please specify)');
                                   }
                                 }}
-                                className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-[#111827] outline-none appearance-none"
+                                className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-[#111827] outline-none appearance-none cursor-pointer"
                               >
                                 <option value="" disabled>Select Reason</option>
-                                <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
-                                <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
-                                <option value="Retirement">Retirement</option>
-                                <option value="End of Contract">End of Contract</option>
+                                <option value="Resigned">Resigned</option>
+                                <option value="AWOL">AWOL</option>
+                                <option value="Terminated">Terminated</option>
                                 <option value="Other">Other</option>
                               </select>
-                              {(!['Voluntary Separation (Resignation)', 'Involuntary Separation (Termination)', 'Retirement', 'End of Contract', ''].includes(form.separationReason)) && (
+                              {(!['Resigned', 'AWOL', 'Terminated', ''].includes(form.separationReason)) && (
                                 <Input
                                   value={form.separationReason === 'Other (Please specify)' ? '' : form.separationReason}
                                   onChange={(value) => updateForm('separationReason', value)}
@@ -1833,9 +1850,9 @@ export default function EmployeeProfile() {
                           const newStatus = e.target.value as 'separated' | 'floating';
                           setArchiveStatusReason(newStatus);
                           if (newStatus === 'separated') {
-                            setArchiveSeparationReason('Voluntary Separation (Resignation)');
+                            setArchiveSeparationReason('Resigned');
                           } else {
-                            setArchiveSeparationReason('The Department/Campaign. has been removed');
+                            setArchiveSeparationReason('');
                           }
                           setArchiveSeparationReasonOther('');
                         }}
@@ -1850,38 +1867,24 @@ export default function EmployeeProfile() {
 
                         <div className="mt-4 animate-in fade-in slide-in-from-top-2">
                           <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Archiving</label>
-                          <select
-                            value={archiveSeparationReason}
-                            onChange={(e) => setArchiveSeparationReason(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
-                          >
-                            {archiveStatusReason === 'separated' ? (
-                              <>
-                                <option value="Voluntary Separation (Resignation)">Voluntary Separation (Resignation)</option>
-                                <option value="Involuntary Separation (Termination)">Involuntary Separation (Termination)</option>
-                                <option value="AWOL">AWOL</option>
-                                <option value="Retirement">Retirement</option>
-                                <option value="End of Contract">End of Contract</option>
-                                <option value="Other">Other</option>
-                              </>
-                            ) : (
-                              <>
-                                <option value="The Department/Campaign. has been removed">The Department/Campaign. has been removed</option>
-                                <option value="Other">Other</option>
-                              </>
-                            )}
-                          </select>
-
-                          {archiveSeparationReason === 'Other' && (
-                            <div className="mt-3 animate-in fade-in slide-in-from-top-2">
-                              <input
-                                type="text"
-                                placeholder="Please specify the reason..."
-                                value={archiveSeparationReasonOther}
-                                onChange={(e) => setArchiveSeparationReasonOther(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
-                              />
-                            </div>
+                          {archiveStatusReason === 'separated' ? (
+                            <select
+                              value={archiveSeparationReason}
+                              onChange={(e) => setArchiveSeparationReason(e.target.value)}
+                              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                            >
+                              <option value="Resigned">Resigned</option>
+                              <option value="AWOL">AWOL</option>
+                              <option value="Terminated">Terminated</option>
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="Please specify the reason..."
+                              value={archiveSeparationReason}
+                              onChange={(e) => setArchiveSeparationReason(e.target.value)}
+                              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                            />
                           )}
 
                           <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Date</label>
@@ -1913,7 +1916,7 @@ export default function EmployeeProfile() {
                 <button
                   type="button"
                   onClick={toggleArchiveEmployee}
-                  disabled={isArchiving}
+                  disabled={isArchiving || (archiveIntent === 'archive' && archiveStatusReason === 'floating' && (!archiveSeparationReason.trim() || !archiveSeparationDate))}
                   className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
                       ? 'bg-green-600 hover:bg-green-700'
                       : 'bg-red-600 hover:bg-red-700'
