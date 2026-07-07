@@ -1916,7 +1916,7 @@ export default function EmployeeProfile() {
                 <button
                   type="button"
                   onClick={toggleArchiveEmployee}
-                  disabled={isArchiving || (archiveIntent === 'archive' && archiveStatusReason === 'floating' && (!archiveSeparationReason.trim() || !archiveSeparationDate))}
+                  disabled={isArchiving || (archiveIntent === 'archive' && (!archiveSeparationReason.trim() || !archiveSeparationDate))}
                   className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
                       ? 'bg-green-600 hover:bg-green-700'
                       : 'bg-red-600 hover:bg-red-700'
