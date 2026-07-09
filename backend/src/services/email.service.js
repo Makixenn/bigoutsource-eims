@@ -40,4 +40,36 @@ export const EmailService = {
       throw new Error('Failed to send verification email');
     }
   },
+
+  async sendPasswordSetupEmail(toEmail, token) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const setupLink = `${frontendUrl}/setup-password?token=${token}`;
+    try {
+      const info = await transporter.sendMail({
+        from: process.env.SMTP_USER ? `"BigOutsource EIMS" <${process.env.SMTP_USER}>` : '"BigOutsource EIMS" <no-reply@bigoutsource.com>',
+        to: toEmail,
+        subject: 'Set Up Your BigOutsource EIMS Account Password',
+        text: `Welcome to BigOutsource EIMS!\n\nPlease use the following link to set up your account password:\n${setupLink}\n\nThis setup link is for one-time use only.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #111827;">
+            <h2 style="color: #1f6fa0;">Welcome to BigOutsource EIMS</h2>
+            <p>Your account has been created by an administrator. Please set your password to activate your access.</p>
+            <div style="margin: 25px 0;">
+              <a href="${setupLink}" style="background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Set Up Password
+              </a>
+            </div>
+            <p style="font-size: 12px; color: #6B7280;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="font-size: 12px; color: #6B7280; word-break: break-all;">${setupLink}</p>
+            <p style="font-size: 12px; color: #6B7280; margin-top: 20px;">This setup link can only be used once.</p>
+          </div>
+        `,
+      });
+      console.log('Password setup email sent: %s', info.messageId);
+      return info;
+    } catch (error) {
+      console.error('Failed to send password setup email:', error);
+      throw new Error('Failed to send registration/setup email');
+    }
+  }
 };

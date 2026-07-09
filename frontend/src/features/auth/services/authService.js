@@ -79,4 +79,15 @@ export const authService = {
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
+
+  verifySetupPasswordToken(token) {
+    return apiRequest(`/auth/setup-password/verify?token=${encodeURIComponent(token)}`);
+  },
+
+  setupPassword(token, password) {
+    return apiRequest('/auth/setup-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
 };

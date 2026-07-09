@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { AuthController } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
-import { changePasswordValidator, loginValidator, registerValidator } from '../utils/auth.validator.js';
+import { changePasswordValidator, loginValidator, registerValidator, setupPasswordValidator } from '../utils/auth.validator.js';
 
 const router = Router();
 
@@ -24,6 +24,9 @@ router.get('/internal-departments', AuthController.internalDepartments);
 router.get('/me', authenticate, AuthController.me);
 router.post('/logout', authenticate, AuthController.logout);
 router.put('/password', authenticate, validate(changePasswordValidator), AuthController.changePassword);
+
+router.get('/setup-password/verify', AuthController.verifySetupPasswordToken);
+router.post('/setup-password', validate(setupPasswordValidator), AuthController.setupPassword);
 
 
 export default router;

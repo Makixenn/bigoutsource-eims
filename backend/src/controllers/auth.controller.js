@@ -77,4 +77,22 @@ export const AuthController = {
     }
   },
 
+  async verifySetupPasswordToken(req, res, next) {
+    try {
+      const data = await AuthService.verifySetupPasswordToken(req.query.token);
+      return success(res, data, 'Token verification complete');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async setupPassword(req, res, next) {
+    try {
+      const data = await AuthService.setupPassword(req.body);
+      return success(res, data, 'Password setup initialized');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
 };

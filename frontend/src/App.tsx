@@ -24,6 +24,7 @@ const Reports = React.lazy(() => import('./pages/Reports'));
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeImportReview = React.lazy(() => import('./pages/EmployeeImportReview'));
+const SetupPassword = React.lazy(() => import('./pages/SetupPassword'));
 
 import { QueryProvider } from './providers/QueryProvider';
 
@@ -37,6 +38,7 @@ export default function App() {
         <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/setup-password" element={<SetupPassword />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Dashboard />} />
