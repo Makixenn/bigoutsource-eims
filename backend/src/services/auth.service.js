@@ -179,7 +179,10 @@ export const AuthService = {
           const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
             expiresIn: '30m',
           });
-          return { token, user: await publicUser(profile) };
+          const refreshToken = jwt.sign({ id: profile.id, type: 'refresh' }, process.env.JWT_SECRET, {
+            expiresIn: '12h',
+          });
+          return { token, refreshToken, user: await publicUser(profile) };
         }
       } catch (err) {
         // Ignore invalid/expired trusted token
@@ -225,12 +228,17 @@ export const AuthService = {
       expiresIn: '30m',
     });
 
+    const refreshToken = jwt.sign({ id: profile.id, type: 'refresh' }, process.env.JWT_SECRET, {
+      expiresIn: '12h',
+    });
+
     const trustedDeviceToken = jwt.sign({ id: profile.id, mfaTrusted: true }, process.env.JWT_SECRET, {
-      expiresIn: '30m',
+      expiresIn: '30d',
     });
 
     return {
       token,
+      refreshToken,
       trustedDeviceToken,
       user: await publicUser(profile),
     };
@@ -272,6 +280,29 @@ export const AuthService = {
 
   async me(user) {
     return publicUser(user);
+  },
+
+  async refreshSession({ refreshToken }) {
+    if (!refreshToken) throw new AppError('Refresh token required', 400);
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    } catch (err) {
+      throw new AppError('Invalid or expired refresh token', 401);
+    }
+
+    if (decoded.type !== 'refresh') {
+      throw new AppError('Invalid token type', 401);
+    }
+
+    const profile = await assertActiveProfile(decoded.id);
+
+    const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+      expiresIn: '30m',
+    });
+
+    return { token, user: await publicUser(profile) };
   },
 
   async changePassword(user, { currentPassword, newPassword }) {
