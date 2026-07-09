@@ -21,6 +21,7 @@ router.post('/login', loginLimiter, validate(loginValidator), AuthController.log
 router.post('/login/mfa', loginLimiter, AuthController.loginMfa);
 router.post('/login/mfa/resend', loginLimiter, AuthController.resendLoginMfa);
 router.get('/internal-departments', AuthController.internalDepartments);
+router.post('/refresh', AuthController.refreshSession);
 router.get('/me', authenticate, AuthController.me);
 router.post('/logout', authenticate, AuthController.logout);
 router.put('/password', authenticate, validate(changePasswordValidator), AuthController.changePassword);

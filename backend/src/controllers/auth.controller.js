@@ -65,6 +65,15 @@ export const AuthController = {
     }
   },
 
+  async refreshSession(req, res, next) {
+    try {
+      const data = await AuthService.refreshSession(req.body);
+      return success(res, data, 'Session refreshed');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async logout(req, res) {
     return success(res, null, 'Logged out');
   },
