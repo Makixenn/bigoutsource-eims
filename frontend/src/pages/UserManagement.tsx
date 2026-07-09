@@ -17,6 +17,7 @@ import { RolesPanel } from '@/src/features/settings/components/RolesPanel';
 import { CapabilityChecklist } from '@/src/features/settings/components/CapabilityChecklist';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 import { useUsersQuery } from '@/src/hooks/queries';
+import { PASSWORD_RULES } from '@/src/lib/utils';
 
 const EDITABLE_ACCOUNT_STATUSES = [
   { value: 'active' as const, label: 'Active' },
@@ -1404,8 +1405,14 @@ export default function UserManagement() {
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!newPassword || newPassword.length < 8) {
-                        toast.error('Password must be at least 8 characters long');
+                      if (!newPassword) {
+                        toast.error('Password is required');
+                        return;
+                      }
+
+                      const missingRules = PASSWORD_RULES.filter((rule) => !rule.test(newPassword)).map((rule) => rule.label.toLowerCase());
+                      if (missingRules.length > 0) {
+                        toast.error(`Password must include ${missingRules.join(', ')}.`);
                         return;
                       }
                       setIsUpdatingPassword(true);
@@ -1420,7 +1427,7 @@ export default function UserManagement() {
                         setIsUpdatingPassword(false);
                       }
                     }}
-                    disabled={isUpdatingPassword || !newPassword || newPassword.length < 8}
+                    disabled={isUpdatingPassword || !newPassword || PASSWORD_RULES.some(rule => !rule.test(newPassword))}
                     className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-[#374151] disabled:opacity-60"
                   >
                     {isUpdatingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}

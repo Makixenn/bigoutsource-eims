@@ -20,5 +20,21 @@ export const registerValidator = {
 
 export const changePasswordValidator = {
   currentPassword: { required: true, type: 'string', min: 1 },
-  newPassword: { required: true, type: 'string', min: 12 },
+  newPassword: { 
+    required: true, 
+    type: 'string', 
+    min: 12,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
+    message: 'password must include uppercase, lowercase, number, and special character',
+  },
+};
+
+export const changeUserPasswordValidator = {
+  newPassword: { 
+    required: true, 
+    type: 'string', 
+    min: 12,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
+    message: 'password must include uppercase, lowercase, number, and special character',
+  },
 };

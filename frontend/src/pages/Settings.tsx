@@ -27,15 +27,9 @@ import { AppUser } from '@/src/types';
 import { authService } from '@/src/features/auth/services/authService';
 import { settingsService } from '@/src/features/settings/services/settingsService';
 import { userService } from '@/src/services/userService';
+import { PASSWORD_RULES } from '@/src/lib/utils';
 
 type SettingsTab = 'profile' | 'notifications' | 'password';
-const PASSWORD_RULES = [
-  { label: 'At least 8 characters', test: (value: string) => value.length >= 8 },
-  { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
-  { label: 'One lowercase letter', test: (value: string) => /[a-z]/.test(value) },
-  { label: 'One number', test: (value: string) => /\d/.test(value) },
-  { label: 'One special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
-];
 
 function asArray(value: any) {
   return Array.isArray(value) ? value : [];
