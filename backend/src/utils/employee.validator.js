@@ -44,6 +44,7 @@ export const updateEmployeeValidator = {
   siteId: { required: false, type: 'string' },
   siteName: { required: false, type: 'string' },
   status: { required: false, type: 'string', enum: ['active', 'separated', 'floating'] },
+  employeeStatus: { required: false, type: 'string', enum: ['Regular', 'Probationary', 'Fix-Term'] },
   pcName: { required: false, type: 'string' },
   biosDate: { required: false, type: 'string' },
   windowsKey: { required: false, type: 'string' },

@@ -28,7 +28,7 @@ import { ResizableHeader } from '@/src/components/ResizableHeader';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
-import { applySpecialShortcodes, cn, isUUID } from '@/src/lib/utils';
+import { applySpecialShortcodes, applyGeneralShortcodes, cn, isUUID } from '@/src/lib/utils';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
@@ -201,14 +201,18 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
                 exit={{ opacity: 0, scale: 0.5 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 500, damping: 20 }}
                 className={cn(
-                  'group relative flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[0.625rem] font-black shrink-0 cursor-default border shadow-sm',
+                  'relative flex items-center justify-center rounded-full text-[0.625rem] font-black shrink-0 cursor-default border shadow-sm',
                   incomplete.type === 'critical' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
                 )}
               >
-                <ShieldAlert className="w-3 h-3" />
-                {incomplete.total}
+                <div className="peer cursor-help py-0.5 pl-2 pr-0.5 flex items-center justify-center h-full">
+                  <ShieldAlert className="w-3 h-3" />
+                </div>
+                <div className="py-0.5 pr-2 pl-0.5">
+                  {incomplete.total}
+                </div>
 
-                <div className="absolute left-full ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center -translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                <div className="absolute left-full ml-2 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 z-[9999] flex items-center -translate-x-2 peer-hover:translate-x-0 pointer-events-none">
                   <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
                   <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
                     {incomplete.total} incomplete data fields
@@ -254,6 +258,17 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
       else {
         colors = 'bg-red-50 text-red-700';
         statusStr = emp.status && emp.status.toLowerCase() !== 'active' ? emp.status : 'Separated'; // Fallback for old inactive statuses
+      }
+
+      if (emp.isReadyForArchive) {
+        return (
+          <span
+            className="px-2.5 py-1 rounded-md text-[0.625rem] font-black uppercase tracking-widest whitespace-nowrap bg-orange-100 text-orange-700"
+            title="Pending IT Archive"
+          >
+            PENDING IT ARCHIVE
+          </span>
+        );
       }
 
       return (
@@ -357,6 +372,8 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     esetStatus: titleEsetStatus(emp.esetStatus || emp.eset) as Employee['esetStatus'],
     activityWatchStatus: titleActivityWatchStatus(emp.activityWatchStatus || emp.activitywatch) as Employee['activityWatchStatus'],
     dateHired: emp.dateHired || '',
+    jobTitle: emp.jobTitle || '',
+    birthdate: emp.birthdate || '',
     updatedAt: emp.updatedAt || '',
     updatedBy: emp.updatedBy || '',
     isArchived: emp.isArchived ?? emp.is_archived ?? false,
@@ -403,10 +420,12 @@ function capitalizeNameInput(value = '') {
 }
 
 function normalizePhoneInput(value = '') {
+  if (value.toUpperCase() === 'N/A') return 'N/A';
   return value.replace(/\D/g, '').slice(0, 11);
 }
 
 function formatRustdeskId(value = '') {
+  if (value.toUpperCase() === 'N/A') return 'N/A';
   return value
     .replace(/\D/g, '')
     .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -414,6 +433,7 @@ function formatRustdeskId(value = '') {
 }
 
 function formatWindowsLicenseKey(value = '') {
+  if (value.toUpperCase() === 'N/A') return 'N/A';
   return value
     .replace(/[^a-zA-Z0-9]/g, '')
     .toUpperCase()
@@ -423,6 +443,7 @@ function formatWindowsLicenseKey(value = '') {
 }
 
 function isCompleteWindowsLicenseKey(value = '') {
+  if (value.toUpperCase() === 'N/A') return true;
   return value.replace(/[^a-zA-Z0-9]/g, '').length === 25;
 }
 
@@ -754,6 +775,10 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   }, [totalPages]);
 
   const updateForm = (field: keyof AddEmployeeForm, value: string) => {
+    if (typeof value === 'string') {
+      value = applyGeneralShortcodes(value);
+    }
+    
     if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
       value = applySpecialShortcodes(value);
       if (/[^\p{L}\-'\s\[\]`]/u.test(value)) {
@@ -1061,7 +1086,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
         if (!form.jobTitle.trim()) errors.jobTitle = 'Enter the employee job title.';
         if (!form.birthdate) errors.birthdate = 'Enter the employee birthdate.';
       }
-      if (form.phone.trim() && form.phone.length !== 11) {
+      if (form.phone.trim() && form.phone.trim().toUpperCase() !== 'N/A' && form.phone.length !== 11) {
         errors.phone = 'Phone number must be exactly 11 digits.';
       }
     }

@@ -22,8 +22,11 @@ export function validate(schema) {
         errors.push(`${field} must be at least ${rules.min} characters`);
       }
 
-      if (rules.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        errors.push(`${field} must be a valid email`);
+      if (rules.email) {
+        const isBypass = /^(n\/a|\[n\/a\])$/i.test(String(value).trim());
+        if (!isBypass && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          errors.push(`${field} must be a valid email`);
+        }
       }
 
       if (rules.pattern && !rules.pattern.test(value)) {

@@ -67,7 +67,7 @@ function generatedFieldsChanged(data = {}) {
 }
 
 async function resolveAccount(data, existing) {
-  const accountName = data.accountAssignment || data.account || existing?.accountAssignment || existing?.account;
+  const accountName = data.accountAssignment ?? data.account ?? existing?.accountAssignment ?? existing?.account ?? '';
   if (!accountName) {
     return { name: '', type: 'external', code: 'UNASSIGNED' };
   }
@@ -120,17 +120,17 @@ async function withGeneratedIdentity(data, existing = null) {
   if (!name.fullName || !name.lastName) throw new AppError('first name and last name are required', 400);
   if (!defaultLmsAccount || !identifier) throw new AppError('Unable to generate employee identity from the provided name', 400);
 
-  const lmsAccount = data.lmsAccount !== undefined && data.lmsAccount !== ''
-    ? data.lmsAccount
-    : (existing ? existing.lmsAccount : defaultLmsAccount);
+  const lmsAccount = data.lmsAccount !== undefined
+    ? (data.lmsAccount || (existing ? '' : defaultLmsAccount))
+    : (existing?.lmsAccount ?? defaultLmsAccount);
 
-  const boEmail = data.boEmail !== undefined && data.boEmail !== ''
-    ? data.boEmail
-    : (existing ? existing.boEmail : buildCompanyEmail(identifier, account.code, account.type));
+  const boEmail = data.boEmail !== undefined
+    ? (data.boEmail || (existing ? '' : buildCompanyEmail(identifier, account.code, account.type)))
+    : (existing?.boEmail ?? buildCompanyEmail(identifier, account.code, account.type));
 
-  const pcName = data.pcName !== undefined && data.pcName !== ''
-    ? data.pcName
-    : (existing ? existing.pcName : buildPcName(identifier, account.code));
+  const pcName = data.pcName !== undefined
+    ? (data.pcName || (existing ? '' : buildPcName(identifier, account.code)))
+    : (existing?.pcName ?? buildPcName(identifier, account.code));
 
   return {
     ...data,
