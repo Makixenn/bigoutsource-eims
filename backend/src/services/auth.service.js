@@ -69,7 +69,28 @@ export const AuthService = {
     const existingProfile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
     if (existingProfile) throw new AppError('An account with this email already exists', 409);
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Look up the matching employee to find their EMAIL DEFAULT PASSWORD (emailPassword)
+    const matchingEmployee = await prisma.employee.findFirst({
+      where: {
+        OR: [
+          { bigoutsourceEmail: { equals: normalizedEmail, mode: 'insensitive' } },
+          { outlookEmail: { equals: normalizedEmail, mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    let initialPassword = password;
+    if (matchingEmployee && matchingEmployee.emailPassword) {
+      initialPassword = matchingEmployee.emailPassword;
+    }
+
+    if (!initialPassword) {
+      // If no password is provided and no default email password is found, generate a secure random fallback password
+      initialPassword = crypto.randomBytes(16).toString('hex') + 'Aa1!';
+    }
+
+    const passwordHash = await bcrypt.hash(initialPassword, 10);
+    const passwordSetupToken = crypto.randomBytes(32).toString('hex');
 
     const profile = await prisma.userProfile.create({
       data: {
@@ -81,13 +102,60 @@ export const AuthService = {
         approvedAt: new Date(),
         department,
         site,
+        passwordSetupToken,
       },
     });
+
+    // Send the password setup email asynchronously
+    await EmailService.sendPasswordSetupEmail(profile.email, passwordSetupToken);
 
     return {
       user: await publicUser(profile),
       message: 'Account created successfully.',
     };
+  },
+
+  async verifySetupPasswordToken(token) {
+    if (!token) return { valid: false };
+    const profile = await prisma.userProfile.findUnique({
+      where: { passwordSetupToken: token }
+    });
+    return { valid: !!profile };
+  },
+
+  async setupPassword({ token, password }) {
+    if (!token) throw new AppError('Token is required', 400);
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { passwordSetupToken: token }
+    });
+
+    if (!profile) {
+      throw new AppError('Invalid or expired password setup link', 400);
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Save password and consume the token immediately
+    await prisma.userProfile.update({
+      where: { id: profile.id },
+      data: {
+        passwordHash,
+        passwordSetupToken: null,
+      }
+    });
+
+    // Generate and send MFA code
+    const code = generateRandomCode();
+    const codeHash = await bcrypt.hash(code, 10);
+
+    await EmailService.sendMfaOtpEmail(profile.email, code);
+
+    const mfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
+      expiresIn: '5m',
+    });
+
+    return { requiresMfa: true, mfaToken };
   },
 
   async login({ email, password, trustedDeviceToken }) {

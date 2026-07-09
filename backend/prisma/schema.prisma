@@ -22,6 +22,7 @@ model UserProfile {
   approvedBy          UserProfile?  @relation("Approver", fields: [approvedById], references: [id])
   approvedUsers       UserProfile[] @relation("Approver")
   approvedAt          DateTime?     @map("approved_at")
+  passwordSetupToken  String?       @unique @map("password_setup_token")
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
 

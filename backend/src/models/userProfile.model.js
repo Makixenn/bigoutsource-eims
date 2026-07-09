@@ -27,6 +27,7 @@ function normalize(row) {
     capabilityOverrides: overrides,
     approvedBy: row.approvedById || null,
     approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
+    passwordSetupToken: row.passwordSetupToken || null,
     createdAt: row.createdAt ? row.createdAt.toISOString() : '',
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };
@@ -58,6 +59,13 @@ export const UserProfileModel = {
     return normalize(row);
   },
 
+  async findByPasswordSetupToken(token) {
+    const row = await prisma.userProfile.findUnique({
+      where: { passwordSetupToken: token },
+    });
+    return normalize(row);
+  },
+
   async create(data) {
     let capabilityOverrides = ['__INHERIT__'];
     if (data.capabilityOverrides === null) {
@@ -80,6 +88,7 @@ export const UserProfileModel = {
         approvedAt: data.approvedAt ? new Date(data.approvedAt) : undefined,
         capabilityOverrides,
         passwordHash: data.passwordHash || '',
+        passwordSetupToken: data.passwordSetupToken || null,
       },
     });
     return normalize(row);
@@ -104,6 +113,7 @@ export const UserProfileModel = {
       }
     }
     if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
+    if (data.passwordSetupToken !== undefined) updateData.passwordSetupToken = data.passwordSetupToken;
 
     const row = await prisma.userProfile.update({
       where: { id },

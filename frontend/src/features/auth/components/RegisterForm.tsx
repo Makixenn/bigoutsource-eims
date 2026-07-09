@@ -9,40 +9,25 @@ import { AppUser, UserRole } from '@/src/types';
 import logoUrl from '/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput, SelectInput } from './authFields';
 
-type RegistrationStep = 0 | 1 | 2;
-type RegistrationErrors = Partial<Record<'fullName' | 'department' | 'site' | 'email' | 'password' | 'confirmPassword', string>>;
+type RegistrationStep = 0 | 1;
+type RegistrationErrors = Partial<Record<'fullName' | 'department' | 'site' | 'email', string>>;
 
 const REGISTRATION_STEPS = [
   { title: 'User Information', fields: ['fullName', 'email'] },
   { title: 'Work Details', fields: ['department', 'site'] },
-  { title: 'Security', fields: ['password', 'confirmPassword'] },
 ] as const;
 
 const SITE_OPTIONS = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
-
-// Assignable roles are fetched live from the roles table (Super Admin is excluded).
-
-const PASSWORD_RULES = [
-  { label: 'At least 12 characters', test: (value: string) => value.length >= 12 },
-  { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
-  { label: 'One lowercase letter', test: (value: string) => /[a-z]/.test(value) },
-  { label: 'One number', test: (value: string) => /\d/.test(value) },
-  { label: 'One special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
-];
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getRegistrationErrors({
   email,
-  password,
-  confirmPassword,
   fullName,
   department,
   site,
 }: {
   email: string;
-  password: string;
-  confirmPassword: string;
   fullName: string;
   department: string;
   site: string;
@@ -63,17 +48,6 @@ function getRegistrationErrors({
     !normalizedEmail.endsWith('@outlook.ph')
   ) {
     errors.email = 'Only @bigoutsource.com, @outlook.com, @bigoutsource.ph, and @outlook.ph emails are allowed.';
-  }
-
-  const missingPasswordRules = PASSWORD_RULES.filter((rule) => !rule.test(password)).map((rule) => rule.label.toLowerCase());
-  if (missingPasswordRules.length) {
-    errors.password = `Password must include ${missingPasswordRules.join(', ')}.`;
-  }
-
-  if (!confirmPassword) {
-    errors.confirmPassword = 'Confirm your password.';
-  } else if (password !== confirmPassword) {
-    errors.confirmPassword = 'Passwords do not match.';
   }
 
   return errors;
@@ -100,8 +74,6 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
   const { register } = useAuth();
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [department, setDepartment] = useState('');
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
@@ -110,7 +82,6 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
   const [site, setSite] = useState('');
   const [roles, setRoles] = useState<Role[]>([]);
   const [roleSlug, setRoleSlug] = useState('viewer');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [emailExistsError, setEmailExistsError] = useState('');
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(0);
@@ -168,8 +139,8 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
   }, []);
 
   const registrationErrors = useMemo(
-    () => getRegistrationErrors({ email, password, confirmPassword, fullName, department, site }),
-    [confirmPassword, department, email, fullName, password, site]
+    () => getRegistrationErrors({ email, fullName, department, site }),
+    [department, email, fullName, site]
   );
   
   const currentStepHasErrors =
@@ -177,10 +148,6 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
     (registrationStep === 1 && (isLoadingDepartments || Boolean(departmentOptionsError))) ||
     Boolean(emailExistsError);
 
-  const passwordStrengthScore = PASSWORD_RULES.filter((rule) => rule.test(password)).length;
-  const passwordStrength = passwordStrengthScore <= 2 ? 'Weak' : passwordStrengthScore <= 4 ? 'Fair' : 'Strong';
-  const passwordStrengthColor =
-    passwordStrengthScore <= 2 ? 'bg-[#EF4444]' : passwordStrengthScore <= 4 ? 'bg-[#F59E0B]' : 'bg-[#10B981]';
   const canSubmit = Object.keys(registrationErrors).length === 0;
 
   const handleNextStep = async () => {
@@ -201,7 +168,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
       }
     }
 
-    const nextStep = Math.min(registrationStep + 1, 2) as RegistrationStep;
+    const nextStep = Math.min(registrationStep + 1, 1) as RegistrationStep;
     setRegistrationStep(nextStep);
     setMaxUnlockedStep((current) => Math.max(current, nextStep) as RegistrationStep);
   };
@@ -214,7 +181,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (registrationStep < 2) {
+    if (registrationStep < 1) {
       handleNextStep();
       return;
     }
@@ -223,7 +190,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
 
     setIsLoading(true);
     try {
-      const user = await register({ email, password, fullName, department, site });
+      const user = await register({ email, fullName, department, site });
       // The register endpoint creates the base account; the admin's chosen role
       // rides back on the user object for the caller to apply immediately.
       onSuccess?.({ ...user, role: roleSlug as UserRole });
@@ -269,7 +236,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
                 error={registrationErrors.fullName}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1 pl-1">Hint: Type [`n] for ñ, [`e] for é, [`a] for á, etc.</p>
+              <p className="text-xs text-gray-500 mt-1 pl-1">Hint: Type [\`n] for ñ, [\`e] for é, [\`a] for á, etc.</p>
               <AuthInput
                 icon={Mail}
                 label="Email Address"
@@ -324,60 +291,6 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
               />
             </motion.div>
           )}
-
-          {registrationStep === 2 && (
-            <motion.div
-              key="step-2"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              <PasswordInput
-                label="Password"
-                value={password}
-                onChange={setPassword}
-                showPassword={showPassword}
-                onToggleVisibility={() => setShowPassword(!showPassword)}
-                minLength={12}
-                error={registrationErrors.password}
-              />
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5" aria-label={`Password strength: ${passwordStrength}`}>
-                  {PASSWORD_RULES.map((rule) => (
-                    <div
-                      key={rule.label}
-                      className={`h-1.5 flex-1 rounded-full ${rule.test(password) ? passwordStrengthColor : 'bg-[#E5E7EB]'}`}
-                    />
-                  ))}
-                  <span className="ml-2 text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">
-                    {passwordStrength}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 gap-1 text-[0.6875rem] text-[#6B7280]">
-                  {PASSWORD_RULES.map((rule) => {
-                    const passed = rule.test(password);
-                    return (
-                      <p key={rule.label} className={passed ? 'text-[#047857]' : 'text-[#6B7280]'}>
-                        {passed ? 'OK' : '-'} {rule.label}
-                      </p>
-                    );
-                  })}
-                </div>
-              </div>
-              <PasswordInput
-                label="Confirm Password"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                showPassword={showPassword}
-                onToggleVisibility={() => setShowPassword(!showPassword)}
-                minLength={12}
-                placeholder="Re-enter password"
-                error={registrationErrors.confirmPassword}
-              />
-            </motion.div>
-          )}
         </AnimatePresence>
 
         <div className="grid grid-cols-2 gap-3">
@@ -389,7 +302,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
           >
             Back
           </button>
-          {registrationStep < 2 ? (
+          {registrationStep < 1 ? (
             <button
               type="button"
               onClick={handleNextStep}

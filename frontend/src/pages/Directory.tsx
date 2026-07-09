@@ -288,6 +288,7 @@ const initialForm: AddEmployeeForm = {
   emailPassword: '',
   lmsAccount: '',
   status: 'active',
+  employeeStatus: 'Regular',
   siteId: '',
   siteName: '',
   pcName: '',
