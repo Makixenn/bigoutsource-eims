@@ -30,7 +30,8 @@ export type Capability =
   | 'reports.export'
   | 'auditlogs.view'
   | 'auditlogs.undo'
-  | 'notifications.employee_added'
+  | 'notifications.hr_action'
+  | 'notifications.it_action'
   | 'users.manage'
   | 'roles.manage'
   | 'settings.manage';

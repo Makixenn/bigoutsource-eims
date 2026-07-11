@@ -6,5 +6,6 @@ const router = Router();
 router.get('/', NotificationController.list);
 router.post('/read-all', NotificationController.markAllRead);
 router.delete('/', NotificationController.clearAll);
+router.delete('/:id', NotificationController.clearSingle);
 
 export default router;

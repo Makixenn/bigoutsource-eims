@@ -208,6 +208,7 @@ export const EmployeeService = {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
+
     await NotificationService.notifyEmployeeAdded({ employee, actor }).catch((error) => {
       console.error('Unable to create employee-added notifications', error);
     });
@@ -250,6 +251,7 @@ export const EmployeeService = {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
+
     return employee;
   },
 

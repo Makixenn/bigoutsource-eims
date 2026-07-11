@@ -26,6 +26,13 @@ const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeImportReview = React.lazy(() => import('./pages/EmployeeImportReview'));
 
 import { QueryProvider } from './providers/QueryProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+const PageSpinner = () => (
+  <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 export default function App() {
   return (
@@ -34,41 +41,41 @@ export default function App() {
     <ThemeProvider>
     <TextSizeProvider>
       <Router>
-        <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+        <ErrorBoundary>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Suspense fallback={<PageSpinner />}><Login /></Suspense>} />
 
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Suspense fallback={<PageSpinner />}><Dashboard /></Suspense>} />
               <Route element={<ProtectedRoute capability="employees.view" />}>
-                <Route path="/directory" element={<Directory />} />
-                <Route path="/employee/:id" element={<EmployeeProfile />} />
+                <Route path="/directory" element={<Suspense fallback={<PageSpinner />}><Directory /></Suspense>} />
+                <Route path="/employee/:id" element={<Suspense fallback={<PageSpinner />}><EmployeeProfile /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute capability="departments.view" />}>
-                <Route path="/departments" element={<Departments />} />
+                <Route path="/departments" element={<Suspense fallback={<PageSpinner />}><Departments /></Suspense>} />
               </Route>
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={<Suspense fallback={<PageSpinner />}><Settings /></Suspense>} />
               <Route element={<ProtectedRoute capability="assets.view" />}>
-                <Route path="/assets" element={<Assets />} />
+                <Route path="/assets" element={<Suspense fallback={<PageSpinner />}><Assets /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute capability="reports.view" />}>
-                <Route path="/reports" element={<Reports />} />
+                <Route path="/reports" element={<Suspense fallback={<PageSpinner />}><Reports /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute capability="auditlogs.view" />}>
-                <Route path="/logs" element={<AuditLogs />} />
+                <Route path="/logs" element={<Suspense fallback={<PageSpinner />}><AuditLogs /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute capability="imports.manage" />}>
-                <Route path="/employee-imports/issues" element={<EmployeeImportReview />} />
-                <Route path="/employee-imports/:batchId" element={<EmployeeImportReview />} />
+                <Route path="/employee-imports/issues" element={<Suspense fallback={<PageSpinner />}><EmployeeImportReview /></Suspense>} />
+                <Route path="/employee-imports/:batchId" element={<Suspense fallback={<PageSpinner />}><EmployeeImportReview /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute capability="users.manage" />}>
-                <Route path="/users" element={<UserManagement />} />
+                <Route path="/users" element={<Suspense fallback={<PageSpinner />}><UserManagement /></Suspense>} />
               </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Suspense>
+        </ErrorBoundary>
         <Toaster position="bottom-right" />
         <GlobalNotifications />
       </Router>

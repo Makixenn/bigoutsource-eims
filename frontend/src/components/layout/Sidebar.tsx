@@ -112,11 +112,12 @@ export function Sidebar() {
                 >
                   {isActive && (
                     <motion.div
-                      layoutId="activeNavBackground"
+                      key="activeNavBg"
                       className="absolute inset-0 rounded-lg -z-10"
                       style={{ backgroundColor: 'var(--color-accent)' }}
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
                     />
                   )}
                   <div className={cn("flex items-center", isRetracted ? "justify-center" : "gap-3")}>
@@ -145,7 +146,12 @@ export function Sidebar() {
                     </AnimatePresence>
                   </div>
                   {!isRetracted && isActive && (
-                    <motion.div layoutId="activeNav" className="w-1.5 h-1.5 rounded-full bg-white mr-2 shrink-0" />
+                    <motion.div
+                      key="activeNavDot"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="w-1.5 h-1.5 rounded-full bg-white mr-2 shrink-0"
+                    />
                   )}
                 </Link>
               );

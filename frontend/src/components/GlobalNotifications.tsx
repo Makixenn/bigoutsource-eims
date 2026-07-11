@@ -20,7 +20,7 @@ export function GlobalNotifications() {
       
       let message = `${log.actor_name || 'Someone'} performed: ${actionName}`;
       
-      if (log.action === 'employee.created') {
+      if (log.action === 'employee.created' || log.action === 'employee.create') {
         message = `${log.actor_name || 'Someone'} added a new employee.`;
         toast.success(message, { icon: '👤' });
       } else if (log.action === 'account.disabled') {

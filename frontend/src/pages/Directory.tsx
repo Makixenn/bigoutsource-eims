@@ -156,31 +156,33 @@ const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
 function calculateIncompleteData(employee: EmployeeRecord) {
   let criticalCount = 0;
   let mildCount = 0;
+  let hrMissing = 0;
+  let itMissing = 0;
 
-  if (!employee.employeeId && !employee.employeeNumber) criticalCount++;
-  if (!employee.accountAssignment) criticalCount++;
-  if (!employee.siteId && !employee.site) criticalCount++;
-  if (!employee.fullName) criticalCount++;
+  if (!employee.employeeId && !employee.employeeNumber) { criticalCount++; hrMissing++; }
+  if (!employee.accountAssignment) { criticalCount++; hrMissing++; }
+  if (!employee.siteId && !employee.site) { criticalCount++; hrMissing++; }
+  if (!employee.fullName) { criticalCount++; hrMissing++; }
 
-  if (!employee.phone) mildCount++;
-  if (!employee.address) mildCount++;
-  if (!employee.jobTitle) mildCount++;
-  if (!employee.birthdate) mildCount++;
-  if (!employee.dateHired) mildCount++;
-  if (!employee.pcName) mildCount++;
-  if (!employee.biosDate) mildCount++;
-  if (!employee.rustdeskId && !employee.rustDeskId) mildCount++;
-  if (!employee.windowsKey) mildCount++;
-  if (!employee.boEmail) mildCount++;
-  if (!employee.emailPassword) mildCount++;
-  if (!employee.lmsAccount) mildCount++;
-  if (employee.activityWatchStatus !== 'Installed') mildCount++;
-  if (employee.esetStatus !== 'Active') mildCount++;
+  if (!employee.phone) { mildCount++; hrMissing++; }
+  if (!employee.address) { mildCount++; hrMissing++; }
+  if (!employee.jobTitle) { mildCount++; hrMissing++; }
+  if (!employee.birthdate) { mildCount++; hrMissing++; }
+  if (!employee.dateHired) { mildCount++; hrMissing++; }
+  if (!employee.pcName) { mildCount++; itMissing++; }
+  if (!employee.biosDate) { mildCount++; itMissing++; }
+  if (!employee.rustdeskId && !employee.rustDeskId) { mildCount++; itMissing++; }
+  if (!employee.windowsKey) { mildCount++; itMissing++; }
+  if (!employee.boEmail) { mildCount++; itMissing++; }
+  if (!employee.emailPassword) { mildCount++; itMissing++; }
+  if (!employee.lmsAccount) { mildCount++; itMissing++; }
+  if (employee.activityWatchStatus !== 'Installed') { mildCount++; itMissing++; }
+  if (employee.esetStatus !== 'Active') { mildCount++; itMissing++; }
 
   const total = criticalCount + mildCount;
   if (total === 0) return null;
 
-  return { total, type: criticalCount > 0 ? 'critical' : 'warning' };
+  return { total, hrMissing, itMissing, type: criticalCount > 0 ? 'critical' : 'warning' };
 }
 
 const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (emp: EmployeeRecord) => ReactNode }> = [
@@ -214,8 +216,15 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
 
                 <div className="absolute left-full ml-2 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 z-[9999] flex items-center -translate-x-2 peer-hover:translate-x-0 pointer-events-none">
                   <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
-                  <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
-                    {incomplete.total} incomplete data fields
+                  <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl flex flex-col gap-0.5">
+                    <span>{incomplete.total} incomplete data fields</span>
+                    {(incomplete.hrMissing > 0 || incomplete.itMissing > 0) && (
+                      <span className="text-[10px] text-gray-400 font-medium leading-tight">
+                        {incomplete.hrMissing > 0 ? `${incomplete.hrMissing} HR` : ''}
+                        {incomplete.hrMissing > 0 && incomplete.itMissing > 0 ? ' • ' : ''}
+                        {incomplete.itMissing > 0 ? `${incomplete.itMissing} IT` : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -1660,7 +1669,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               {showHRFields && (
                                 <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                   <div className="md:w-full">
-                                    <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                                    <Field label="Employee ID" required isFilled={Boolean(form.employeeNumber)} error={formErrors.employeeNumber}>
                                       <div className="flex items-center gap-2">
                                         <div className="flex-1">
                                           <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
@@ -1680,7 +1689,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               )}
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%]">
-                                  <Field label="First Name" required error={formErrors.firstName}>
+                                  <Field label="First Name" required isFilled={Boolean(form.firstName)} error={formErrors.firstName}>
                                     <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
                                   </Field>
                                 </div>
@@ -1692,7 +1701,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               </div>
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[70%]">
-                                  <Field label="Last Name" required error={formErrors.lastName}>
+                                  <Field label="Last Name" required isFilled={Boolean(form.lastName)} error={formErrors.lastName}>
                                     <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
                                   </Field>
                                 </div>
@@ -1710,12 +1719,12 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                             {showHRFields && (
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%] mt-[1px]">
-                                  <Field label="Job Title" required={reqHRFields} error={formErrors.jobTitle as string}>
+                                  <Field label="Job Title" required={reqHRFields} isFilled={Boolean(form.jobTitle)} error={formErrors.jobTitle as string}>
                                     <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
                                   </Field>
                                 </div>
                                 <div className="md:w-[48%]">
-                                  <Field label="Birthdate" required={reqHRFields} error={formErrors.birthdate as string}>
+                                  <Field label="Birthdate" required={reqHRFields} isFilled={Boolean(form.birthdate)} error={formErrors.birthdate as string}>
                                     <Input type="date" value={form.birthdate} onChange={(value) => updateForm('birthdate', value)} max={getTodayDateInputValue()} />
                                   </Field>
                                 </div>
@@ -1727,7 +1736,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         {showHRFields && (
                           <SectionCard title="Contact Details" eyebrow="Manual">
                             <div className="grid grid-cols-1 gap-4">
-                              <Field label="Phone Number" required={reqHRFields} error={formErrors.phone}>
+                              <Field label="Phone Number" required={reqHRFields} isFilled={Boolean(form.phone)} error={formErrors.phone}>
                                 <Input
                                   value={form.phone}
                                   onChange={(value) => updateForm('phone', value)}
@@ -1735,7 +1744,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                   error={Boolean(formErrors.phone)}
                                 />
                               </Field>
-                              <Field label="Address" required={reqHRFields} error={formErrors.address}>
+                              <Field label="Address" required={reqHRFields} isFilled={Boolean(form.address)} error={formErrors.address}>
                                 <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" error={Boolean(formErrors.address)} />
                               </Field>
                             </div>
@@ -1749,7 +1758,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         {showHRFields && (
                           <SectionCard title="Accounts" eyebrow="Manual">
                             <div className="grid grid-cols-1 gap-4">
-                              <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                              <Field label="Account / Department" required isFilled={Boolean(form.accountAssignment)} error={formErrors.accountAssignment}>
                                 <div className="relative">
                                   <button
                                     type="button"
@@ -1906,7 +1915,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <SectionCard title="Assignment" eyebrow="Manual">
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <Field label="Site" required error={formErrors.siteId}>
+                            <Field label="Site" required isFilled={Boolean(form.siteId)} error={formErrors.siteId}>
                               <div className="relative">
                                 <button
                                   type="button"
@@ -2038,17 +2047,17 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         <SectionCard title="Employee Information" eyebrow="Review" status={(!showHRFields || !validationForStep(0).employeeNumber) && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {showHRFields && (
-                              <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                              <Field label="Employee ID" required isFilled={Boolean(form.employeeNumber)} error={formErrors.employeeNumber}>
                                 <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
                               </Field>
                             )}
-                            <Field label="First Name" required error={formErrors.firstName}>
+                            <Field label="First Name" required isFilled={Boolean(form.firstName)} error={formErrors.firstName}>
                               <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
                             </Field>
                             <Field label="Middle Name">
                               <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" />
                             </Field>
-                            <Field label="Last Name" required error={formErrors.lastName}>
+                            <Field label="Last Name" required isFilled={Boolean(form.lastName)} error={formErrors.lastName}>
                               <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
                             </Field>
                             <Field label="Suffix">
@@ -2080,7 +2089,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         {showHRFields && (
                           <SectionCard title="Accounts" eyebrow="Review" status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
                             <div className="grid grid-cols-1 gap-4">
-                              <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                              <Field label="Account / Department" required isFilled={Boolean(form.accountAssignment)} error={formErrors.accountAssignment}>
                                 <div className="relative">
                                   <button
                                     type="button"
@@ -2161,7 +2170,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                         )}
                         <SectionCard title="Assignment" eyebrow="Review" status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <Field label="Site" required error={formErrors.siteId}>
+                            <Field label="Site" required isFilled={Boolean(form.siteId)} error={formErrors.siteId}>
                               <div className="relative">
                                 <button
                                   type="button"

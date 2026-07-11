@@ -340,12 +340,12 @@ function formatDate(value?: string) {
 
 function actionLabel(action: string) {
   const norm = action.toUpperCase();
-  if (norm === 'UPDATE') return 'Updated record';
-  if (norm === 'CREATE') return 'Created record';
-  if (norm === 'DELETE') return 'Deleted record';
-  if (norm === 'ARCHIVE') return 'Archived record';
-  if (norm === 'UNARCHIVE') return 'Unarchived record';
-  return action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  if (norm === 'UPDATE' || norm === 'EMPLOYEE.UPDATE') return 'Updated record';
+  if (norm === 'CREATE' || norm === 'EMPLOYEE.CREATE') return 'Created record';
+  if (norm === 'DELETE' || norm === 'EMPLOYEE.DELETE') return 'Deleted record';
+  if (norm === 'ARCHIVE' || norm === 'EMPLOYEE.ARCHIVE') return 'Archived record';
+  if (norm === 'UNARCHIVE' || norm === 'EMPLOYEE.UNARCHIVE') return 'Unarchived record';
+  return action.replace(/[._]/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatFieldName(field: string) {
@@ -360,12 +360,13 @@ function formatFieldName(field: string) {
 function formatValue(value: any) {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object') return JSON.stringify(value);
   
   const strValue = String(value);
   const lowerValue = strValue.toLowerCase();
-  if (['missing', 'installed', 'active', 'inactive'].includes(lowerValue)) {
-    return strValue.charAt(0).toUpperCase() + strValue.slice(1);
-  }
+  
+  if (lowerValue === 'true') return 'Yes';
+  if (lowerValue === 'false') return 'No';
   
   return strValue;
 }
@@ -462,6 +463,7 @@ export default function EmployeeProfile() {
   const [unarchiveJobTitle, setUnarchiveJobTitle] = useState('');
   const [unarchiveAccountAssignment, setUnarchiveAccountAssignment] = useState('');
   const [unarchiveSiteId, setUnarchiveSiteId] = useState('');
+  const [unarchiveEmployeeStatus, setUnarchiveEmployeeStatus] = useState('');
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -937,6 +939,7 @@ export default function EmployeeProfile() {
           is_archived: false,
           is_ready_for_archive: false,
           status: 'active',
+          employeeStatus: unarchiveEmployeeStatus || 'Regular',
           separation_reason: null,
           separation_date: null,
           floatDate: null,
@@ -1093,14 +1096,14 @@ export default function EmployeeProfile() {
                       >
                         <div className="flex flex-col gap-5">
                           <div className="w-full md:w-1/3">
-                            <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                            <Field label="Employee ID" required isFilled={Boolean(form.employeeNumber)} error={formErrors.employeeNumber}>
                               <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. 1004" error={Boolean(formErrors.employeeNumber)} />
                             </Field>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 bg-[#F9FAFB] p-4 rounded-xl border border-[#E5E7EB]">
                             <div className="sm:col-span-4">
-                              <Field label="First Name" required error={formErrors.firstName}>
+                              <Field label="First Name" required isFilled={Boolean(form.firstName)} error={formErrors.firstName}>
                                 <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
                               </Field>
                             </div>
@@ -1110,7 +1113,7 @@ export default function EmployeeProfile() {
                               </Field>
                             </div>
                             <div className="sm:col-span-3">
-                              <Field label="Last Name" required error={formErrors.lastName}>
+                              <Field label="Last Name" required isFilled={Boolean(form.lastName)} error={formErrors.lastName}>
                                 <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
                               </Field>
                             </div>
@@ -1254,6 +1257,7 @@ export default function EmployeeProfile() {
                                   setUnarchiveJobTitle(employee.jobTitle || '');
                                   setUnarchiveAccountAssignment(employee.accountAssignment || '');
                                   setUnarchiveSiteId(employee.siteId || '');
+                                  setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
                                 } else if (employee.isReadyForArchive) {
                                   setArchiveStep(2);
                                 } else {
@@ -1410,7 +1414,9 @@ export default function EmployeeProfile() {
                           </AnimatePresence>
                         </div>
                       ) : (
-                        employee.employeeStatus || 'Regular'
+                        employee.isArchived 
+                          ? formatStatus(employee.status)
+                          : employee.employeeStatus || 'Regular'
                       )}
                     </ProfileField>
                     <ProfileField label="Site" icon={MapPin} editing={editingHR}>
@@ -2128,6 +2134,18 @@ export default function EmployeeProfile() {
                         />
                       </div>
                       <div>
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Employee Status</label>
+                        <select
+                          value={unarchiveEmployeeStatus}
+                          onChange={(e) => setUnarchiveEmployeeStatus(e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                        >
+                          <option value="Regular">Regular</option>
+                          <option value="Probationary">Probationary</option>
+                          <option value="Fix-Term">Fix-Term</option>
+                        </select>
+                      </div>
+                      <div>
                         <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">DEPARTMENT/CAMPAIGN.</label>
                         <select
                           value={unarchiveAccountAssignment}
@@ -2498,11 +2516,23 @@ function ComplianceField({
   );
 }
 
-function Field({ label, required, children, error }: { label: string; required?: boolean; children: ReactNode; error?: string }) {
+function Field({ label, required, isFilled, children, error }: { label: string; required?: boolean; isFilled?: boolean; children: ReactNode; error?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
-        {label} {required && <span className="text-red-500">*</span>}
+      <span className="flex items-center gap-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
+        {label} 
+        {required && (
+          <span 
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[0.5625rem] border transition-colors",
+              isFilled 
+                ? "bg-green-50 text-green-700 border-green-200" 
+                : "bg-red-50 text-red-600 border-red-100"
+            )}
+          >
+            {isFilled ? 'Filled' : 'Required'}
+          </span>
+        )}
       </span>
       {children}
       {error && <span className="text-xs font-bold text-red-600">{error}</span>}

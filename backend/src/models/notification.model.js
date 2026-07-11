@@ -76,4 +76,40 @@ export const NotificationModel = {
     });
     return [];
   },
+
+  async clearSingleForRecipient(id, recipientId) {
+    await prisma.notification.deleteMany({
+      where: { id, recipientId },
+    });
+    return [];
+  },
+
+  async findById(id) {
+    const row = await prisma.notification.findUnique({
+      where: { id },
+    });
+    return normalize(row);
+  },
+
+  async clearGlobalByEntity(entityType, entityId, type, missingFields) {
+    const notifications = await prisma.notification.findMany({
+      where: { entityType, entityId, type },
+    });
+
+    const toDelete = notifications.filter((n) => {
+      // Prisma JSON fields are parsed as objects/arrays automatically if supported, 
+      // or we might need to check the raw value. We use normalize() normally.
+      const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
+      const mFields = parsed?.missingFields;
+      if (!missingFields) return !mFields;
+      return mFields === missingFields;
+    }).map((n) => n.id);
+
+    if (toDelete.length > 0) {
+      await prisma.notification.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+    }
+    return [];
+  },
 };

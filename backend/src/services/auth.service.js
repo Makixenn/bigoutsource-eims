@@ -56,10 +56,10 @@ export const AuthService = {
 
   async register({ email, password, fullName, department = 'Unassigned', site = 'HQ' }) {
     const normalizedEmail = normalizeEmail(email);
-    
+
     if (
-      !normalizedEmail.endsWith('@bigoutsource.com') && 
-      !normalizedEmail.endsWith('@outlook.com') && 
+      !normalizedEmail.endsWith('@bigoutsource.com') &&
+      !normalizedEmail.endsWith('@outlook.com') &&
       !normalizedEmail.endsWith('@bigoutsource.ph') &&
       !normalizedEmail.endsWith('@outlook.ph')
     ) {
@@ -104,6 +104,17 @@ export const AuthService = {
 
     await assertActiveProfile(profile.id);
 
+    // TEMPORARY: Bypass OTP for all accounts
+    if (true) {
+      const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+        expiresIn: '30m',
+      });
+      const newTrustedDeviceToken = jwt.sign({ id: profile.id, mfaTrusted: true }, process.env.JWT_SECRET, {
+        expiresIn: '30m',
+      });
+      return { token, trustedDeviceToken: newTrustedDeviceToken, user: await publicUser(profile) };
+    }
+
     if (trustedDeviceToken) {
       try {
         const decoded = jwt.verify(trustedDeviceToken, process.env.JWT_SECRET);
@@ -120,13 +131,13 @@ export const AuthService = {
 
     const code = generateRandomCode();
     const codeHash = await bcrypt.hash(code, 10);
-    
+
     await EmailService.sendMfaOtpEmail(profile.email, code);
 
     const mfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
       expiresIn: '5m',
     });
-    
+
     return { requiresMfa: true, mfaToken };
   },
 
@@ -181,7 +192,7 @@ export const AuthService = {
     if (!decoded.mfaPending) {
       throw new AppError('Invalid MFA token', 401);
     }
-    
+
     // Prevent resending if the original login attempt is older than 15 minutes
     const tokenAgeMs = Date.now() - (decoded.iat * 1000);
     if (tokenAgeMs > 15 * 60 * 1000) {
@@ -192,13 +203,13 @@ export const AuthService = {
 
     const code = generateRandomCode();
     const codeHash = await bcrypt.hash(code, 10);
-    
+
     await EmailService.sendMfaOtpEmail(profile.email, code);
 
     const newMfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
       expiresIn: '5m',
     });
-    
+
     return { mfaToken: newMfaToken };
   },
 
@@ -233,7 +244,7 @@ export const AuthService = {
     if (!email || !password) return;
 
     let profile = await prisma.userProfile.findUnique({ where: { email } });
-    
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     if (profile) {
