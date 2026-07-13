@@ -62,6 +62,28 @@ export function sanitizeCapabilities(input) {
       throw new AppError(`"${cap}" is reserved for Super Admin and cannot be granted`, 400);
     }
     if (!GRANTABLE_CAPABILITIES.includes(cap)) {
+      if (cap === 'notifications.employee_added') {
+        // Auto-migrate legacy capability
+        set.add('notifications.hr_action');
+        set.add('notifications.it_action');
+        continue;
+      }
+
+      if (cap === 'notifications.hr_completion' || cap === 'notifications.it_completion') {
+        // Obsolete capabilities, just ignore them
+        continue;
+      }
+
+      if (cap === 'employees.fields.hr') {
+        set.add('employees.create.hr_fields');
+        continue;
+      }
+
+      if (cap === 'employees.fields.it') {
+        set.add('employees.create.it_fields');
+        continue;
+      }
+      
       const baseCap = cap.replace(/\.(optional|required)$/, '');
       if (GRANTABLE_CAPABILITIES.includes(baseCap) && baseCap.startsWith('employees.create.')) {
         set.add(cap);
@@ -124,7 +146,7 @@ export const RoleService = {
     return this.resolveCapabilities(profile?.role);
   },
 
-  async create({ name, capabilities }) {
+  async create({ name, capabilities }, user, meta = {}) {
     const cleanName = String(name || '').trim();
     if (cleanName.length < 2) throw new AppError('Role name is required', 400);
 
@@ -144,7 +166,7 @@ export const RoleService = {
     return role;
   },
 
-  async update(slug, { name, capabilities }) {
+  async update(slug, { name, capabilities }, user, meta = {}) {
     const role = await RoleModel.findBySlug(slug);
     if (!role) throw new AppError('Role not found', 404);
     if (slug === 'super_admin') throw new AppError('The Super Admin role cannot be modified', 400);
@@ -166,7 +188,7 @@ export const RoleService = {
     return updated;
   },
 
-  async remove(slug) {
+  async remove(slug, user, meta = {}) {
     const role = await RoleModel.findBySlug(slug);
     if (!role) throw new AppError('Role not found', 404);
     if (role.isSystem) throw new AppError('Built-in roles cannot be deleted', 400);

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { AlertCircle, History, Loader2, Search, ChevronRight, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Undo2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -498,8 +499,17 @@ export default function AuditLogs() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-sm font-bold text-[#111827] truncate">{log.details?.fullName || log.details?.employeeNumber || cleanString(log.entityType)}</p>
-                            <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] mt-1">{cleanString(log.entityType)}</p>
+                            {log.entityType === 'employees' && log.entityId ? (
+                              <Link to={`/employee/${log.entityId}`} className="group/link block">
+                                <p className="text-sm font-bold text-[#111827] group-hover/link:text-[#2563EB] transition-colors truncate">{log.entityLabel || log.details?.fullName || log.details?.employeeNumber || cleanString(log.entityType)}</p>
+                                <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] mt-1">{cleanString(log.entityType)}</p>
+                              </Link>
+                            ) : (
+                              <div>
+                                <p className="text-sm font-bold text-[#111827] truncate">{log.entityLabel || log.details?.fullName || log.details?.employeeNumber || cleanString(log.entityType)}</p>
+                                <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] mt-1">{cleanString(log.entityType)}</p>
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4">
                             <AuditDetails details={log.details} />

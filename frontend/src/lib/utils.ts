@@ -22,6 +22,14 @@ export function applySpecialShortcodes(value: string): string {
     .replace(/\[`N\]/g, 'Ã‘');
 }
 
+export function applyGeneralShortcodes(value: string): string {
+  if (typeof value !== 'string') return value;
+  // Replace [n/a] or [n] (case-insensitive) with N/A
+  return value
+    .replace(/\[n\/a\]/ig, 'N/A')
+    .replace(/\[n\]/ig, 'N/A');
+}
+
 export function isUUID(id: string): boolean {
   if (!id) return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);

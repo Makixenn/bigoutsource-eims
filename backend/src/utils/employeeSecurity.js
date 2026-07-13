@@ -19,14 +19,13 @@ const HR_WRITE_FIELDS = [
   'name', 'fullName', 'firstName', 'middleName', 'lastName', 'suffix',
   'account', 'accountAssignment', 'internalDepartmentId', 'externalDepartmentId',
   'phone', 'phoneNumber', 'address',
-  'boEmail', 'bigoutsourceEmail', 'lmsAccount',
   'status', 'employeeStatus', 'site', 'siteId', 'siteName', 'avatarUrl', 'dateHired',
   'separationDate', 'separation_date', 'separationReason', 'separation_reason',
   'jobTitle', 'birthdate', 'floatDate'
 ];
-const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount'];
+const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];
-const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived'];
+const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive'];
 
 function blankFields(target, fields) {
   for (const field of fields) {

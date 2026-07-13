@@ -12,7 +12,8 @@ export const UserController = {
 
   async approve(req, res, next) {
     try {
-      return success(res, await UserService.approve(req.params.id, req.user), 'User approved');
+      const meta = { ipAddress: req.ip, userAgent: req.get('user-agent') };
+      return success(res, await UserService.approve(req.params.id, req.user, meta), 'User approved');
     } catch (error) {
       return next(error);
     }
@@ -20,7 +21,8 @@ export const UserController = {
 
   async disable(req, res, next) {
     try {
-      return success(res, await UserService.disable(req.params.id), 'User disabled');
+      const meta = { ipAddress: req.ip, userAgent: req.get('user-agent') };
+      return success(res, await UserService.disable(req.params.id, req.user, meta), 'User disabled');
     } catch (error) {
       return next(error);
     }
@@ -28,7 +30,8 @@ export const UserController = {
 
   async update(req, res, next) {
     try {
-      return success(res, await UserService.update(req.params.id, req.body, req.user), 'User updated');
+      const meta = { ipAddress: req.ip, userAgent: req.get('user-agent') };
+      return success(res, await UserService.update(req.params.id, req.body, req.user, meta), 'User updated');
     } catch (error) {
       return next(error);
     }
@@ -40,7 +43,8 @@ export const UserController = {
         const { AppError } = await import('../utils/apiResponse.js');
         throw new AppError('Password is required', 400);
       }
-      return success(res, await UserService.updatePassword(req.params.id, req.body.newPassword), 'Password updated');
+      const meta = { ipAddress: req.ip, userAgent: req.get('user-agent') };
+      return success(res, await UserService.updatePassword(req.params.id, req.body.newPassword, req.user, meta), 'Password updated');
     } catch (error) {
       return next(error);
     }
@@ -48,9 +52,8 @@ export const UserController = {
 
   async setCapabilities(req, res, next) {
     try {
-      const value = req.body?.capabilities;
-      const capabilities = value === null ? null : value;
-      return success(res, await UserService.setCapabilities(req.params.id, capabilities), 'Permissions updated');
+      const meta = { ipAddress: req.ip, userAgent: req.get('user-agent') };
+      return success(res, await UserService.setCapabilities(req.params.id, req.body.capabilities, req.user, meta), 'Capabilities updated');
     } catch (error) {
       return next(error);
     }

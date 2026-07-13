@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from 'react';
 import type { ElementType, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   Archive,
   ArrowLeft,
@@ -36,7 +36,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
-import { applySpecialShortcodes, cn, isUUID } from '@/src/lib/utils';
+import { applySpecialShortcodes, applyGeneralShortcodes, cn, isUUID } from '@/src/lib/utils';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
 import { siteService } from '@/src/services/siteService';
@@ -82,6 +82,7 @@ type EmployeeForm = {
   separationDate: string;
   separationReason: string;
   isArchived?: boolean;
+  isReadyForArchive?: boolean;
   avatarUrl?: string;
   jobTitle: string;
   birthdate: string;
@@ -119,6 +120,7 @@ const emptyEmployee: EmployeeForm = {
   separationDate: '',
   separationReason: '',
   isArchived: false,
+  isReadyForArchive: false,
   avatarUrl: '',
   jobTitle: '',
   birthdate: '',
@@ -143,6 +145,7 @@ const editableFields: Array<keyof EmployeeForm> = [
   'status',
   'employeeStatus',
   'siteId',
+  'lmsAccount',
   'pcName',
   'biosDate',
   'windowsKey',
@@ -263,10 +266,14 @@ function formatEmployeeName(firstName = '', middleName = '', lastName = '', suff
 }
 
 function normalizePhoneInput(value = '') {
+  const upper = value.toUpperCase();
+  if ('N/A'.startsWith(upper)) return upper;
   return value.replace(/\D/g, '').slice(0, 11);
 }
 
 function formatRustdeskId(value = '') {
+  const upper = value.toUpperCase();
+  if ('N/A'.startsWith(upper)) return upper;
   return value
     .replace(/\D/g, '')
     .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -274,6 +281,8 @@ function formatRustdeskId(value = '') {
 }
 
 function formatWindowsLicenseKey(value = '') {
+  const upper = value.toUpperCase();
+  if ('N/A'.startsWith(upper)) return upper;
   return value
     .replace(/[^a-zA-Z0-9]/g, '')
     .toUpperCase()
@@ -283,6 +292,7 @@ function formatWindowsLicenseKey(value = '') {
 }
 
 function isCompleteWindowsLicenseKey(value = '') {
+  if (value.toUpperCase() === 'N/A') return true;
   return value.replace(/[^a-zA-Z0-9]/g, '').length === 25;
 }
 
@@ -330,12 +340,12 @@ function formatDate(value?: string) {
 
 function actionLabel(action: string) {
   const norm = action.toUpperCase();
-  if (norm === 'UPDATE') return 'Updated record';
-  if (norm === 'CREATE') return 'Created record';
-  if (norm === 'DELETE') return 'Deleted record';
-  if (norm === 'ARCHIVE') return 'Archived record';
-  if (norm === 'UNARCHIVE') return 'Unarchived record';
-  return action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  if (norm === 'UPDATE' || norm === 'EMPLOYEE.UPDATE') return 'Updated record';
+  if (norm === 'CREATE' || norm === 'EMPLOYEE.CREATE') return 'Created record';
+  if (norm === 'DELETE' || norm === 'EMPLOYEE.DELETE') return 'Deleted record';
+  if (norm === 'ARCHIVE' || norm === 'EMPLOYEE.ARCHIVE') return 'Archived record';
+  if (norm === 'UNARCHIVE' || norm === 'EMPLOYEE.UNARCHIVE') return 'Unarchived record';
+  return action.replace(/[._]/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatFieldName(field: string) {
@@ -350,12 +360,13 @@ function formatFieldName(field: string) {
 function formatValue(value: any) {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object') return JSON.stringify(value);
   
   const strValue = String(value);
   const lowerValue = strValue.toLowerCase();
-  if (['missing', 'installed', 'active', 'inactive'].includes(lowerValue)) {
-    return strValue.charAt(0).toUpperCase() + strValue.slice(1);
-  }
+  
+  if (lowerValue === 'true') return 'Yes';
+  if (lowerValue === 'false') return 'No';
   
   return strValue;
 }
@@ -399,7 +410,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     address: emp?.address || '',
     boEmail: emp?.boEmail || '',
     emailPassword: emp?.emailPassword || '',
-    lmsAccount: emp?.lmsAccount || generateLmsAccount(formatEmployeeName(nameParts.firstName, nameParts.middleName, nameParts.lastName, '')) || '',
+    lmsAccount: (emp?.lmsAccount !== undefined) ? emp.lmsAccount : (generateLmsAccount(formatEmployeeName(nameParts.firstName, nameParts.middleName, nameParts.lastName, '')) || ''),
     status: emp?.status || 'active',
     employeeStatus: emp?.employeeStatus || 'Regular',
     siteId: emp?.siteId === 'HQ' ? 'HQ' : emp?.siteId || '',
@@ -414,6 +425,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     separationDate: emp?.separationDate || emp?.separation_date || '',
     separationReason: emp?.separationReason || emp?.separation_reason || '',
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
+    isReadyForArchive: emp?.is_ready_for_archive ?? emp?.isReadyForArchive ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
     jobTitle: emp?.jobTitle || '',
     birthdate: emp?.birthdate || '',
@@ -426,7 +438,8 @@ function normalizeEmployee(emp: any): EmployeeForm {
 }
 
 export default function EmployeeProfile() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, can } = useAuth();
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
@@ -444,12 +457,19 @@ export default function EmployeeProfile() {
   const [archiveSeparationReason, setArchiveSeparationReason] = useState<string>('Voluntary Separation (Resignation)');
   const [archiveSeparationReasonOther, setArchiveSeparationReasonOther] = useState<string>('');
   const [archiveSeparationDate, setArchiveSeparationDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [archiveStep, setArchiveStep] = useState<1 | 2>(1);
+  const [hrCheckboxes, setHrCheckboxes] = useState({ jobTitle: false, accountAssignment: false, site: false });
+  const [itCheckboxes, setItCheckboxes] = useState<Record<string, boolean>>({});
+  const [unarchiveJobTitle, setUnarchiveJobTitle] = useState('');
+  const [unarchiveAccountAssignment, setUnarchiveAccountAssignment] = useState('');
+  const [unarchiveSiteId, setUnarchiveSiteId] = useState('');
+  const [unarchiveEmployeeStatus, setUnarchiveEmployeeStatus] = useState('');
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isEmployeeStatusDropdownOpen, setIsEmployeeStatusDropdownOpen] = useState(false);
   const [isEsetDropdownOpen, setIsEsetDropdownOpen] = useState(false);
   const [isActivityWatchDropdownOpen, setIsActivityWatchDropdownOpen] = useState(false);
   const [visibleLogsCount, setVisibleLogsCount] = useState(3);
@@ -497,7 +517,39 @@ export default function EmployeeProfile() {
   const canEditHR = can('employees.edit');
   const canEditIT = can('employees.it.edit');
   const canEditSecrets = can('employees.secrets.edit');
-  const canArchiveEmployee = can('employees.delete');
+  const reqITFields = useMemo(() => ['admin', 'it'].includes(user?.role?.toLowerCase() || ''), [user]);
+  const isSuperAdmin = user?.role?.toLowerCase() === 'admin';
+  const canArchiveEmployee = (isSuperAdmin || canEditHR || canEditIT) && employee.status !== 'Separated';
+  
+  const hasActiveITAccounts = useMemo(() => {
+    return [
+      employee.outlookEmail,
+      employee.googleAccount,
+      employee.teamsAccount,
+      employee.mattermostAccount,
+      employee.boEmail,
+      employee.lmsAccount,
+      employee.windowsKey,
+      employee.rustdeskId,
+      employee.pcName
+    ].some(val => val && !/^(N\/A|\[N\/A\])$/i.test(val.trim()));
+  }, [employee]);
+
+  const activeITAccountKeys = useMemo(() => {
+    const keys: {key: string, label: string}[] = [];
+    const isActive = (val?: string | null) => val && !/^(N\/A|\[N\/A\])$/i.test(val.trim());
+    
+    if (isActive(employee.outlookEmail)) keys.push({key: 'outlookEmail', label: 'Outlook Email'});
+    if (isActive(employee.googleAccount)) keys.push({key: 'googleAccount', label: 'Google Account'});
+    if (isActive(employee.teamsAccount)) keys.push({key: 'teamsAccount', label: 'Teams Account'});
+    if (isActive(employee.mattermostAccount)) keys.push({key: 'mattermostAccount', label: 'Mattermost Account'});
+    if (isActive(employee.boEmail)) keys.push({key: 'boEmail', label: 'Snappy Email'});
+    if (isActive(employee.lmsAccount)) keys.push({key: 'lmsAccount', label: 'LMS Account'});
+    if (isActive(employee.windowsKey)) keys.push({key: 'windowsKey', label: 'Windows Key'});
+    if (isActive(employee.rustdeskId)) keys.push({key: 'rustdeskId', label: 'Remote ID'});
+    if (isActive(employee.pcName)) keys.push({key: 'pcName', label: 'PC Name'});
+    return keys;
+  }, [employee]);
   const canManageEmployee = canEditHR || canEditIT || canEditSecrets;
   const canUseEmployeeActions = canManageEmployee || canArchiveEmployee;
   const editingHR = isEditing && canEditHR;
@@ -635,6 +687,10 @@ export default function EmployeeProfile() {
   };
 
   const updateForm = (field: keyof EmployeeForm, value: any) => {
+    if (typeof value === 'string') {
+      value = applyGeneralShortcodes(value);
+    }
+    
     if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
       if (typeof value === 'string') {
         value = applySpecialShortcodes(value);
@@ -737,7 +793,7 @@ export default function EmployeeProfile() {
       return;
     }
 
-    if (form.phone && form.phone.length !== 11) {
+    if (form.phone && form.phone.trim().toUpperCase() !== 'N/A' && form.phone.length !== 11) {
       setFormErrors((current) => ({ ...current, phone: 'Phone number must be exactly 11 digits.' }));
       toast.error('Please resolve the highlighted fields before saving');
       return;
@@ -769,6 +825,7 @@ export default function EmployeeProfile() {
         pcName: form.pcName.trim(),
         emailPassword: form.emailPassword.trim(),
         status: form.status,
+        employeeStatus: form.employeeStatus,
         siteId: selectedSite?.id,
         siteName: selectedSite?.name,
         biosDate: form.biosDate || '',
@@ -798,6 +855,11 @@ export default function EmployeeProfile() {
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
       setIsEditing(false);
       toast.success('Employee record updated');
+      
+      const newId = form.employeeNumber.trim();
+      if (id && newId && id !== newId) {
+        navigate(`/employee/${newId}`, { replace: true });
+      }
     } catch (error: any) {
       toast.error(error.message || 'Unable to update employee record');
     } finally {
@@ -809,26 +871,86 @@ export default function EmployeeProfile() {
     if (!canArchiveEmployee) return;
     if (!id) return;
 
+    if (archiveIntent === 'archive' && archiveStep === 2) {
+      if (employee.isReadyForArchive) {
+        if (activeITAccountKeys.some(acc => !itCheckboxes[acc.key])) {
+          toast.error("all fields must be cleared");
+          return;
+        }
+      } else {
+        if (!hrCheckboxes.jobTitle || !hrCheckboxes.accountAssignment || !hrCheckboxes.site) {
+          toast.error("all fields must be cleared");
+          return;
+        }
+      }
+    }
+
     setIsArchiving(true);
 
     try {
-      const newValue = !employee.isArchived;
-      const isFloating = newValue && archiveStatusReason === 'floating';
-      const isSeparated = newValue && archiveStatusReason === 'separated';
+      let updateData: any = {};
       
-      const updated = await employeeService.update(id, { 
-        is_archived: newValue,
-        status: newValue ? archiveStatusReason : 'active',
-        ...(newValue ? { 
-          separation_reason: archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason, 
-          separation_date: isSeparated && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null,
-          floatDate: isFloating && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null,
-        } : {
+      if (archiveIntent === 'archive') {
+        const isFloating = archiveStatusReason === 'floating';
+        const isSeparated = archiveStatusReason === 'separated';
+        const separationReason = archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason;
+        const sepDate = isSeparated && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
+        const flDate = isFloating && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
+        
+        if (employee.isReadyForArchive) {
+          // IT Admin is finalizing the archive
+          updateData = {
+            is_archived: true,
+            is_ready_for_archive: false,
+          };
+          
+          if (itCheckboxes.boEmail) { updateData.boEmail = ''; updateData.emailPassword = ''; }
+          if (itCheckboxes.lmsAccount) updateData.lmsAccount = '';
+          if (itCheckboxes.pcName) updateData.pcName = '';
+          if (itCheckboxes.outlookEmail) updateData.outlookEmail = '';
+          if (itCheckboxes.teamsAccount) updateData.teamsAccount = '';
+          if (itCheckboxes.mattermostAccount) updateData.mattermostAccount = '';
+          if (itCheckboxes.googleAccount) updateData.googleAccount = '';
+          if (itCheckboxes.windowsKey) updateData.windowsKey = '';
+          if (itCheckboxes.rustdeskId) updateData.rustdeskId = '';
+          
+        } else {
+          // HR is initiating
+          updateData = {
+            status: archiveStatusReason,
+            separation_reason: separationReason,
+            separation_date: sepDate,
+            floatDate: flDate,
+            jobTitle: '',
+            accountAssignment: '',
+            siteId: null,
+            siteName: '',
+          };
+          
+          if (hasActiveITAccounts) {
+            updateData.is_ready_for_archive = true;
+          } else {
+            updateData.is_archived = true;
+          }
+        }
+      } else {
+        // Unarchive
+        updateData = {
+          is_archived: false,
+          is_ready_for_archive: false,
+          status: 'active',
+          employeeStatus: unarchiveEmployeeStatus || 'Regular',
           separation_reason: null,
           separation_date: null,
           floatDate: null,
-        })
-      });
+          jobTitle: unarchiveJobTitle.trim(),
+          accountAssignment: unarchiveAccountAssignment.trim(),
+          siteId: unarchiveSiteId,
+          siteName: sites.find(s => s.id === unarchiveSiteId)?.name || '',
+        };
+      }
+      
+      const updated = await employeeService.update(id, updateData);
 
       const normalized = normalizeEmployee(updated);
 
@@ -838,10 +960,16 @@ export default function EmployeeProfile() {
       setForm(normalized);
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
 
-      toast.success(newValue ? 'Employee archived' : 'Employee unarchived');
+      toast.success(archiveIntent === 'unarchive' ? 'Employee unarchived' : (employee.isReadyForArchive || !hasActiveITAccounts) ? 'Employee archived' : 'Employee marked ready for IT Archive');
 
       setShowArchiveModal(false);
       setArchiveIntent(null);
+      setArchiveStep(1);
+      setHrCheckboxes({ jobTitle: false, accountAssignment: false, site: false });
+      setItCheckboxes({});
+      setUnarchiveJobTitle('');
+      setUnarchiveAccountAssignment('');
+      setUnarchiveSiteId('');
     } catch (error: any) {
       console.error('Archive error:', error);
       toast.error(error.message || 'Unable to update archive status');
@@ -968,14 +1096,14 @@ export default function EmployeeProfile() {
                       >
                         <div className="flex flex-col gap-5">
                           <div className="w-full md:w-1/3">
-                            <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                            <Field label="Employee ID" required isFilled={Boolean(form.employeeNumber)} error={formErrors.employeeNumber}>
                               <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. 1004" error={Boolean(formErrors.employeeNumber)} />
                             </Field>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 bg-[#F9FAFB] p-4 rounded-xl border border-[#E5E7EB]">
                             <div className="sm:col-span-4">
-                              <Field label="First Name" required error={formErrors.firstName}>
+                              <Field label="First Name" required isFilled={Boolean(form.firstName)} error={formErrors.firstName}>
                                 <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
                               </Field>
                             </div>
@@ -985,7 +1113,7 @@ export default function EmployeeProfile() {
                               </Field>
                             </div>
                             <div className="sm:col-span-3">
-                              <Field label="Last Name" required error={formErrors.lastName}>
+                              <Field label="Last Name" required isFilled={Boolean(form.lastName)} error={formErrors.lastName}>
                                 <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
                               </Field>
                             </div>
@@ -1089,56 +1217,87 @@ export default function EmployeeProfile() {
                           </button>
                         )}
 
-                        {canArchiveEmployee && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
-                            setArchiveStatusReason((form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated');
-                            
-                            const predefinedReasons = ['Resigned', 'AWOL', 'Terminated'];
-                            const currentReason = form.separationReason || employee.separationReason;
-                            const initialStatus = (form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated';
-                            
-                            if (initialStatus === 'separated') {
-                              if (currentReason && predefinedReasons.includes(currentReason)) {
-                                setArchiveSeparationReason(currentReason);
-                              } else {
-                                setArchiveSeparationReason('Resigned');
-                              }
-                              setArchiveSeparationReasonOther('');
-                            } else {
-                              setArchiveSeparationReason(currentReason || '');
-                              setArchiveSeparationReasonOther('');
-                            }
+                        {(() => {
+                          const isArchiveReady = employee.isReadyForArchive;
+                          
+                          let buttonText = 'Archive';
+                          let buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
+                          let isDisabled = false;
+                          let icon = <Archive className="w-4 h-4" />;
+                          
+                          if (employee.isArchived) {
+                            buttonText = 'Unarchive';
+                            buttonColor = 'bg-green-600 text-white hover:bg-green-700 shadow-green-500/20';
+                            isDisabled = !isSuperAdmin && !canEditHR;
+                            icon = <RotateCcw className="w-4 h-4" />;
+                          } else if (isArchiveReady) {
+                            buttonText = 'Deactivate & Archive';
+                            buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
+                            isDisabled = !isSuperAdmin && !canEditIT;
+                          } else if (hasActiveITAccounts) {
+                            buttonText = 'Ready For Archive, HR Admin';
+                            buttonColor = 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20';
+                            isDisabled = !isSuperAdmin && !canEditHR;
+                          } else {
+                            buttonText = 'Archive';
+                            buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
+                            isDisabled = !isSuperAdmin && !canEditHR;
+                          }
 
-                            const currentDate = form.separationDate || employee.separationDate;
-                            if (currentDate) {
-                              setArchiveSeparationDate(currentDate.split('T')[0]);
-                            } else {
-                              setArchiveSeparationDate('');
-                            }
-                            
-                            setShowArchiveModal(true);
-                          }}
-                          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${employee.isArchived
-                              ? "bg-green-600 text-white hover:bg-green-700 shadow-green-500/20"
-                              : "bg-red-600 text-white hover:bg-red-700 shadow-red-500/20"
-                            }`}
-                        >
-                          {employee.isArchived ? (
-                            <>
-                              <RotateCcw className="w-4 h-4" />
-                              Unarchive
-                            </>
-                          ) : (
-                            <>
-                              <Archive className="w-4 h-4" />
-                              Archive
-                            </>
-                          )}
-                        </button>
-                        )}
+                          if (!canArchiveEmployee || (isDisabled && !isSuperAdmin)) return null;
+
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
+                                
+                                if (employee.isArchived) {
+                                  setArchiveStep(1);
+                                  setUnarchiveJobTitle(employee.jobTitle || '');
+                                  setUnarchiveAccountAssignment(employee.accountAssignment || '');
+                                  setUnarchiveSiteId(employee.siteId || '');
+                                  setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
+                                } else if (employee.isReadyForArchive) {
+                                  setArchiveStep(2);
+                                } else {
+                                  setArchiveStep(1);
+                                  setArchiveStatusReason((form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated');
+                                  
+                                  const predefinedReasons = ['Resigned', 'AWOL', 'Terminated'];
+                                  const currentReason = form.separationReason || employee.separationReason;
+                                  const initialStatus = (form.status === 'floating' || employee.status === 'floating') ? 'floating' : 'separated';
+                                  
+                                  if (initialStatus === 'separated') {
+                                    if (currentReason && predefinedReasons.includes(currentReason)) {
+                                      setArchiveSeparationReason(currentReason);
+                                    } else {
+                                      setArchiveSeparationReason('Resigned');
+                                    }
+                                    setArchiveSeparationReasonOther('');
+                                  } else {
+                                    setArchiveSeparationReason(currentReason || '');
+                                    setArchiveSeparationReasonOther('');
+                                  }
+
+                                  const currentDate = form.separationDate || employee.separationDate;
+                                  if (currentDate) {
+                                    setArchiveSeparationDate(currentDate.split('T')[0]);
+                                  } else {
+                                    setArchiveSeparationDate('');
+                                  }
+                                }
+                                
+                                setShowArchiveModal(true);
+                              }}
+                              disabled={isDisabled}
+                              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${buttonColor}`}
+                            >
+                              {icon}
+                              {buttonText}
+                            </button>
+                          );
+                        })()}
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
@@ -1202,17 +1361,62 @@ export default function EmployeeProfile() {
 
                     <ProfileField label="Employee Status" icon={ShieldCheck} editing={editingHR}>
                       {editingHR ? (
-                        <select
-                          value={form.employeeStatus || 'Regular'}
-                          onChange={(e) => updateForm('employeeStatus', e.target.value)}
-                          className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all appearance-none cursor-pointer"
-                        >
-                          <option value="Regular">Regular</option>
-                          <option value="Probationary">Probationary</option>
-                          <option value="Fix-Term">Fix-Term</option>
-                        </select>
+                        <div className={cn("relative transition-all", isEmployeeStatusDropdownOpen ? "z-50" : "z-10")}>
+                          <button
+                            type="button"
+                            onClick={() => setIsEmployeeStatusDropdownOpen((current) => !current)}
+                            className={cn(
+                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                              !form.employeeStatus ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+                            )}
+                          >
+                            <span className="truncate">{form.employeeStatus || 'Regular'}</span>
+                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isEmployeeStatusDropdownOpen && 'rotate-90')} />
+                          </button>
+                          <AnimatePresence>
+                            {isEmployeeStatusDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsEmployeeStatusDropdownOpen(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                                >
+                                  <div className="max-h-64 overflow-y-auto py-1">
+                                    {['Regular', 'Probationary', 'Fix-Term'].map((statusOption) => {
+                                      const isSelected = (form.employeeStatus || 'Regular') === statusOption;
+                                      return (
+                                        <button
+                                          key={statusOption}
+                                          type="button"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            updateForm('employeeStatus', statusOption);
+                                            setIsEmployeeStatusDropdownOpen(false);
+                                          }}
+                                          className={cn(
+                                            "flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[#F3F4F6]",
+                                            isSelected ? "bg-[#EFF6FF]" : ""
+                                          )}
+                                        >
+                                          <span className={cn("text-sm font-semibold truncate", isSelected ? "text-[#2563EB]" : "text-[#4B5563]")}>{statusOption}</span>
+                                          {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       ) : (
-                        employee.employeeStatus || 'Regular'
+                        employee.isArchived 
+                          ? formatStatus(employee.status)
+                          : employee.employeeStatus || 'Regular'
                       )}
                     </ProfileField>
                     <ProfileField label="Site" icon={MapPin} editing={editingHR}>
@@ -1249,7 +1453,9 @@ export default function EmployeeProfile() {
                                         <button
                                           key={site.id}
                                           type="button"
-                                          onClick={() => {
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
                                             updateForm('siteId', site.id);
                                             setIsSiteDropdownOpen(false);
                                           }}
@@ -1367,7 +1573,7 @@ export default function EmployeeProfile() {
                 </ProfileSection>
 
                 {canViewIT && (
-                <ProfileSection icon={Laptop} title="IT INFORMATION" iconColorClass="text-purple-600 bg-purple-50" className="relative z-50">
+                <ProfileSection icon={Laptop} title="ACCOUNT AND DEVICE INFORMATION" iconColorClass="text-purple-600 bg-purple-50" className="relative z-50">
                   <div className="space-y-8">
                     {/* Accounts */}
                     <div>
@@ -1503,12 +1709,85 @@ export default function EmployeeProfile() {
                             employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
                           )}
                         </ProfileField>
+                        <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
+                          {editingIT ? (
+                            <div className="relative flex items-center w-full">
+                              <Input type="text" placeholder="YYYY-MM-DD or N/A" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
+                                <Calendar className="w-4 h-4 pointer-events-none absolute text-gray-500" />
+                                <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => { if (e.target.value) updateForm('biosDate', e.target.value); }} />
+                              </div>
+                            </div>
+                          ) : employee.biosDate ? (employee.biosDate.trim().toUpperCase() === 'N/A' || isNaN(Date.parse(employee.biosDate)) ? employee.biosDate : new Date(employee.biosDate).toLocaleDateString()) : <span className="text-red-500 font-black">Not Set</span>}
+                        </ProfileField>
                         {canViewSecrets && (
                         <ProfileField label="Remote ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
                           {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
                         </ProfileField>
                         )}
                       </div>
+
+                      {canViewSecrets && (
+                      <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
+                          <AnimatePresence mode="popLayout" initial={false}>
+                            {editingSecrets ? (
+                              <motion.div
+                                key="edit-windows"
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                              >
+                                <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" error={Boolean(formErrors.windowsKey)} />
+                                {formErrors.windowsKey && <span className="mt-1.5 block text-xs font-bold text-red-600">{formErrors.windowsKey}</span>}
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="view-windows"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 5 }}
+                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                              >
+                                <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit overflow-hidden flex items-center">
+                                  <AnimatePresence mode="popLayout" initial={false}>
+                                    <motion.span
+                                      key={showSensitive ? 'visible' : 'hidden'}
+                                      initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
+                                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                      exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
+                                      transition={{ duration: 0.2 }}
+                                      className="inline-block"
+                                    >
+                                      {showSensitive ? (employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>) : (employee.windowsKey ? '*****-*****-*****-*****-*****' : <span className="text-red-500 font-black">Not Assigned</span>)}
+                                    </motion.span>
+                                  </AnimatePresence>
+                                </p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        <AnimatePresence mode="popLayout" initial={false}>
+                          {!isEditing && employee.windowsKey && (
+                            <motion.button
+                              key="reveal-button"
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                              type="button"
+                              onClick={handleReveal}
+                              className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-xl text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                            >
+                              {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              {showSensitive ? 'Hide' : 'Reveal Key'}
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      )}
                     </div>
                   </div>
                 </ProfileSection>
@@ -1584,7 +1863,9 @@ export default function EmployeeProfile() {
                                       <button
                                         key={opt.id}
                                         type="button"
-                                        onClick={() => {
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           updateForm('esetStatus', opt.id as any);
                                           setIsEsetDropdownOpen(false);
                                         }}
@@ -1641,7 +1922,9 @@ export default function EmployeeProfile() {
                                       <button
                                         key={opt.id}
                                         type="button"
-                                        onClick={() => {
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           updateForm('activityWatchStatus', opt.id as any);
                                           setIsActivityWatchDropdownOpen(false);
                                         }}
@@ -1840,11 +2123,67 @@ export default function EmployeeProfile() {
 
                   <p className="mt-2 text-sm text-[#6B7280]">
                     {archiveIntent === 'unarchive'
-                      ? 'This employee will be restored to the active directory and their status will be set to active.'
-                      : 'This employee will be removed from the active directory. Please select their new status below:'}
+                      ? 'This employee will be restored to the active directory. Please provide their required HR fields.'
+                      : archiveStep === 1 
+                        ? 'This employee will be removed from the active directory. Please select their new status below:' 
+                        : 'Would You like to clear the fields then check box'}
                   </p>
-                  {archiveIntent === 'archive' && (
-                    <div className="mt-4">
+                  
+                  {archiveIntent === 'unarchive' && (
+                    <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                      <div>
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Job Title</label>
+                        <input
+                          type="text"
+                          value={unarchiveJobTitle}
+                          onChange={(e) => setUnarchiveJobTitle(e.target.value)}
+                          placeholder="e.g. Customer Service Rep"
+                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Employee Status</label>
+                        <select
+                          value={unarchiveEmployeeStatus}
+                          onChange={(e) => setUnarchiveEmployeeStatus(e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                        >
+                          <option value="Regular">Regular</option>
+                          <option value="Probationary">Probationary</option>
+                          <option value="Fix-Term">Fix-Term</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">DEPARTMENT/CAMPAIGN.</label>
+                        <select
+                          value={unarchiveAccountAssignment}
+                          onChange={(e) => setUnarchiveAccountAssignment(e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                        >
+                          <option value="">Select a Department/Campaign.</option>
+                          {accounts.map(account => (
+                            <option key={account.id} value={account.name}>{account.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Site</label>
+                        <select
+                          value={unarchiveSiteId}
+                          onChange={(e) => setUnarchiveSiteId(e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                        >
+                          <option value="">Select Site Location</option>
+                          {sites.map((site) => (
+                            <option key={site.id} value={site.id}>{site.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {archiveIntent === 'archive' && archiveStep === 1 && (
+                    <div className="mt-4 animate-in fade-in">
                       <select
                         value={archiveStatusReason}
                         onChange={(e) => {
@@ -1866,36 +2205,64 @@ export default function EmployeeProfile() {
                         <option value="floating">FLOATING</option>
                       </select>
 
-                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Archiving</label>
-                          {archiveStatusReason === 'separated' ? (
-                            <select
-                              value={archiveSeparationReason}
-                              onChange={(e) => setArchiveSeparationReason(e.target.value)}
-                              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
-                            >
-                              <option value="Resigned">Resigned</option>
-                              <option value="AWOL">AWOL</option>
-                              <option value="Terminated">Terminated</option>
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              placeholder="Please specify the reason..."
-                              value={archiveSeparationReason}
-                              onChange={(e) => setArchiveSeparationReason(e.target.value)}
-                              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
-                            />
-                          )}
-
-                          <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Date</label>
+                      <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Reason for Archiving</label>
+                        {archiveStatusReason === 'separated' ? (
+                          <select
+                            value={archiveSeparationReason}
+                            onChange={(e) => setArchiveSeparationReason(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                          >
+                            <option value="Resigned">Resigned</option>
+                            <option value="AWOL">AWOL</option>
+                            <option value="Terminated">Terminated</option>
+                          </select>
+                        ) : (
                           <input
-                            type="date"
-                            value={archiveSeparationDate}
-                            onChange={(e) => setArchiveSeparationDate(e.target.value)}
+                            type="text"
+                            placeholder="Please specify the reason..."
+                            value={archiveSeparationReason}
+                            onChange={(e) => setArchiveSeparationReason(e.target.value)}
                             className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
                           />
-                        </div>
+                        )}
+
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2 mt-4">Date</label>
+                        <input
+                          type="date"
+                          value={archiveSeparationDate}
+                          onChange={(e) => setArchiveSeparationDate(e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {archiveIntent === 'archive' && archiveStep === 2 && (
+                    <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-right-4">
+                      {employee.isReadyForArchive ? (
+                        activeITAccountKeys.map(acc => (
+                          <label key={acc.key} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={itCheckboxes[acc.key] || false} onChange={(e) => setItCheckboxes(prev => ({ ...prev, [acc.key]: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">{acc.label}</span>
+                          </label>
+                        ))
+                      ) : (
+                        <>
+                          <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.jobTitle} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, jobTitle: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">Job Title</span>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.accountAssignment} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, accountAssignment: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">Department/Campaign</span>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.site} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, site: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">Site</span>
+                          </label>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1907,6 +2274,7 @@ export default function EmployeeProfile() {
                   onClick={() => {
                     setShowArchiveModal(false);
                     setArchiveIntent(null);
+                    setArchiveStep(1);
                   }}
                   disabled={isArchiving}
                   className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827]"
@@ -1914,27 +2282,41 @@ export default function EmployeeProfile() {
                   Cancel
                 </button>
 
-                <button
-                  type="button"
-                  onClick={toggleArchiveEmployee}
-                  disabled={isArchiving || (archiveIntent === 'archive' && (!archiveSeparationReason.trim() || !archiveSeparationDate))}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-red-600 hover:bg-red-700'
-                    }`}
-                >
-                  {isArchiving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : archiveIntent === 'unarchive' ? (
-                    <RotateCcw className="w-4 h-4" />
-                  ) : (
-                    <Archive className="w-4 h-4" />
-                  )}
+                {archiveIntent === 'archive' && archiveStep === 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setArchiveStep(2)}
+                    disabled={isArchiving || (!archiveSeparationReason.trim() || !archiveSeparationDate)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    Proceed <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toggleArchiveEmployee}
+                    disabled={
+                      isArchiving ||
+                      (archiveIntent === 'unarchive' && (!unarchiveJobTitle.trim() || !unarchiveAccountAssignment.trim() || !unarchiveSiteId))
+                    }
+                    className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : employee.isReadyForArchive ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-500 hover:bg-orange-600'
+                      }`}
+                  >
+                    {isArchiving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : archiveIntent === 'unarchive' ? (
+                      <RotateCcw className="w-4 h-4" />
+                    ) : (
+                      <Archive className="w-4 h-4" />
+                    )}
 
-                  {archiveIntent === 'unarchive'
-                    ? 'Confirm Unarchive'
-                    : 'Confirm Archive'}
-                </button>
+                    {archiveIntent === 'unarchive'
+                      ? 'Confirm Unarchive'
+                      : employee.isReadyForArchive ? 'Deactivate & Archive' : 'Ready for Archive'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -2142,11 +2524,23 @@ function ComplianceField({
   );
 }
 
-function Field({ label, required, children, error }: { label: string; required?: boolean; children: ReactNode; error?: string }) {
+function Field({ label, required, isFilled, children, error }: { label: string; required?: boolean; isFilled?: boolean; children: ReactNode; error?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
-        {label} {required && <span className="text-red-500">*</span>}
+      <span className="flex items-center gap-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
+        {label} 
+        {required && (
+          <span 
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[0.5625rem] border transition-colors",
+              isFilled 
+                ? "bg-green-50 text-green-700 border-green-200" 
+                : "bg-red-50 text-red-600 border-red-100"
+            )}
+          >
+            {isFilled ? 'Filled' : 'Required'}
+          </span>
+        )}
       </span>
       {children}
       {error && <span className="text-xs font-bold text-red-600">{error}</span>}
@@ -2256,7 +2650,11 @@ function AccountDropdownGroup({
           <button
             key={account.id}
             type="button"
-            onClick={() => onSelect(account)}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSelect(account);
+            }}
             className={cn(
               "flex w-full items-center justify-between gap-3 border-t border-[#F3F4F6] px-3.5 py-2.5 text-left transition-colors hover:bg-[#F3F4F6]",
               isSelected ? "bg-[#EFF6FF]" : ""

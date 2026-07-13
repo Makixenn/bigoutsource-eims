@@ -19,7 +19,7 @@ export const UserService = {
     return UserProfileModel.findAll(filters);
   },
 
-  async approve(id, actor) {
+  async approve(id, userActor, meta = {}) {
     const user = await UserProfileModel.findById(id);
     if (!user) throw new AppError('User not found', 404);
     if (user.status === 'disabled') throw new AppError('Disabled users cannot be approved directly', 400);
@@ -28,14 +28,14 @@ export const UserService = {
     const updated = await UserProfileModel.update(id, {
       role: 'viewer',
       status: 'active',
-      approvedBy: actor.id,
+      approvedBy: userActor.id,
       approvedAt: new Date().toISOString(),
     });
     await emitAccessUpdate(updated, 'user.approved');
     return updated;
   },
 
-  async disable(id) {
+  async disable(id, userActor, meta = {}) {
     const user = await UserProfileModel.findById(id);
     if (!user) throw new AppError('User not found', 404);
     if (user.role === 'super_admin') throw new AppError('Super Admin accounts cannot be disabled here', 400);
@@ -47,7 +47,7 @@ export const UserService = {
     return updated;
   },
 
-  async update(id, data = {}, actor) {
+  async update(id, data = {}, userActor, meta = {}) {
     const user = await UserProfileModel.findById(id);
     if (!user) throw new AppError('User not found', 404);
     if (user.role === 'super_admin') throw new AppError('Super Admin accounts cannot be edited here', 400);
@@ -87,8 +87,8 @@ export const UserService = {
         throw new AppError('Status must be active or inactive', 400);
       }
       updates.status = data.status;
-      if (data.status === 'active' && user.status === 'pending' && actor?.id) {
-        updates.approvedBy = actor.id;
+      if (data.status === 'active' && user.status === 'pending' && userActor?.id) {
+        updates.approvedBy = userActor.id;
         updates.approvedAt = new Date().toISOString();
       }
     }
@@ -96,11 +96,12 @@ export const UserService = {
     if (!Object.keys(updates).length) throw new AppError('No valid fields to update', 400);
 
     const updated = await UserProfileModel.update(id, updates);
+
     await emitAccessUpdate(updated, 'user.updated');
     return updated;
   },
 
-  async updatePassword(id, newPassword) {
+  async updatePassword(id, newPassword, userActor, meta = {}) {
     const user = await UserProfileModel.findById(id);
     if (!user) throw new AppError('User not found', 404);
     if (user.role === 'super_admin') throw new AppError('Super Admin accounts cannot be edited here', 400);
@@ -108,8 +109,8 @@ export const UserService = {
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.hash(newPassword, 10);
     const updated = await UserProfileModel.update(id, { passwordHash });
-    
-    return { changed: true };
+
+    return updated;
   },
 
   /**
@@ -117,13 +118,14 @@ export const UserService = {
    * revert the account to its role's default capabilities. Meta-capabilities are
    * never grantable (same guardrail as the role editor).
    */
-  async setCapabilities(id, capabilities) {
+  async setCapabilities(id, capabilities, userActor, meta = {}) {
     const user = await UserProfileModel.findById(id);
     if (!user) throw new AppError('User not found', 404);
     if (user.role === 'super_admin') throw new AppError('Super Admin permissions cannot be overridden', 400);
 
     const overrides = capabilities === null ? null : sanitizeCapabilities(capabilities);
     const updated = await UserProfileModel.update(id, { capabilityOverrides: overrides });
+
     await emitAccessUpdate(updated, 'user.permissions_updated');
     return updated;
   },

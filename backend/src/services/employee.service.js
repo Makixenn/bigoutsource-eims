@@ -6,6 +6,7 @@ import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
 import { filterEmployeeWritePayload } from '../utils/employeeSecurity.js';
 import { NotificationService } from '../services/notification.service.js';
+import { NotificationModel } from '../models/notification.model.js';
 import {
   buildCompanyEmail,
   buildEmployeeIdentifierBase,
@@ -36,6 +37,17 @@ const trackedFields = [
   'esetStatus',
   'activityWatchStatus',
   'isArchived',
+  'outlookEmail',
+  'googleAccount',
+  'teamsAccount',
+  'mattermostAccount',
+  'jobTitle',
+  'birthdate',
+  'floatDate',
+  'separationDate',
+  'separationReason',
+  'isReadyForArchive',
+  'avatarUrl',
 ];
 
 function localEmailIdentifier(email = '') {
@@ -67,7 +79,7 @@ function generatedFieldsChanged(data = {}) {
 }
 
 async function resolveAccount(data, existing) {
-  const accountName = data.accountAssignment || data.account || existing?.accountAssignment || existing?.account;
+  const accountName = data.accountAssignment ?? data.account ?? existing?.accountAssignment ?? existing?.account ?? '';
   if (!accountName) {
     return { name: '', type: 'external', code: 'UNASSIGNED' };
   }
@@ -120,17 +132,17 @@ async function withGeneratedIdentity(data, existing = null) {
   if (!name.fullName || !name.lastName) throw new AppError('first name and last name are required', 400);
   if (!defaultLmsAccount || !identifier) throw new AppError('Unable to generate employee identity from the provided name', 400);
 
-  const lmsAccount = data.lmsAccount !== undefined && data.lmsAccount !== ''
-    ? data.lmsAccount
-    : (existing ? existing.lmsAccount : defaultLmsAccount);
+  const lmsAccount = data.lmsAccount !== undefined
+    ? (data.lmsAccount || (existing ? '' : defaultLmsAccount))
+    : (existing?.lmsAccount ?? defaultLmsAccount);
 
-  const boEmail = data.boEmail !== undefined && data.boEmail !== ''
-    ? data.boEmail
-    : (existing ? existing.boEmail : buildCompanyEmail(identifier, account.code, account.type));
+  const boEmail = data.boEmail !== undefined
+    ? (data.boEmail || (existing ? '' : buildCompanyEmail(identifier, account.code, account.type)))
+    : (existing?.boEmail ?? buildCompanyEmail(identifier, account.code, account.type));
 
-  const pcName = data.pcName !== undefined && data.pcName !== ''
-    ? data.pcName
-    : (existing ? existing.pcName : buildPcName(identifier, account.code));
+  const pcName = data.pcName !== undefined
+    ? (data.pcName || (existing ? '' : buildPcName(identifier, account.code)))
+    : (existing?.pcName ?? buildPcName(identifier, account.code));
 
   return {
     ...data,
@@ -208,6 +220,7 @@ export const EmployeeService = {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
+
     await NotificationService.notifyEmployeeAdded({ employee, actor }).catch((error) => {
       console.error('Unable to create employee-added notifications', error);
     });
@@ -231,9 +244,36 @@ export const EmployeeService = {
 
     const archiveValue = data?.is_archived ?? data?.isArchived;
     const willBeArchived = archiveValue === undefined ? before.isArchived : archiveValue === true || String(archiveValue).toLowerCase() === 'true';
+    
+    const readyForArchiveValue = data?.is_ready_for_archive ?? data?.isReadyForArchive;
+    const willBeReadyForArchive = readyForArchiveValue === undefined ? before.isReadyForArchive : readyForArchiveValue === true || String(readyForArchiveValue).toLowerCase() === 'true';
+    
+    const isHrArchiving = !before.isReadyForArchive && willBeReadyForArchive;
+    const isItArchiving = !before.isArchived && willBeArchived;
+    const isNewlyArchived = isHrArchiving || isItArchiving;
 
     const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
+
+    const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.jobTitle;
+    const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName || !employee.windowsKey;
+
+    if (!isHrFieldsMissing) {
+      await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'hr_action', 'HR').catch(console.error);
+    }
+    if (!isItFieldsMissing) {
+      await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'it_action', 'IT').catch(console.error);
+    }
+
+    if (isNewlyArchived) {
+      await NotificationService.notifyEmployeeArchived({ 
+        employee, 
+        actor,
+        isComplete: isItArchiving
+      }).catch((error) => {
+        console.error('Unable to create employee-archived notifications', error);
+      });
+    }
 
     const changes = diffEmployee(before, employee);
     await AuditLogModel.create({
@@ -250,6 +290,7 @@ export const EmployeeService = {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
+
     return employee;
   },
 

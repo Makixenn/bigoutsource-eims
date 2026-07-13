@@ -14,6 +14,9 @@ export interface Employee {
   boEmail: string;
   lmsAccount: string;
   // IT Data
+  isArchived: boolean;
+  isReadyForArchive?: boolean;
+  avatarUrl?: string;
   pcName: string;
   dateHired: string;
   biosDate: string;

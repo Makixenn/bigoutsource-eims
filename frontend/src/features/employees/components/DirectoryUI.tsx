@@ -57,11 +57,13 @@ export function SectionCard({
 export function Field({
   label,
   required,
+  isFilled,
   error,
   children,
 }: {
   label: string;
   required?: boolean;
+  isFilled?: boolean;
   error?: string;
   children: ReactNode;
 }) {
@@ -69,7 +71,18 @@ export function Field({
     <label className="flex flex-col gap-1.5">
       <span className="flex items-center gap-2 text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">
         {label}
-        {required && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[0.5625rem] text-red-600 border border-red-100">Required</span>}
+        {required && (
+          <span 
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[0.5625rem] border transition-colors",
+              isFilled 
+                ? "bg-green-50 text-green-700 border-green-200" 
+                : "bg-red-50 text-red-600 border-red-100"
+            )}
+          >
+            {isFilled ? 'Filled' : 'Required'}
+          </span>
+        )}
       </span>
       {children}
       {error && <span className="text-xs font-bold text-red-600">{error}</span>}

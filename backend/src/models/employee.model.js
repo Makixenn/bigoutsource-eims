@@ -105,9 +105,14 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (data?.jobTitle !== undefined) payload.job_title = stringOrEmpty(data.jobTitle);
   if (data?.birthdate !== undefined) payload.birthdate = stringOrEmpty(data.birthdate);
   if (data?.floatDate !== undefined) payload.float_date = stringOrEmpty(data.floatDate);
+  if (data?.employeeStatus !== undefined) payload.employee_status = stringOrEmpty(data.employeeStatus);
   const isArchived = valueFrom(data, 'is_archived', 'isArchived');
   if (isArchived !== undefined) {
     payload.is_archived = toBoolean(isArchived);
+  }
+  const isReadyForArchive = valueFrom(data, 'is_ready_for_archive', 'isReadyForArchive');
+  if (isReadyForArchive !== undefined) {
+    payload.is_ready_for_archive = toBoolean(isReadyForArchive);
   }
   return payload;
 }
@@ -131,6 +136,7 @@ function normalize(row) {
     emailPassword: row.emailPassword || row.email_password || '',
     lmsAccount: row.lmsAccount || row.lms_account || '',
     status: row.status || 'active',
+    employeeStatus: row.employeeStatus || row.employee_status || 'Regular',
     siteId: row.site || '',
     site: row.site || '',
     pcName: row.pcName || row.pc_name || '',
@@ -154,6 +160,7 @@ function normalize(row) {
     birthdate: row.birthdate || '',
     floatDate: row.floatDate || row.float_date || '',
     isArchived: row.isArchived ?? row.is_archived ?? false,
+    isReadyForArchive: row.isReadyForArchive ?? row.is_ready_for_archive ?? false,
     avatarUrl: row.avatarUrl || row.avatar_url || null,
     createdAt: row.createdAt || row.created_at || '',
     updatedAt: row.updatedAt || row.updated_at || '',
@@ -236,6 +243,7 @@ export const EmployeeModel = {
       emailPassword: payload.email_password,
       lmsAccount: payload.lms_account,
       status: payload.status,
+      employeeStatus: payload.employee_status,
       site: payload.site,
       pcName: payload.pc_name,
       rustdeskId: payload.rustdesk_id,
@@ -254,6 +262,7 @@ export const EmployeeModel = {
       birthdate: payload.birthdate,
       floatDate: payload.float_date,
       isArchived: payload.is_archived,
+      isReadyForArchive: payload.is_ready_for_archive,
       avatarUrl: payload.avatar_url,
     };
     
@@ -280,6 +289,7 @@ export const EmployeeModel = {
         emailPassword: payload.email_password,
         lmsAccount: payload.lms_account,
         status: payload.status,
+        employeeStatus: payload.employee_status,
         site: payload.site,
         pcName: payload.pc_name,
         rustdeskId: payload.rustdesk_id,
@@ -298,6 +308,7 @@ export const EmployeeModel = {
         floatDate: payload.float_date,
         windowsLicenseKey: payload.windows_license_key,
         isArchived: payload.is_archived,
+        isReadyForArchive: payload.is_ready_for_archive,
         avatarUrl: payload.avatar_url,
       };
       Object.keys(createData).forEach(key => createData[key] === undefined ? delete createData[key] : {});
@@ -319,6 +330,7 @@ export const EmployeeModel = {
     const payload = toDatabasePayload(data);
     console.log('--- EmployeeModel Update Payload ---', payload);
     const updateData = {
+      id: payload.id,
       name: payload.name,
       account: payload.account,
       phoneNumber: payload.phone_number,
@@ -327,6 +339,7 @@ export const EmployeeModel = {
       emailPassword: payload.email_password,
       lmsAccount: payload.lms_account,
       status: payload.status,
+      employeeStatus: payload.employee_status,
       site: payload.site,
       pcName: payload.pc_name,
       rustdeskId: payload.rustdesk_id,
@@ -345,6 +358,7 @@ export const EmployeeModel = {
       birthdate: payload.birthdate,
       floatDate: payload.float_date,
       isArchived: payload.is_archived,
+      isReadyForArchive: payload.is_ready_for_archive,
       avatarUrl: payload.avatar_url,
     };
     Object.keys(updateData).forEach(key => updateData[key] === undefined ? delete updateData[key] : {});

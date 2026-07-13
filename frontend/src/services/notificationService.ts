@@ -13,6 +13,10 @@ class NotificationService extends BaseService<any> {
   async clearAll() {
     return apiRequest(this.endpoint, { method: 'DELETE' });
   }
+
+  async clearSingle(id: string) {
+    return apiRequest(`${this.endpoint}/${id}`, { method: 'DELETE' });
+  }
 }
 
 export const notificationService = new NotificationService();

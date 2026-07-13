@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Bell, Loader2, ShieldAlert, UserPlus, X } from 'lucide-react';
+import { Bell, Loader2, ShieldAlert, UserPlus, X, RefreshCw, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -110,7 +110,7 @@ function NotificationBell() {
   const [activeEmployeeNotificationIds, setActiveEmployeeNotificationIds] = useState<Set<string>>(new Set());
 
   const canManageUsers = can('users.manage');
-  const canReceiveEmployeeAddedNotifications = can('notifications.employee_added');
+  const canReceiveEmployeeAddedNotifications = can('notifications.hr_action') || can('notifications.it_action');
 
   const pendingUsers = useMemo(
     () => users.filter((account) => account.status === 'pending'),
@@ -183,6 +183,24 @@ function NotificationBell() {
       setEmployeeNotifications(previousNotifications);
     } finally {
       setIsClearing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    setRefreshTrigger(prev => prev + 1);
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    setIsLoading(false);
+  };
+
+  const handleClearSingle = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setEmployeeNotifications(current => current.filter(n => String(n.id) !== id));
+      await notificationService.clearSingle(id);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -272,6 +290,15 @@ function NotificationBell() {
                 <h2 className="text-base font-black" style={{ color: 'var(--color-text-primary)' }}>Notifications</h2>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="rounded-lg border px-2 py-1.5 transition-colors hover:bg-[#F9FAFB]"
+                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+                  title="Refresh"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </button>
                 {employeeNotifications.length > 0 && (
                   <button
                     type="button"
@@ -308,25 +335,57 @@ function NotificationBell() {
                     return (
                     <div
                       key={notification.id}
-                      className="rounded-xl border p-4 text-left transition-colors"
+                      className="relative rounded-xl border p-4 text-left transition-colors"
                       style={
                         activeEmployeeNotificationIds.has(String(notification.id))
-                          ? { borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.08)' }
+                          ? { borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.04)' }
                           : { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }
                       }
                     >
-                      <div className="flex items-start gap-3">
+                      {notification.details?.isArchiveNotification ? (
+                        <div className="absolute right-12 top-4">
+                          <span className={`rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-wider border shadow-sm ${
+                            notification.details.archiveStatus === 'complete'
+                              ? 'bg-green-100 text-green-600 border-green-200'
+                              : 'bg-red-100 text-red-600 border-red-200'
+                          }`}>
+                            {notification.details.archiveStatus === 'complete' ? 'ARCHIVED COMPLETE' : 'HR Archived'}
+                          </span>
+                        </div>
+                      ) : notification.details?.missingFields ? (
+                        <div className="absolute right-12 top-4">
+                          <span className={`rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-wider border shadow-sm ${
+                            notification.details.isComplete
+                              ? 'bg-green-100 text-green-600 border-green-200'
+                              : 'bg-red-100 text-red-600 border-red-200'
+                          }`}>
+                            {notification.details.missingFields} FIELDS {notification.details.isComplete ? 'COMPLETE' : 'INCOMPLETE'}
+                          </span>
+                        </div>
+                      ) : null}
+                      
+                      {!(
+                        (notification.details?.isArchiveNotification && notification.details.archiveStatus !== 'complete') ||
+                        (notification.details?.missingFields && !notification.details.isComplete)
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleClearSingle(String(notification.id), e)}
+                          className="absolute right-3 top-3 rounded-full p-1.5 transition-colors hover:bg-gray-100 focus:outline-none"
+                          title="Mark as done"
+                        >
+                          <Check className="h-4 w-4 text-gray-400 hover:text-green-600 transition-colors" />
+                        </button>
+                      )}
+                      
+                      <div className="flex items-start gap-3 mt-1">
                         <div
-                          className="rounded-xl p-2"
-                          style={
-                            activeEmployeeNotificationIds.has(String(notification.id))
-                              ? { color: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)' }
-                              : { backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-muted)' }
-                          }
+                          className="rounded-xl p-2 shrink-0"
+                          style={{ color: '#2563EB', backgroundColor: '#EFF6FF' }}
                         >
                           <UserPlus className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 pr-4">
                           <div className="flex items-center gap-2">
                             <p className="truncate text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>{notification.actorName || 'Someone'}</p>
                             {activeEmployeeNotificationIds.has(String(notification.id)) && (
@@ -340,7 +399,9 @@ function NotificationBell() {
                             <p className="mt-1 text-[0.6875rem] font-bold" style={{ color: 'var(--color-text-muted)' }}>{timestamp}</p>
                           )}
                           <p className="mt-2 text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>
-                            Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.
+                            {notification.message ? notification.message : (
+                              <>Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.</>
+                            )}
                           </p>
                           {notification.actionUrl && (
                             <Link

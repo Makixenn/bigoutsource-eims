@@ -26,4 +26,12 @@ export const NotificationController = {
       return next(error);
     }
   },
+
+  async clearSingle(req, res, next) {
+    try {
+      return success(res, await NotificationService.clearSingleForUser(req.params.id, req.user), 'Notification cleared');
+    } catch (error) {
+      return next(error);
+    }
+  },
 };

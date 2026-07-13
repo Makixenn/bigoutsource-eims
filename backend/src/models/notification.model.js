@@ -71,9 +71,85 @@ export const NotificationModel = {
   },
 
   async clearAllForRecipient(recipientId) {
+    const notifications = await prisma.notification.findMany({ where: { recipientId } });
+    const toDelete = notifications.filter(n => {
+      const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
+      if (parsed?.isArchiveNotification && parsed?.archiveStatus !== 'complete') return false;
+      if (parsed?.missingFields && !parsed?.isComplete) return false;
+      return true;
+    }).map(n => n.id);
+
+    if (toDelete.length > 0) {
+      await prisma.notification.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+    }
+    return [];
+  },
+
+  async clearSingleForRecipient(id, recipientId) {
+    const n = await prisma.notification.findFirst({ where: { id, recipientId } });
+    if (!n) return [];
+
+    const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
+    if (parsed?.isArchiveNotification && parsed?.archiveStatus !== 'complete') return [];
+    if (parsed?.missingFields && !parsed?.isComplete) return [];
+
     await prisma.notification.deleteMany({
-      where: { recipientId },
+      where: { id, recipientId },
     });
+    return [];
+  },
+
+  async findById(id) {
+    const row = await prisma.notification.findUnique({
+      where: { id },
+    });
+    return normalize(row);
+  },
+
+  async clearGlobalByEntity(entityType, entityId, type, missingFields) {
+    const notifications = await prisma.notification.findMany({
+      where: { entityType, entityId, type },
+    });
+
+    const toDelete = notifications.filter((n) => {
+      // Prisma JSON fields are parsed as objects/arrays automatically if supported, 
+      // or we might need to check the raw value. We use normalize() normally.
+      const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
+      const mFields = parsed?.missingFields;
+      if (!missingFields) return !mFields;
+      return mFields === missingFields;
+    }).map((n) => n.id);
+
+    if (toDelete.length > 0) {
+      await prisma.notification.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+    }
+    return [];
+  },
+
+  async markAsCompleteGlobalByEntity(entityType, entityId, type, missingFields) {
+    const notifications = await prisma.notification.findMany({
+      where: { entityType, entityId, type },
+    });
+
+    for (const n of notifications) {
+      const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
+      const mFields = parsed?.missingFields;
+      if (mFields === missingFields && !parsed?.isComplete) {
+        await prisma.notification.update({
+          where: { id: n.id },
+          data: {
+            details: {
+              ...parsed,
+              isComplete: true,
+            },
+          },
+        });
+      }
+    }
     return [];
   },
 };

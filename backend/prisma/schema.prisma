@@ -57,6 +57,7 @@ model Employee {
   jobTitle          String   @default("") @map("job_title")
   birthdate         String   @default("")
   floatDate         String   @default("") @map("float_date")
+  isReadyForArchive Boolean  @default(false) @map("is_ready_for_archive")
 
   outlookEmail      String   @default("") @map("outlook_email")
   mattermostAccount String   @default("") @map("mattermost_account")
@@ -116,6 +117,7 @@ model Notification {
   readAt      DateTime?    @map("read_at")
   createdAt   DateTime     @default(now()) @map("created_at")
 
+  @@index([recipientId, createdAt(sort: Desc)])
   @@map("notifications")
 }
 

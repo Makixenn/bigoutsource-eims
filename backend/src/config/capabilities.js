@@ -30,7 +30,8 @@ export const CAPABILITIES = {
   'reports.export': 'Export / download reports',
   'auditlogs.view': 'View audit logs',
   'auditlogs.undo': 'Undo audit-logged actions',
-  'notifications.employee_added': 'Receive employee-added notifications',
+  'notifications.hr_action': 'Receive HR action required notifications',
+  'notifications.it_action': 'Receive IT action required notifications',
   // Meta — Super Admin only; never grantable to custom roles (Phase 4 guardrail).
   'users.manage': 'Manage user accounts',
   'roles.manage': 'Manage roles & permissions',
@@ -52,7 +53,7 @@ export const ROLE_CAPABILITIES = {
     'imports.manage',
     'reports.view', 'reports.export',
     'auditlogs.view', 'auditlogs.undo',
-    'notifications.employee_added',
+    'notifications.hr_action', 'notifications.it_action',
   ],
   hr_admin: [
     'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.delete',
@@ -60,7 +61,7 @@ export const ROLE_CAPABILITIES = {
     'imports.manage',
     'reports.view', 'reports.export',
     'auditlogs.view',
-    'notifications.employee_added',
+    'notifications.hr_action',
   ],
   it_admin: [
     'employees.view', 'employees.create', 'employees.create.it_fields.required',
@@ -70,12 +71,11 @@ export const ROLE_CAPABILITIES = {
     'imports.manage',
     'reports.view', 'reports.export',
     'auditlogs.view',
-    'notifications.employee_added',
+    'notifications.it_action',
   ],
   viewer: [
     'employees.view',
     'departments.view',
-    'notifications.employee_added',
   ],
 };
 
