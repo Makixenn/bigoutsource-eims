@@ -45,8 +45,8 @@ export default function App() {
       <Router>
         <ErrorBoundary>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/setup-password" element={<SetupPassword />} />
+            
+            <Route path="/login" element={<Suspense fallback={<PageSpinner />}><Login /></Suspense>} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Suspense fallback={<PageSpinner />}><Dashboard /></Suspense>} />
