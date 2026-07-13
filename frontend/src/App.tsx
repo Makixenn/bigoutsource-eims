@@ -25,6 +25,7 @@ const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeImportReview = React.lazy(() => import('./pages/EmployeeImportReview'));
 const FAQ = React.lazy(() => import('./pages/FAQ'));
+const SetupPassword = React.lazy(() => import('./pages/SetupPassword'));
 
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -47,6 +48,7 @@ export default function App() {
           <Routes>
             
             <Route path="/login" element={<Suspense fallback={<PageSpinner />}><Login /></Suspense>} />
+            <Route path="/setup-password" element={<Suspense fallback={<PageSpinner />}><SetupPassword /></Suspense>} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Suspense fallback={<PageSpinner />}><Dashboard /></Suspense>} />
