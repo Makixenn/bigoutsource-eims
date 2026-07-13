@@ -296,14 +296,21 @@ export const EmployeeService = {
 
   async remove(id, user, meta = {}) {
     const actor = auditActor(user);
+    const employee = await EmployeeModel.findById(id);
+    if (!employee) throw new AppError('Employee not found', 404);
+
     const removed = await EmployeeModel.remove(id);
-    if (!removed) throw new AppError('Employee not found', 404);
+    if (!removed) throw new AppError('Failed to delete employee', 500);
+
     await AuditLogModel.create({
       ...actor,
       action: 'employee.delete',
       entityType: 'employees',
       entityId: id,
-      entityLabel: id,
+      entityLabel: employee.fullName || id,
+      details: {
+        employee: employee
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

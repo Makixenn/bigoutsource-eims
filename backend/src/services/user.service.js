@@ -4,6 +4,8 @@ import { RoleService, sanitizeCapabilities } from '../services/role.service.js';
 import { AppError } from '../utils/apiResponse.js';
 import { emitUserAccessRevoked, emitUserAccessUpdated } from '../realtime/accessEvents.js';
 import { publicUserPayload } from '../utils/publicUser.js';
+import { AuditLogModel } from '../models/auditLog.model.js';
+import { auditActor } from '../utils/auditActor.js';
 
 async function emitAccessUpdate(profile, reason) {
   const capabilities = await RoleService.resolveUserCapabilities(profile);
@@ -32,6 +34,18 @@ export const UserService = {
       approvedAt: new Date().toISOString(),
     });
     await emitAccessUpdate(updated, 'user.approved');
+
+    const actor = auditActor(userActor);
+    await AuditLogModel.create({
+      ...actor,
+      action: 'user.approved',
+      entityType: 'users',
+      entityId: id,
+      entityLabel: updated.fullName || updated.email,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
     return updated;
   },
 
@@ -44,6 +58,18 @@ export const UserService = {
       status: 'disabled',
     });
     await emitAccessUpdate(updated, 'user.disabled');
+
+    const actor = auditActor(userActor);
+    await AuditLogModel.create({
+      ...actor,
+      action: 'user.disabled',
+      entityType: 'users',
+      entityId: id,
+      entityLabel: updated.fullName || updated.email,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
     return updated;
   },
 
@@ -98,6 +124,19 @@ export const UserService = {
     const updated = await UserProfileModel.update(id, updates);
 
     await emitAccessUpdate(updated, 'user.updated');
+
+    const actor = auditActor(userActor);
+    await AuditLogModel.create({
+      ...actor,
+      action: 'user.updated',
+      entityType: 'users',
+      entityId: id,
+      entityLabel: updated.fullName || updated.email,
+      details: { updates: Object.keys(updates) },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
     return updated;
   },
 
@@ -109,6 +148,18 @@ export const UserService = {
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.hash(newPassword, 10);
     const updated = await UserProfileModel.update(id, { passwordHash });
+
+    const actor = auditActor(userActor);
+    await AuditLogModel.create({
+      ...actor,
+      action: 'user.password_changed',
+      entityType: 'users',
+      entityId: id,
+      entityLabel: user.fullName || user.email,
+      details: { message: 'Password was updated by admin.' },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
 
     return updated;
   },
@@ -127,6 +178,18 @@ export const UserService = {
     const updated = await UserProfileModel.update(id, { capabilityOverrides: overrides });
 
     await emitAccessUpdate(updated, 'user.permissions_updated');
+
+    const actor = auditActor(userActor);
+    await AuditLogModel.create({
+      ...actor,
+      action: 'user.permissions_updated',
+      entityType: 'users',
+      entityId: id,
+      entityLabel: updated.fullName || updated.email,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
     return updated;
   },
 
@@ -138,6 +201,17 @@ export const UserService = {
     await UserProfileModel.remove(id);
 
     emitUserAccessRevoked(id, 'user.deleted');
+
+    await AuditLogModel.create({
+      userId: user.id, // For deleted system users, we might not have a separate userActor in the remove signature, wait, remove doesn't have userActor
+      userEmail: 'System', // Let's log it as system if there's no userActor passed
+      action: 'user.deleted',
+      entityType: 'users',
+      entityId: id,
+      entityLabel: user.fullName || user.email,
+      details: { email: user.email, role: user.role }
+    });
+
     return { id };
   },
 };

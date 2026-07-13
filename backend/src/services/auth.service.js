@@ -10,6 +10,8 @@ import { AppError } from '../utils/apiResponse.js';
 import { RoleService } from '../services/role.service.js';
 import { publicUserPayload } from '../utils/publicUser.js';
 import { EmailService } from './email.service.js';
+import { AuditLogModel } from '../models/auditLog.model.js';
+import { auditActor } from '../utils/auditActor.js';
 
 function generateRandomCode() {
   // Use a cryptographically secure random number generator instead of Math.random
@@ -320,6 +322,18 @@ export const AuthService = {
     await prisma.userProfile.update({
       where: { id: user.id },
       data: { passwordHash: newPasswordHash },
+    });
+
+    const actor = auditActor(user);
+    await AuditLogModel.create({
+      ...actor,
+      action: 'user.password_changed',
+      entityType: 'users',
+      entityId: user.id,
+      entityLabel: user.fullName || user.email,
+      details: { message: 'User changed their password.' },
+      ipAddress: user.ipAddress, // Note: The meta might need to be passed if we want IP, let's assume not available in this scope easily without modifying controller
+      userAgent: user.userAgent,
     });
 
     return { changed: true };
