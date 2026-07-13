@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { authService } from '@/src/features/auth/services/authService';
 import { AlertCircle, Check, Clock, Key, Mail, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,6 +22,16 @@ export default function SetupPassword() {
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
   const { loginMfa, resendLoginMfa } = useAuth();
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      }
+    };
+  }, [isDark]);
 
   const [isVerifyingToken, setIsVerifyingToken] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(false);
