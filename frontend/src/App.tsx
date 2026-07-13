@@ -11,6 +11,9 @@ import { AuthProvider } from './contexts/AuthContext';
 import React, { Suspense } from 'react';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import { GlobalNotifications } from './components/GlobalNotifications';
+import { QueryProvider } from './providers/QueryProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { FloatingFAQButton } from './components/FloatingFAQButton';
 
 // Lazy-loaded pages
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -25,10 +28,6 @@ const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeImportReview = React.lazy(() => import('./pages/EmployeeImportReview'));
 const FAQ = React.lazy(() => import('./pages/FAQ'));
-
-import { QueryProvider } from './providers/QueryProvider';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { FloatingFAQButton } from './components/FloatingFAQButton';
 
 const PageSpinner = () => (
   <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
