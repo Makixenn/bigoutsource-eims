@@ -342,21 +342,41 @@ function NotificationBell() {
                           : { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }
                       }
                     >
-                      {notification.details?.missingFields && (
+                      {notification.details?.isArchiveNotification ? (
                         <div className="absolute right-12 top-4">
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-wider text-red-600 border border-red-200 shadow-sm">
-                            {notification.details.missingFields} FIELDS INCOMPLETE
+                          <span className={`rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-wider border shadow-sm ${
+                            notification.details.archiveStatus === 'complete'
+                              ? 'bg-green-100 text-green-600 border-green-200'
+                              : 'bg-red-100 text-red-600 border-red-200'
+                          }`}>
+                            {notification.details.archiveStatus === 'complete' ? 'ARCHIVED COMPLETE' : 'HR Archived'}
                           </span>
                         </div>
+                      ) : notification.details?.missingFields ? (
+                        <div className="absolute right-12 top-4">
+                          <span className={`rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-wider border shadow-sm ${
+                            notification.details.isComplete
+                              ? 'bg-green-100 text-green-600 border-green-200'
+                              : 'bg-red-100 text-red-600 border-red-200'
+                          }`}>
+                            {notification.details.missingFields} FIELDS {notification.details.isComplete ? 'COMPLETE' : 'INCOMPLETE'}
+                          </span>
+                        </div>
+                      ) : null}
+                      
+                      {!(
+                        (notification.details?.isArchiveNotification && notification.details.archiveStatus !== 'complete') ||
+                        (notification.details?.missingFields && !notification.details.isComplete)
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleClearSingle(String(notification.id), e)}
+                          className="absolute right-3 top-3 rounded-full p-1.5 transition-colors hover:bg-gray-100 focus:outline-none"
+                          title="Mark as done"
+                        >
+                          <Check className="h-4 w-4 text-gray-400 hover:text-green-600 transition-colors" />
+                        </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={(e) => handleClearSingle(String(notification.id), e)}
-                        className="absolute right-3 top-3 rounded-full p-1.5 transition-colors hover:bg-gray-100 focus:outline-none"
-                        title="Mark as done"
-                      >
-                        <Check className="h-4 w-4 text-gray-400 hover:text-green-600 transition-colors" />
-                      </button>
                       
                       <div className="flex items-start gap-3 mt-1">
                         <div
@@ -379,7 +399,9 @@ function NotificationBell() {
                             <p className="mt-1 text-[0.6875rem] font-bold" style={{ color: 'var(--color-text-muted)' }}>{timestamp}</p>
                           )}
                           <p className="mt-2 text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>
-                            Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.
+                            {notification.message ? notification.message : (
+                              <>Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.</>
+                            )}
                           </p>
                           {notification.actionUrl && (
                             <Link

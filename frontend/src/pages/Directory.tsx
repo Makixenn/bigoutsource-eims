@@ -452,7 +452,7 @@ function formatWindowsLicenseKey(value = '') {
 }
 
 function isCompleteWindowsLicenseKey(value = '') {
-  if (value.toUpperCase() === 'N/A') return true;
+  if (value.trim().toUpperCase() === 'N/A') return true;
   return value.replace(/[^a-zA-Z0-9]/g, '').length === 25;
 }
 
@@ -2017,12 +2017,6 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
                                   <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="e.g. 123 456 789" />
                                 </Field>
-                                <Field label="Windows License Key" error={formErrors.windowsKey}>
-                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                                </Field>
-                                <Field label="BIOS Date">
-                                  <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} max={getTodayDateInputValue()} />
-                                </Field>
                                 <Field label="ESET Status">
                                   <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v as any)}>
                                     <option value="active">Active</option>
@@ -2249,12 +2243,6 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               </Field>
                               <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
                                 <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} />
-                              </Field>
-                              <Field label="Windows License Key" error={formErrors.windowsKey}>
-                                <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} />
-                              </Field>
-                              <Field label="BIOS Date">
-                                <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} max={getTodayDateInputValue()} />
                               </Field>
                             </div>
                           </SectionCard>

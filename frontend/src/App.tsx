@@ -24,9 +24,11 @@ const Reports = React.lazy(() => import('./pages/Reports'));
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeImportReview = React.lazy(() => import('./pages/EmployeeImportReview'));
+const FAQ = React.lazy(() => import('./pages/FAQ'));
 
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { FloatingFAQButton } from './components/FloatingFAQButton';
 
 const PageSpinner = () => (
   <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
@@ -71,6 +73,8 @@ export default function App() {
               <Route element={<ProtectedRoute capability="users.manage" />}>
                 <Route path="/users" element={<Suspense fallback={<PageSpinner />}><UserManagement /></Suspense>} />
               </Route>
+              
+              <Route path="/faq" element={<Suspense fallback={<PageSpinner />}><FAQ /></Suspense>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -78,6 +82,7 @@ export default function App() {
         </ErrorBoundary>
         <Toaster position="bottom-right" />
         <GlobalNotifications />
+        <FloatingFAQButton />
       </Router>
     </TextSizeProvider>
     </ThemeProvider>

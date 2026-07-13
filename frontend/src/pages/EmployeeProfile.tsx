@@ -1710,7 +1710,15 @@ export default function EmployeeProfile() {
                           )}
                         </ProfileField>
                         <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
-                          {editingIT ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-red-500 font-black">Not Set</span>}
+                          {editingIT ? (
+                            <div className="relative flex items-center w-full">
+                              <Input type="text" placeholder="YYYY-MM-DD or N/A" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
+                                <Calendar className="w-4 h-4 pointer-events-none absolute text-gray-500" />
+                                <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => { if (e.target.value) updateForm('biosDate', e.target.value); }} />
+                              </div>
+                            </div>
+                          ) : employee.biosDate ? (employee.biosDate.trim().toUpperCase() === 'N/A' || isNaN(Date.parse(employee.biosDate)) ? employee.biosDate : new Date(employee.biosDate).toLocaleDateString()) : <span className="text-red-500 font-black">Not Set</span>}
                         </ProfileField>
                         {canViewSecrets && (
                         <ProfileField label="Remote ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>

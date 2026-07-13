@@ -68,6 +68,21 @@ export function sanitizeCapabilities(input) {
         set.add('notifications.it_action');
         continue;
       }
+
+      if (cap === 'notifications.hr_completion' || cap === 'notifications.it_completion') {
+        // Obsolete capabilities, just ignore them
+        continue;
+      }
+
+      if (cap === 'employees.fields.hr') {
+        set.add('employees.create.hr_fields');
+        continue;
+      }
+
+      if (cap === 'employees.fields.it') {
+        set.add('employees.create.it_fields');
+        continue;
+      }
       
       const baseCap = cap.replace(/\.(optional|required)$/, '');
       if (GRANTABLE_CAPABILITIES.includes(baseCap) && baseCap.startsWith('employees.create.')) {

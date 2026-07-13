@@ -104,16 +104,7 @@ export const AuthService = {
 
     await assertActiveProfile(profile.id);
 
-    // TEMPORARY: Bypass OTP for all accounts
-    if (true) {
-      const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
-        expiresIn: '30m',
-      });
-      const newTrustedDeviceToken = jwt.sign({ id: profile.id, mfaTrusted: true }, process.env.JWT_SECRET, {
-        expiresIn: '30m',
-      });
-      return { token, trustedDeviceToken: newTrustedDeviceToken, user: await publicUser(profile) };
-    }
+
 
     if (trustedDeviceToken) {
       try {

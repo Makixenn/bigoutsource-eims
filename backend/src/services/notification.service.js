@@ -143,4 +143,64 @@ export const NotificationService = {
     }
     return [];
   },
+
+  async notifyEmployeeArchived({ employee, actor, isComplete }) {
+    const recipients = await UserProfileModel.findAll({ status: 'active' });
+    
+    const eligibleRecipients = [];
+    for (const recipient of recipients) {
+      if (!isComplete && String(recipient.id) === String(actor.userId)) continue;
+      const capabilities = await RoleService.resolveUserCapabilities(recipient);
+      eligibleRecipients.push({ ...recipient, capabilities });
+    }
+
+    const employeeLabel = employee.fullName || employee.employeeNumber || employee.id;
+    const actorName = actor.userName || actor.userEmail || 'Someone';
+    const actorRole = roleLabel(actor.userRole);
+    const message = isComplete 
+      ? `${actorName} completed archiving employee ${employeeLabel}.`
+      : `${actorName} marked employee ${employeeLabel} for archive.`;
+
+    const notificationsToCreate = [];
+
+    if (isComplete) {
+      await NotificationModel.clearGlobalByEntity('employees', employee.id, 'it_action').catch(console.error);
+    }
+
+    const targetCapabilities = isComplete ? ['notifications.hr_action', 'notifications.it_action'] : ['notifications.it_action'];
+    const targetType = isComplete ? 'hr_action' : 'it_action';
+
+    const baseNotification = {
+      type: targetType,
+      actorId: actorIdForDatabase(actor),
+      actorName,
+      actorRole,
+      message,
+      entityType: 'employees',
+      entityId: employee.id,
+      entityLabel: employeeLabel,
+      actionUrl: `/employee/${employee.id}`,
+    };
+
+    const targetRecipients = eligibleRecipients.filter(r => targetCapabilities.some(cap => hasCapability(r.capabilities, cap)));
+    targetRecipients.forEach(r => {
+      notificationsToCreate.push({
+        ...baseNotification,
+        recipientId: r.id,
+        details: {
+          employeeNumber: employee.employeeNumber,
+          fullName: employee.fullName,
+          accountAssignment: employee.accountAssignment,
+          site: employee.site,
+          isArchiveNotification: true,
+          archiveStatus: isComplete ? 'complete' : 'pending'
+        }
+      });
+    });
+
+    if (notificationsToCreate.length > 0) {
+      return NotificationModel.createMany(notificationsToCreate);
+    }
+    return [];
+  },
 };

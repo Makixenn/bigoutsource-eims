@@ -6,6 +6,7 @@ import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
 import { filterEmployeeWritePayload } from '../utils/employeeSecurity.js';
 import { NotificationService } from '../services/notification.service.js';
+import { NotificationModel } from '../models/notification.model.js';
 import {
   buildCompanyEmail,
   buildEmployeeIdentifierBase,
@@ -36,6 +37,17 @@ const trackedFields = [
   'esetStatus',
   'activityWatchStatus',
   'isArchived',
+  'outlookEmail',
+  'googleAccount',
+  'teamsAccount',
+  'mattermostAccount',
+  'jobTitle',
+  'birthdate',
+  'floatDate',
+  'separationDate',
+  'separationReason',
+  'isReadyForArchive',
+  'avatarUrl',
 ];
 
 function localEmailIdentifier(email = '') {
@@ -232,9 +244,36 @@ export const EmployeeService = {
 
     const archiveValue = data?.is_archived ?? data?.isArchived;
     const willBeArchived = archiveValue === undefined ? before.isArchived : archiveValue === true || String(archiveValue).toLowerCase() === 'true';
+    
+    const readyForArchiveValue = data?.is_ready_for_archive ?? data?.isReadyForArchive;
+    const willBeReadyForArchive = readyForArchiveValue === undefined ? before.isReadyForArchive : readyForArchiveValue === true || String(readyForArchiveValue).toLowerCase() === 'true';
+    
+    const isHrArchiving = !before.isReadyForArchive && willBeReadyForArchive;
+    const isItArchiving = !before.isArchived && willBeArchived;
+    const isNewlyArchived = isHrArchiving || isItArchiving;
 
     const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
+
+    const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.jobTitle;
+    const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName || !employee.windowsKey;
+
+    if (!isHrFieldsMissing) {
+      await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'hr_action', 'HR').catch(console.error);
+    }
+    if (!isItFieldsMissing) {
+      await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'it_action', 'IT').catch(console.error);
+    }
+
+    if (isNewlyArchived) {
+      await NotificationService.notifyEmployeeArchived({ 
+        employee, 
+        actor,
+        isComplete: isItArchiving
+      }).catch((error) => {
+        console.error('Unable to create employee-archived notifications', error);
+      });
+    }
 
     const changes = diffEmployee(before, employee);
     await AuditLogModel.create({
