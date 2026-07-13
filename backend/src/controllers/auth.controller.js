@@ -65,6 +65,15 @@ export const AuthController = {
     }
   },
 
+  async refreshSession(req, res, next) {
+    try {
+      const data = await AuthService.refreshSession(req.body);
+      return success(res, data, 'Session refreshed');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async logout(req, res) {
     return success(res, null, 'Logged out');
   },
@@ -72,6 +81,24 @@ export const AuthController = {
   async changePassword(req, res, next) {
     try {
       return success(res, await AuthService.changePassword(req.user, req.body), 'Password changed');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async verifySetupPasswordToken(req, res, next) {
+    try {
+      const data = await AuthService.verifySetupPasswordToken(req.query.token);
+      return success(res, data, 'Token verification complete');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async setupPassword(req, res, next) {
+    try {
+      const data = await AuthService.setupPassword(req.body);
+      return success(res, data, 'Password setup initialized');
     } catch (error) {
       return next(error);
     }

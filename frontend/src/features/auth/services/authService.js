@@ -1,4 +1,4 @@
-import { apiRequest, clearAuthToken, setAuthToken } from '@/src/lib/api';
+import { apiRequest, clearAuthToken, setAuthToken, setRefreshToken, clearRefreshToken } from '@/src/lib/api';
 
 export const authService = {
   internalDepartments() {
@@ -17,6 +17,7 @@ export const authService = {
     }
 
     setAuthToken(data.token);
+    if (data.refreshToken) setRefreshToken(data.refreshToken);
     if (data.trustedDeviceToken) {
       localStorage.setItem('eims_mfa_trusted', data.trustedDeviceToken);
     }
@@ -30,6 +31,7 @@ export const authService = {
     });
 
     setAuthToken(data.token);
+    if (data.refreshToken) setRefreshToken(data.refreshToken);
     if (data.trustedDeviceToken) {
       localStorage.setItem('eims_mfa_trusted', data.trustedDeviceToken);
     }
@@ -70,6 +72,7 @@ export const authService = {
       // The client should still clear local auth state if the token is already gone or expired.
     } finally {
       clearAuthToken();
+      clearRefreshToken();
     }
   },
 
@@ -77,6 +80,17 @@ export const authService = {
     return apiRequest('/auth/password', {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+
+  verifySetupPasswordToken(token) {
+    return apiRequest(`/auth/setup-password/verify?token=${encodeURIComponent(token)}`);
+  },
+
+  setupPassword(token, password) {
+    return apiRequest('/auth/setup-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     });
   },
 };

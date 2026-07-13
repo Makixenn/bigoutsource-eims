@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface RegisterInput {
   email: string;
-  password: string;
+  password?: string;
   fullName: string;
   department: string;
   site: string;
