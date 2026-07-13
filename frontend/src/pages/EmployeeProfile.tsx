@@ -29,6 +29,7 @@ import {
   User,
   X,
   Undo2,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -486,6 +487,9 @@ export default function EmployeeProfile() {
   const [isBoEmailEdited, setIsBoEmailEdited] = useState(false);
   const [isLmsAccountEdited, setIsLmsAccountEdited] = useState(false);
   const [isPcNameEdited, setIsPcNameEdited] = useState(false);
+  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const generatedPreviewWithLms = (f: EmployeeForm, account?: AccountOption) => {
     const nameForLms = formatEmployeeName(f.firstName, f.lastName, '', '');
@@ -518,7 +522,7 @@ export default function EmployeeProfile() {
   const canEditIT = can('employees.it.edit');
   const canEditSecrets = can('employees.secrets.edit');
   const reqITFields = useMemo(() => ['admin', 'it'].includes(user?.role?.toLowerCase() || ''), [user]);
-  const isSuperAdmin = user?.role?.toLowerCase() === 'admin';
+  const isSuperAdmin = ['super admin', 'superadmin', 'super_admin'].includes(user?.role?.toLowerCase() || '');
   const canArchiveEmployee = (isSuperAdmin || canEditHR || canEditIT) && employee.status !== 'Separated';
   
   const hasActiveITAccounts = useMemo(() => {
@@ -1002,6 +1006,19 @@ export default function EmployeeProfile() {
     show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 380, damping: 30 } }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      await employeeService.remove(id);
+      toast.success('Employee permanently deleted');
+      navigate('/directory', { replace: true });
+    } catch (error: any) {
+      toast.error(error.message || 'Unable to delete employee');
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <PageLayout title={pageTitle} backFallback="/directory">
       <AnimatePresence mode="wait" initial={false}>
@@ -1053,7 +1070,18 @@ export default function EmployeeProfile() {
         ) : (
           <motion.form key="content-profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 30 }} onSubmit={saveProfile} className="flex flex-col gap-8 pb-12 w-full">
             <div className="relative bg-white rounded-3xl border border-[#E5E7EB] overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
-              <div className="h-32 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827]"></div>
+              <div className="h-32 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827] relative">
+                {(isSuperAdmin && (employee.isArchived || employee.status?.toLowerCase() === 'separated')) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="absolute top-4 right-4 flex items-center justify-center p-2 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all duration-300 z-10"
+                    title="Delete Employee Permanently"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
 
               <div className="px-8 pb-8 pt-4 flex flex-col md:flex-row md:items-end gap-6 relative">
                 <div className="absolute -top-16 left-8">
@@ -2380,6 +2408,70 @@ export default function EmployeeProfile() {
                     <Undo2 className="w-4 h-4" />
                   )}
                   Confirm Undo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-xs"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="w-full max-w-md bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-6"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-2xl bg-red-50 text-red-600">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-[#111827]">
+                    Delete Employee Permanently
+                  </h3>
+
+                  <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                    Are you sure you want to completely delete{' '}
+                    <span className="font-bold text-[#111827]">
+                      {employee.fullName}
+                    </span>
+                    ? This action cannot be undone and will erase all data associated with this employee.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex items-center gap-2 px-4 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                  Delete Permanently
                 </button>
               </div>
             </motion.div>
