@@ -489,6 +489,7 @@ export default function EmployeeProfile() {
   const [isPcNameEdited, setIsPcNameEdited] = useState(false);
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   const generatedPreviewWithLms = (f: EmployeeForm, account?: AccountOption) => {
@@ -2447,13 +2448,32 @@ export default function EmployeeProfile() {
                     </span>
                     ? This action cannot be undone and will erase all data associated with this employee.
                   </p>
+
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={deleteInput}
+                      onChange={(e) => setDeleteInput(e.target.value)}
+                      placeholder="CONFIRM"
+                      className={`w-full rounded-xl border px-4 py-2.5 text-sm font-bold outline-none transition-all ${deleteInput === 'CONFIRM'
+                          ? 'border-green-400 focus:ring-2 focus:ring-[#111827]'
+                          : deleteInput.length > 0
+                            ? 'border-red-300 focus:ring-2 focus:ring-red-500'
+                            : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]'
+                        }`}
+                    />
+                    <p className="text-[0.6875rem] font-bold text-[#6B7280] mt-2">Type "CONFIRM" to enable the Delete button.</p>
+                  </div>
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteInput('');
+                  }}
                   disabled={isDeleting}
                   className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] disabled:opacity-50 transition-colors"
                 >
@@ -2463,7 +2483,7 @@ export default function EmployeeProfile() {
                 <button
                   type="button"
                   onClick={handleDelete}
-                  disabled={isDeleting}
+                  disabled={isDeleting || deleteInput !== 'CONFIRM'}
                   className="flex items-center gap-2 px-4 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {isDeleting ? (

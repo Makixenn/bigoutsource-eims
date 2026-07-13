@@ -12,7 +12,8 @@ export const SettingsController = {
 
   async update(req, res, next) {
     try {
-      return success(res, await SettingsService.update(req.body), 'Settings saved');
+      const meta = { ipAddress: req.ip, userAgent: req.get('user-agent') };
+      return success(res, await SettingsService.update(req.body, req.user, meta), 'Settings saved');
     } catch (error) {
       return next(error);
     }
