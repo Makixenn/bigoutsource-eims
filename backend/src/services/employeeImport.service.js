@@ -25,12 +25,25 @@ const mappedFields = [
   'activityWatchStatus',
   'windowsKey',
   'is_archived',
+  'jobTitle',
+  'outlookEmail',
+  'googleAccount',
+  'teamsAccount',
+  'mattermostAccount',
+  'birthdate',
+  'dateHired',
+  'floatDate',
+  'separationDate',
+  'separationReason',
 ];
 
 function value(row, ...keys) {
   for (const key of keys) {
-    if (row?.[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-      return String(row[key]).trim();
+    if (row?.[key] !== undefined && row[key] !== null) {
+      const val = String(row[key]).trim();
+      if (val !== '' && val.toUpperCase() !== 'N/A') {
+        return val;
+      }
     }
   }
   return '';
@@ -73,24 +86,42 @@ function normalizeRow(row) {
   const status = normalizeStatus(value(row, 'Status'));
   const fullName = value(row, 'Name');
 
+  const isArchivedExplicit = String(value(row, 'Archived')).toLowerCase() === 'yes';
+  let finalStatus = status.status;
+  let finalIsArchived = status.isArchived;
+  if (isArchivedExplicit) {
+    finalIsArchived = true;
+    if (finalStatus === 'active') finalStatus = 'inactive';
+  }
+
   return {
-    employeeNumber: value(row, 'ID'),
-    fullName,
-    accountAssignment: value(row, 'Account'),
-    phone: value(row, 'Phone Number'),
+    employeeNumber: value(row, 'Employee ID', 'ID'),
+    fullName: value(row, 'Full Name', 'Name', 'fullName'),
+    accountAssignment: value(row, 'Department/Campaign', 'DEPARTMENT/CAMPAIGN.', 'Department/Campaign.', 'Account'),
+    phone: value(row, 'Phone', 'Phone Number'),
     address: value(row, 'Address'),
-    boEmail: value(row, 'Bigoutsource Email'),
+    boEmail: value(row, 'BO Email', 'Bigoutsource Email'),
     emailPassword: value(row, 'Email Password'),
     lmsAccount: value(row, 'LMS Account') || generateLmsAccount(fullName),
-    status: status.status,
+    status: finalStatus,
     siteName: normalizeSite(value(row, 'Site')),
     pcName: value(row, 'PC Name'),
-    rustdeskId: value(row, 'RustDesk ID'),
-    esetStatus: normalizeEset(value(row, 'ESET')),
+    rustdeskId: value(row, 'Remote ID', 'REMOTE ID', 'RustDesk ID'),
+    esetStatus: normalizeEset(value(row, 'ESET Status', 'ESET')),
     biosDate: normalizeDate(value(row, 'BIOS Date')),
-    activityWatchStatus: normalizeActivityWatch(value(row, 'ActivityWatch')),
-    windowsKey: value(row, 'Windows License Key'),
-    is_archived: status.isArchived,
+    activityWatchStatus: normalizeActivityWatch(value(row, 'Activity Watch', 'ActivityWatch')),
+    windowsKey: value(row, 'Windows Key', 'Windows License Key'),
+    jobTitle: value(row, 'Job Title'),
+    outlookEmail: value(row, 'Outlook Email'),
+    googleAccount: value(row, 'Google Account'),
+    teamsAccount: value(row, 'Teams Account'),
+    mattermostAccount: value(row, 'Mattermost Account'),
+    birthdate: normalizeDate(value(row, 'Birthdate')),
+    dateHired: normalizeDate(value(row, 'Date Hired')),
+    floatDate: normalizeDate(value(row, 'Float Date')),
+    separationDate: normalizeDate(value(row, 'Separation Date')),
+    separationReason: value(row, 'Separation Reason'),
+    is_archived: finalIsArchived,
   };
 }
 
@@ -203,6 +234,16 @@ function coerceEditableData(data = {}) {
     biosDate: normalizeDate(data.biosDate),
     activityWatchStatus: normalizeActivityWatch(data.activityWatchStatus),
     windowsKey: String(data.windowsKey || '').trim(),
+    jobTitle: String(data.jobTitle || '').trim(),
+    outlookEmail: String(data.outlookEmail || '').trim(),
+    googleAccount: String(data.googleAccount || '').trim(),
+    teamsAccount: String(data.teamsAccount || '').trim(),
+    mattermostAccount: String(data.mattermostAccount || '').trim(),
+    birthdate: normalizeDate(data.birthdate),
+    dateHired: normalizeDate(data.dateHired),
+    floatDate: normalizeDate(data.floatDate),
+    separationDate: normalizeDate(data.separationDate),
+    separationReason: String(data.separationReason || '').trim(),
     is_archived: data.is_archived ?? status.isArchived,
   };
 }

@@ -16,6 +16,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@vitejs/plugin-react": "^5.0.4",
     "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.39.0",
     "react": "^19.0.1",

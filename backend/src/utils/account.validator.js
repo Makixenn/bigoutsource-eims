@@ -4,8 +4,8 @@ export const createAccountValidator = {
   departmentCode: {
     required: false,
     type: 'string',
-    pattern: /^[A-Za-z]+$/,
-    message: 'departmentCode must contain letters only',
+    pattern: /^[A-Za-z]{1,4}$/,
+    message: 'departmentCode must be 1-4 letters',
   },
 };
 
@@ -15,7 +15,7 @@ export const updateAccountValidator = {
   departmentCode: {
     required: false,
     type: 'string',
-    pattern: /^[A-Za-z]+$/,
-    message: 'departmentCode must contain letters only',
+    pattern: /^[A-Za-z]{1,4}$/,
+    message: 'departmentCode must be 1-4 letters',
   },
 };
