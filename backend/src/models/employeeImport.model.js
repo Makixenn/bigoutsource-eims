@@ -51,7 +51,13 @@ export const EmployeeImportModel = {
   async findAll(filters = {}) {
     const where = {};
     if (filters.importBatchId) where.importBatchId = filters.importBatchId;
-    if (filters.status) where.status = filters.status;
+    if (filters.status) {
+      if (filters.status === 'pending') {
+        where.status = { in: ['issue', 'ready'] };
+      } else {
+        where.status = filters.status;
+      }
+    }
 
     const rows = await prisma.employeeImportStaging.findMany({
       where,
