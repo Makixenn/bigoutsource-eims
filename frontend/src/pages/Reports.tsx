@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { FileText, Download, PieChart, BarChart, ShieldAlert, Trash2, Loader2, TrendingUp, ClipboardList, X, Users, ArrowLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -34,6 +34,10 @@ function formatDate(iso: string) {
   });
 }
 
+function na(val: any): any {
+  return (val === undefined || val === null || String(val).trim() === '') ? 'N/A' : val;
+}
+
 function isEmployeeArchived(employee: any) {
   return employee?.isArchived === true || employee?.is_archived === true;
 }
@@ -65,24 +69,66 @@ interface ReportData {
   message: string;
 }
 
-function buildWorkbook(sheets: SheetDef[], filename: string, format: 'xlsx' | 'csv' = 'xlsx') {
-  const wb = XLSX.utils.book_new();
+async function buildWorkbook(sheets: SheetDef[], filename: string, format: 'xlsx' | 'csv' = 'xlsx') {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'EIMS System';
+  workbook.created = new Date();
+
   for (const { name, rows } of sheets) {
-    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ '(No records)': '' }]);
-    if (rows.length > 0) {
-      const keys = Object.keys(rows[0]);
-      ws['!cols'] = keys.map((key) => ({
-        wch: Math.max(key.length, ...rows.map((r) => String(r[key] ?? '').length)) + 2,
-      }));
+    const sheetName = name.substring(0, 31).replace(/[\[\]\*\\\/\?]/g, '');
+    const ws = workbook.addWorksheet(sheetName, {
+      views: [{ state: 'frozen', ySplit: 1 }]
+    });
+
+    if (rows.length === 0) {
+      ws.addRow(['(No records)']);
+      continue;
     }
-    XLSX.utils.book_append_sheet(wb, ws, name.substring(0, 31));
+
+    const keys = Object.keys(rows[0]);
+    ws.columns = keys.map((key) => {
+      let maxLength = key.length;
+      rows.forEach(r => {
+        const valLength = String(r[key] ?? '').length;
+        if (valLength > maxLength) maxLength = valLength;
+      });
+      return { header: key, key: key, width: Math.min(maxLength + 2, 50) };
+    });
+
+    ws.addRows(rows);
+
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF111827' }
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    ws.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: keys.length }
+    };
   }
-  
+
+  let buffer;
   if (format === 'csv') {
-    XLSX.writeFile(wb, filename.replace('.xlsx', '.csv'), { bookType: 'csv' });
+    buffer = await workbook.csv.writeBuffer();
+    filename = filename.replace('.xlsx', '.csv');
   } else {
-    XLSX.writeFile(wb, filename);
+    buffer = await workbook.xlsx.writeBuffer();
   }
+
+  const blob = new Blob([buffer], { type: format === 'csv' ? 'text/csv;charset=utf-8;' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode?.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }
 
 // ─── Report 1: Employee Master List ──────────────────────────────────────────
@@ -114,25 +160,39 @@ async function generateEmployeeMasterList(params?: any): Promise<ReportData> {
 
   if (!filteredEmployees.length) throw new Error('No employee records found for this scope.');
 
-  const rows = filteredEmployees.map((e) => ({
-    'Employee ID': e.id ?? '',
-    'Full Name': e.fullName ?? '',
-    'Status': capitalize(e.status),
-    'Site': e.site ?? '',
-    'Department/Campaign.': e.accountAssignment ?? '',
-    'BO Email': e.boEmail ?? '',
-    'Email Password': e.emailPassword ?? '',
-    'LMS Account': e.lmsAccount ?? '',
-    'Phone': e.phone ?? '',
-    'Address': e.address ?? '',
-    'PC Name': e.pcName ?? '',
-    'Remote ID': e.rustDeskId ?? '',
-    'ESET Status': capitalize(e.esetStatus),
-    'Activity Watch': capitalize(e.activityWatchStatus),
-    'Archived': e.isArchived ? 'Yes' : 'No',
-    'Created': formatDate(e.createdAt),
-    'Last Updated': formatDate(e.updatedAt),
-  }));
+  const rows = filteredEmployees.map((e) => {
+    return {
+      'Employee ID': na(e.id),
+      'Full Name': na(e.fullName),
+      'Status': na(capitalize(e.status)),
+      'Job Title': na(e.jobTitle),
+      'Department/Campaign': na(e.accountAssignment),
+      'Site': na(e.site),
+      'BO Email': na(e.boEmail),
+      'Email Password': na(e.emailPassword),
+      'LMS Account': na(e.lmsAccount),
+      'Phone': na(e.phone),
+      'Address': na(e.address),
+      'PC Name': na(e.pcName),
+      'Remote ID': na(e.rustDeskId),
+      'ESET Status': na(capitalize(e.esetStatus)),
+      'Activity Watch': na(capitalize(e.activityWatchStatus)),
+      'Windows Key': na(e.windowsKey),
+      'BIOS Date': na(e.biosDate),
+      'Outlook Email': na(e.outlookEmail),
+      'Google Account': na(e.googleAccount),
+      'Teams Account': na(e.teamsAccount),
+      'Mattermost Account': na(e.mattermostAccount),
+      'Birthdate': na(e.birthdate),
+      'Date Hired': na(e.dateHired),
+      'Float Date': na(e.floatDate),
+      'Separation Date': na(e.separationDate),
+      'Separation Reason': na(e.separationReason),
+      'Archived': e.isArchived ? 'Yes' : 'No',
+      'Created': na(formatDate(e.createdAt)),
+      'Last Updated': na(formatDate(e.updatedAt)),
+    };
+  });
 
   const safeScope = scope.replace(/[^a-zA-Z0-9]/g, '_');
   return {
@@ -172,13 +232,14 @@ async function generateITAssetReport(params?: any): Promise<ReportData> {
   if (!filteredEmployees.length) throw new Error('No IT asset records found for this scope.');
 
   const rows = filteredEmployees.map((e) => ({
-    'Employee ID': e.id ?? '',
-    'Full Name': e.fullName ?? '',
-    'Site': e.site ?? '',
-    'PC Name': e.pcName ?? '',
-    'Remote ID': e.rustDeskId ?? '',
-    'ESET Status': capitalize(e.esetStatus),
-    'Activity Watch': capitalize(e.activityWatchStatus),
+    'Employee ID': na(e.id),
+    'Full Name': na(e.fullName),
+    'Site': na(e.site),
+    'PC Name': na(e.pcName),
+    'Remote ID': na(e.rustDeskId),
+    'Windows Key': na(e.windowsKey),
+    'ESET Status': na(capitalize(e.esetStatus)),
+    'Activity Watch': na(capitalize(e.activityWatchStatus)),
   }));
 
   const safeScope = scope.replace(/[^a-zA-Z0-9]/g, '_');
@@ -218,14 +279,15 @@ async function generateSecurityAudit(): Promise<ReportData> {
     if (String(e.activityWatchStatus ?? '').toLowerCase() !== 'installed') issues.push('Activity Watch Missing');
     if (!e.windowsKey) issues.push('No Windows Key');
     return {
-      'Employee ID': e.id ?? '',
-      'Full Name': e.fullName ?? '',
-      'Site': e.site ?? '',
-      'PC Name': e.pcName || 'No PC assigned',
-      'ESET Status': capitalize(e.esetStatus),
-      'Activity Watch': capitalize(e.activityWatchStatus),
+      'Employee ID': na(e.id),
+      'Full Name': na(e.fullName),
+      'Site': na(e.site),
+      'PC Name': na(e.pcName || 'No PC assigned'),
+      'Remote ID': na(e.rustDeskId),
+      'ESET Status': na(capitalize(e.esetStatus)),
+      'Activity Watch': na(capitalize(e.activityWatchStatus)),
       'Windows Key': e.windowsKey ? 'Present' : 'Missing',
-      'Issues': issues.join('; '),
+      'Issues': na(issues.join('; ')),
     };
   });
 
@@ -284,12 +346,12 @@ async function generateSiteOccupancy(): Promise<ReportData> {
     sheets.push({
       name: site,
       rows: group.map((e: any) => ({
-        'Employee ID': e.id ?? '',
-        'Full Name': e.fullName ?? '',
-        'Status': capitalize(e.status),
-        'Account': e.accountAssignment ?? '',
-        'BO Email': e.boEmail ?? '',
-        'PC Name': e.pcName ?? '',
+        'Employee ID': na(e.id),
+        'Full Name': na(e.fullName),
+        'Status': na(capitalize(e.status)),
+        'Department/Campaign': na(e.accountAssignment),
+        'BO Email': na(e.boEmail),
+        'PC Name': na(e.pcName),
       })),
     });
   }
@@ -334,15 +396,17 @@ async function generateTerminationsReport(): Promise<ReportData> {
   const archivedRows = archivedEmployees.map((e: any) => {
     const archivedLog = latestArchiveLogByEmployee.get(String(e.id || e.employeeId || e.employeeNumber || ''));
     return {
-    'Employee ID': e.id ?? '',
-    'Full Name': e.fullName ?? '',
-    'Status': capitalize(e.status),
-    'Site': e.site ?? '',
-    'Account': e.accountAssignment ?? '',
+    'Employee ID': na(e.id),
+    'Full Name': na(e.fullName),
+    'Status': na(capitalize(e.status)),
+    'Job Title': na(e.jobTitle),
+    'Site': na(e.site),
+    'Department/Campaign': na(e.accountAssignment),
     'Archived': 'Yes',
-    'Archived Date': formatDate(archivedLog?.createdAt || e.updatedAt),
-    'Archived By': archivedLog?.userEmail ?? '',
-    'Last Updated': formatDate(e.updatedAt),
+    'Separation Reason': na(e.separationReason),
+    'Archived Date': na(formatDate(archivedLog?.createdAt || e.updatedAt)),
+    'Archived By': na(archivedLog?.userEmail),
+    'Last Updated': na(formatDate(e.updatedAt)),
     };
   });
 
@@ -392,7 +456,7 @@ async function generateWorkforceAnalytics(): Promise<ReportData> {
     }
   });
   const deptRows = Array.from(deptCounts.entries()).map(([name, count]) => ({
-    'Department': name,
+    'Department/Campaign': name,
     'Active Employees': count
   })).sort((a, b) => b['Active Employees'] - a['Active Employees']);
 
@@ -528,12 +592,13 @@ async function generateDepartmentRoster(params?: any): Promise<ReportData> {
   });
 
   const rows = filteredEmployees.map(e => ({
-    'Employee ID': e.id ?? '',
-    'Full Name': e.fullName ?? '',
-    'Status': capitalize(e.status),
-    'Department': e.accountAssignment ?? '',
-    'Site': e.site ?? '',
-    'BO Email': e.boEmail ?? '',
+    'Employee ID': na(e.id),
+    'Full Name': na(e.fullName),
+    'Status': na(capitalize(e.status)),
+    'Job Title': na(e.jobTitle),
+    'Department/Campaign': na(e.accountAssignment),
+    'Site': na(e.site),
+    'BO Email': na(e.boEmail),
   }));
 
   const safeScope = scope.replace(/[^a-zA-Z0-9]/g, '_');
@@ -667,16 +732,21 @@ export default function Reports() {
     setGenerating(selectedReport.title);
     const report = selectedReport;
     const scope = departmentScope;
-    setSelectedReport(null);
-    setLastReport({ report, scope });
+    
     const toastId = toast.loading(`Generating preview for ${report.title}…`);
     try {
       const data = await report.generate({ departmentScope: scope });
+      
+      // Generation succeeded, now close the modal and show preview
+      setSelectedReport(null);
+      setLastReport({ report, scope });
+      
       setPreviewData(data);
       setSelectedFormat(format);
       toast.success('Preview generated', { id: toastId });
     } catch (err: any) {
       toast.error(err?.message ?? `Failed to generate ${report.title}`, { id: toastId });
+      // We don't close the modal here, so the user can try a different scope!
     } finally {
       setGenerating(null);
     }
@@ -691,7 +761,7 @@ export default function Reports() {
       return;
     }
     try {
-      buildWorkbook(previewData.sheets, previewData.filename, selectedFormat);
+      await buildWorkbook(previewData.sheets, previewData.filename, selectedFormat);
       toast.success(previewData.message);
     } catch (err: any) {
       toast.error('Failed to download file');
