@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Circle,
   Download,
+  FileSpreadsheet,
   FolderPlus,
   Loader2,
   Search,
@@ -22,6 +23,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
+import ExcelJS from 'exceljs';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
 import { ResizableHeader } from '@/src/components/ResizableHeader';
@@ -994,6 +996,104 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
     fileInputRef.current?.click();
   };
 
+  const handleDownloadTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'EIMS System';
+    workbook.created = new Date();
+
+    const ws = workbook.addWorksheet('Employee Records', {
+      views: [{ state: 'frozen', ySplit: 1 }]
+    });
+
+    // Create a hidden sheet for dynamic dropdown lists (Sites, Departments)
+    const listsSheet = workbook.addWorksheet('Lists', { state: 'hidden' });
+    const siteNames = sites.map(s => s.name).filter(Boolean);
+    const accountNames = accounts.map(a => a.name).filter(Boolean);
+    
+    listsSheet.getColumn(1).values = ['Sites', ...siteNames];
+    listsSheet.getColumn(2).values = ['Accounts', ...accountNames];
+
+    const columns = [
+      'Employee ID', 'Full Name', 'Status', 'Job Title', 'Department/Campaign', 'Site', 
+      'BO Email', 'Email Password', 'LMS Account', 'Phone', 'Address', 'PC Name', 
+      'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 
+      'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 
+      'Birthdate', 'Date Hired', 'Float Date', 'Separation Date', 'Separation Reason', 
+      'Archived'
+    ];
+
+    ws.columns = columns.map(col => ({ header: col, key: col, width: Math.min(col.length + 5, 30) }));
+
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF111827' }
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Apply Data Validations
+    const maxRows = 1000;
+
+    // C: Status
+    (ws as any).dataValidations.add(`C2:C${maxRows}`, {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"Active,Inactive,Floating,Separated"']
+    });
+
+    // E: Department/Campaign
+    if (accountNames.length > 0) {
+      (ws as any).dataValidations.add(`E2:E${maxRows}`, {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`Lists!$B$2:$B$${accountNames.length + 1}`]
+      });
+    }
+
+    // F: Site
+    if (siteNames.length > 0) {
+      (ws as any).dataValidations.add(`F2:F${maxRows}`, {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`Lists!$A$2:$A$${siteNames.length + 1}`]
+      });
+    }
+
+    // N: ESET Status
+    (ws as any).dataValidations.add(`N2:N${maxRows}`, {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"Active,Inactive"']
+    });
+
+    // O: Activity Watch
+    (ws as any).dataValidations.add(`O2:O${maxRows}`, {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"Installed,Missing"']
+    });
+
+    // AA: Archived
+    (ws as any).dataValidations.add(`AA2:AA${maxRows}`, {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"No,Yes"']
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Employee_Import_Template.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleImportFile = async (file?: File) => {
     if (!file) return;
 
@@ -1376,6 +1476,14 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                     className="hidden"
                     onChange={(event) => void handleImportFile(event.target.files?.[0])}
                   />
+                  <button
+                    onClick={handleDownloadTemplate}
+                    disabled={isStagingImport}
+                    className="flex items-center gap-1.5 whitespace-nowrap px-3 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Template
+                  </button>
                   <button
                     onClick={handleImport}
                     disabled={isStagingImport}
