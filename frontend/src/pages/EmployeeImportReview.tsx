@@ -18,6 +18,7 @@ import {
   Save,
   Building2,
   AlertTriangle,
+  CalendarDays,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -200,7 +201,7 @@ export default function EmployeeImportReview() {
     if (!importReviewCache.hasLoaded) setIsLoading(true);
     try {
       const targetBatchId = batchId || focusedBatchId;
-      let result = await employeeImportService.list(targetBatchId ? { importBatchId: targetBatchId } : { status: 'issue' });
+      let result = await employeeImportService.list(targetBatchId ? { importBatchId: targetBatchId } : { status: 'pending' });
 
       if (!targetBatchId) {
         const issueRows = Array.isArray(result.rows) ? result.rows : [];
@@ -1436,13 +1437,16 @@ function EditRowModal({
             <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectDropdown
-                  label="Department/Account"
+                  label="Department/Campaign"
                   value={form.accountAssignment || ''}
                   options={accounts.map(acc => ({ id: acc.name, name: acc.name }))}
                   onSelect={(val) => onChange('accountAssignment', val)}
                   required
-                  placeholder="Select account"
+                  placeholder="Select department/campaign"
                 />
+                <Field label="Job Title">
+                  <Input value={form.jobTitle || ''} onChange={(val) => onChange('jobTitle', val)} placeholder="e.g. CSR" />
+                </Field>
                 <Field label="Bigoutsource Email" required>
                   <Input value={form.boEmail || ''} onChange={(val) => onChange('boEmail', val)} placeholder="e.g. john@bigoutsource.com" />
                 </Field>
@@ -1469,13 +1473,25 @@ function EditRowModal({
               </div>
             </ProfileSection>
 
-            <ProfileSection icon={Phone} title="Contact Details" iconColorClass="text-green-600 bg-green-50">
-              <div className="grid grid-cols-1 gap-4">
+            <ProfileSection icon={Phone} title="Contact & Communication" iconColorClass="text-green-600 bg-green-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Phone">
                   <Input value={form.phone || ''} onChange={(val) => onChange('phone', val)} placeholder="e.g. 09123456789" />
                 </Field>
                 <Field label="Address">
-                  <Input value={form.address || ''} onChange={(val) => onChange('address', val)} placeholder="e.g. 123 Main St, Candelaria" />
+                  <Input value={form.address || ''} onChange={(val) => onChange('address', val)} placeholder="e.g. 123 Main St" />
+                </Field>
+                <Field label="Outlook Email">
+                  <Input value={form.outlookEmail || ''} onChange={(val) => onChange('outlookEmail', val)} placeholder="e.g. john@outlook.com" />
+                </Field>
+                <Field label="Google Account">
+                  <Input value={form.googleAccount || ''} onChange={(val) => onChange('googleAccount', val)} placeholder="e.g. john@gmail.com" />
+                </Field>
+                <Field label="Teams Account">
+                  <Input value={form.teamsAccount || ''} onChange={(val) => onChange('teamsAccount', val)} placeholder="e.g. john.teams" />
+                </Field>
+                <Field label="Mattermost Account">
+                  <Input value={form.mattermostAccount || ''} onChange={(val) => onChange('mattermostAccount', val)} placeholder="e.g. john.mattermost" />
                 </Field>
               </div>
             </ProfileSection>
@@ -1494,10 +1510,37 @@ function EditRowModal({
                 <Field label="PC Name">
                   <Input value={form.pcName || ''} onChange={(val) => onChange('pcName', val)} placeholder="e.g. PC-JOHN" />
                 </Field>
-
                 <Field label="Remote ID">
                   <Input value={form.rustdeskId || ''} onChange={(val) => onChange('rustdeskId', val)} placeholder="e.g. 123 456 789" />
                 </Field>
+                <Field label="Windows Key">
+                  <Input value={form.windowsKey || ''} onChange={(val) => onChange('windowsKey', val)} placeholder="e.g. XXXX-XXXX" />
+                </Field>
+                <Field label="BIOS Date">
+                  <Input type="date" value={form.biosDate || ''} onChange={(val) => onChange('biosDate', val)} />
+                </Field>
+              </div>
+            </ProfileSection>
+
+            <ProfileSection icon={CalendarDays} title="Employment Timeline" iconColorClass="text-purple-600 bg-purple-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Birthdate">
+                  <Input type="date" value={form.birthdate || ''} onChange={(val) => onChange('birthdate', val)} />
+                </Field>
+                <Field label="Date Hired">
+                  <Input type="date" value={form.dateHired || ''} onChange={(val) => onChange('dateHired', val)} />
+                </Field>
+                <Field label="Float Date">
+                  <Input type="date" value={form.floatDate || ''} onChange={(val) => onChange('floatDate', val)} />
+                </Field>
+                <Field label="Separation Date">
+                  <Input type="date" value={form.separationDate || ''} onChange={(val) => onChange('separationDate', val)} />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Field label="Separation Reason">
+                    <Input value={form.separationReason || ''} onChange={(val) => onChange('separationReason', val)} placeholder="e.g. Resigned" />
+                  </Field>
+                </div>
               </div>
             </ProfileSection>
 
@@ -1515,9 +1558,6 @@ function EditRowModal({
                   options={[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }]}
                   onSelect={(val) => onChange('activityWatchStatus', val)}
                 />
-                <div className="sm:col-span-2">
-  
-                </div>
                 <div className="sm:col-span-2">
                   <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 hover:bg-[#F9FAFB] transition-colors cursor-pointer shadow-xs">
                     <input

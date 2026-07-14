@@ -12,20 +12,26 @@ export function sanitizeDepartmentCode(value = '') {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z]/g, '')
-    .slice(0, 1);
+    .slice(0, 4);
 }
 
 export function suggestDepartmentCode(name = '') {
-  const clean = String(name)
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z]/g, '')
-    .toLowerCase();
-  return clean.charAt(0);
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+
+  const initials = words
+    .map((w) => w.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
+    .filter(Boolean)
+    .join('');
+
+  if (initials.length >= 2) return initials.slice(0, 3);
+
+  const base = (words[0].replace(/[^a-zA-Z]/g, '') || '').toLowerCase();
+  return base.slice(0, Math.max(2, Math.min(3, base.length)));
 }
 
 export function isValidDepartmentCode(code = '') {
-  return /^[a-z]{1}$/.test(String(code));
+  return /^[a-z]{1,4}$/.test(String(code));
 }
 
 const KNOWN_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', 'md', 'm.d.', 'phd', 'ph.d.', 'esq', 'esq.']);
