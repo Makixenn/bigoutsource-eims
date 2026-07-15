@@ -64,6 +64,14 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+// Prevent caching of any API responses to protect sensitive data
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
 app.use(express.json({ limit: '50mb' }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
