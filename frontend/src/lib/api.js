@@ -1,6 +1,7 @@
 let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+API_BASE_URL = API_BASE_URL.replace(/\/$/, '');
 if (!API_BASE_URL.endsWith('/api')) {
-  API_BASE_URL = API_BASE_URL.replace(/\/$/, '') + '/api';
+  API_BASE_URL += '/api';
 }
 const TOKEN_KEY = 'eims_auth_token';
 const REFRESH_TOKEN_KEY = 'eims_refresh_token';
