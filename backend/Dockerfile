@@ -11,6 +11,9 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Expose port
 EXPOSE 5001
 
