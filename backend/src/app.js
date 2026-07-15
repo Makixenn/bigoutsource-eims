@@ -40,6 +40,7 @@ app.set('trust proxy', true);
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
+    hsts: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
