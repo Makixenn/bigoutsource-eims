@@ -21,6 +21,12 @@ export default defineConfig(() => {
       headers: {
         'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http: https: wss: ws:; frame-ancestors 'none';",
         'X-Frame-Options': 'DENY'
+      },
+      proxy: {
+        '/api': {
+          target: 'http://backend:5001',
+          changeOrigin: true
+        }
       }
     },
     build: {
