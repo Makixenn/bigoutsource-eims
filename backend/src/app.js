@@ -37,7 +37,24 @@ function resolveCorsOrigin(origin, callback) {
 import path from 'path';
 
 app.set('trust proxy', true);
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        // Allowed to connect to anything on the local network (http and https)
+        connectSrc: ["'self'", 'http://*', 'https://*'],
+        frameAncestors: ["'none'"]
+      }
+    },
+    frameguard: {
+      action: 'deny'
+    }
+  })
+);
 app.use(
   cors({
     origin: resolveCorsOrigin,
