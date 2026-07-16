@@ -175,33 +175,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const resetTimer = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        logout();
-        toast.error('Logged out due to 30 minutes of inactivity');
-      }, 30 * 60 * 1000); // 30 minutes
-    };
+    let lastActivityTime = Date.now();
+    const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
 
     const handleUserActivity = () => {
-      resetTimer();
+      lastActivityTime = Date.now();
     };
 
-    resetTimer();
+    const checkInactivity = setInterval(() => {
+      if (Date.now() - lastActivityTime > INACTIVITY_LIMIT_MS) {
+        logout();
+        toast.error('Logged out due to 30 minutes of inactivity');
+      }
+    }, 10000); // Check every 10 seconds
 
     window.addEventListener('mousemove', handleUserActivity);
     window.addEventListener('keydown', handleUserActivity);
     window.addEventListener('scroll', handleUserActivity);
     window.addEventListener('click', handleUserActivity);
+    window.addEventListener('touchstart', handleUserActivity);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearInterval(checkInactivity);
       window.removeEventListener('mousemove', handleUserActivity);
       window.removeEventListener('keydown', handleUserActivity);
       window.removeEventListener('scroll', handleUserActivity);
       window.removeEventListener('click', handleUserActivity);
+      window.removeEventListener('touchstart', handleUserActivity);
     };
   }, [user, logout]);
 
