@@ -1107,8 +1107,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
         throw new Error('The workbook does not contain an Employee Records sheet.');
       }
 
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:V1');
-      range.e.c = Math.min(range.e.c, 21);
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:Z1');
 
       const matrix = XLSX.utils.sheet_to_json<any[]>(worksheet, {
         header: 1,

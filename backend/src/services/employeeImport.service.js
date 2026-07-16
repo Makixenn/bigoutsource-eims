@@ -68,9 +68,24 @@ function normalizeActivityWatch(status) {
 
 function normalizeDate(value) {
   if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toISOString().slice(0, 10);
+  const strVal = String(value).trim();
+  
+  if (/^\d+(\.\d+)?$/.test(strVal)) {
+    const excelDate = parseFloat(strVal);
+    const unixDays = excelDate - 25569;
+    const date = new Date(unixDays * 86400 * 1000);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  const date = new Date(strVal);
+  if (Number.isNaN(date.getTime())) return strVal.slice(0, 10);
+  
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function normalizeSite(value) {
