@@ -1,6 +1,7 @@
 import { AuthService } from '../services/auth.service.js';
 import { AccountService } from '../services/account.service.js';
 import { success } from '../utils/apiResponse.js';
+import { emitSessionOverride } from '../realtime/accessEvents.js';
 
 export const AuthController = {
   async internalDepartments(req, res, next) {
@@ -33,6 +34,9 @@ export const AuthController = {
   async login(req, res, next) {
     try {
       const data = await AuthService.login(req.body, { ipAddress: req.ip });
+      if (!data.requiresMfa && data.user) {
+        emitSessionOverride(data.user.id);
+      }
       return success(res, data, data.requiresMfa ? 'MFA required' : 'Logged in');
     } catch (error) {
       return next(error);
@@ -42,6 +46,7 @@ export const AuthController = {
   async loginMfa(req, res, next) {
     try {
       const data = await AuthService.loginMfa(req.body);
+      emitSessionOverride(data.user.id);
       return success(res, data, 'MFA successful, logged in');
     } catch (error) {
       return next(error);

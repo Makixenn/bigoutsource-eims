@@ -49,6 +49,9 @@ export function initRealtime(httpServer) {
       
       const profile = await UserProfileModel.findById(decoded.id);
       if (!profile || profile.status !== 'active') throw new Error('Account is not active');
+      if (profile.currentSessionId && profile.currentSessionId !== decoded.sessionId) {
+        throw new Error('Session expired because of a new login');
+      }
 
       socket.user = {
         id: profile.id,

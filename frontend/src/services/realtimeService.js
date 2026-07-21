@@ -111,3 +111,15 @@ export function connectTableSocket({ onTableChange }) {
     releaseSocket();
   };
 }
+
+export function connectSessionSocket({ onOverride }) {
+  const socket = retainSocket();
+  if (!socket) return () => {};
+
+  socket.on('session:override', onOverride);
+
+  return () => {
+    socket.off('session:override', onOverride);
+    releaseSocket();
+  };
+}
