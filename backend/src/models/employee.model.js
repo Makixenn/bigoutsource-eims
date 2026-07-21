@@ -98,6 +98,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (valueFrom(data, 'windowsKey', 'windowsLicenseKey') !== undefined) {
     payload.windows_license_key = stringOrEmpty(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
   }
+  if (data?.deviceType !== undefined) {
+    payload.device_type = stringOrEmpty(data.deviceType);
+  }
   if (data?.outlookEmail !== undefined) payload.outlook_email = stringOrEmpty(data.outlookEmail);
   if (data?.googleAccount !== undefined) payload.google_account = stringOrEmpty(data.googleAccount);
   if (data?.teamsAccount !== undefined) payload.teams_account = stringOrEmpty(data.teamsAccount);
@@ -146,6 +149,7 @@ function normalize(row) {
     separationReason: row.separationReason || row.separation_reason || '',
     windowsKey: row.windowsLicenseKey || row.windows_license_key || '',
     windowsLicenseKey: row.windowsLicenseKey || row.windows_license_key || '',
+    deviceType: row.deviceType || row.device_type || 'Windows',
     rustdeskId: row.rustdeskId || row.rustdesk_id || '',
     rustDeskId: row.rustdeskId || row.rustdesk_id || '',
     esetStatus: row.eset || 'inactive',
@@ -254,6 +258,7 @@ export const EmployeeModel = {
       separationReason: payload.separation_reason,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
+      deviceType: payload.device_type,
       outlookEmail: payload.outlook_email,
       googleAccount: payload.google_account,
       teamsAccount: payload.teams_account,
@@ -307,6 +312,7 @@ export const EmployeeModel = {
         birthdate: payload.birthdate,
         floatDate: payload.float_date,
         windowsLicenseKey: payload.windows_license_key,
+        deviceType: payload.device_type,
         isArchived: payload.is_archived,
         isReadyForArchive: payload.is_ready_for_archive,
         avatarUrl: payload.avatar_url,
@@ -350,6 +356,7 @@ export const EmployeeModel = {
       separationReason: payload.separation_reason,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
+      deviceType: payload.device_type,
       outlookEmail: payload.outlook_email,
       googleAccount: payload.google_account,
       teamsAccount: payload.teams_account,

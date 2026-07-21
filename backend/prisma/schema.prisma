@@ -46,6 +46,7 @@ model Employee {
   employeeStatus    String   @default("Regular") @map("employee_status")
   site              String   @default("")
   pcName            String   @default("") @map("pc_name")
+  deviceType        String   @default("Windows") @map("device_type")
   biosDate          String   @default("") @map("bios_date")
   windowsLicenseKey String   @default("") @map("windows_license_key")
   rustdeskId        String   @default("") @map("rustdesk_id")

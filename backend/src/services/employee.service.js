@@ -32,6 +32,7 @@ const trackedFields = [
   'pcName',
   'dateHired',
   'biosDate',
+  'deviceType',
   'windowsKey',
   'rustdeskId',
   'esetStatus',
@@ -256,7 +257,7 @@ export const EmployeeService = {
     if (!employee) throw new AppError('Employee not found', 404);
 
     const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.jobTitle;
-    const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName || !employee.windowsKey;
+    const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName;
 
     if (!isHrFieldsMissing) {
       await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'hr_action', 'HR').catch(console.error);

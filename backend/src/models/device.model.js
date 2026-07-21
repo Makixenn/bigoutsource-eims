@@ -5,7 +5,7 @@ function toDevice(employee) {
   return {
     id: employee.id,
     assetTag: employee.pcName || employee.id,
-    deviceType: 'computer',
+    deviceType: employee.deviceType,
     pcName: employee.pcName,
     serialNumber: '',
     biosDate: employee.biosDate,
@@ -52,6 +52,7 @@ export const DeviceModel = {
     const updated = await EmployeeModel.update(id, {
       pcName: data.pcName,
       biosDate: data.biosDate,
+      deviceType: data.deviceType,
       windowsKey: data.windowsKey,
       rustdeskId: data.rustdeskId,
       esetStatus: data.esetStatus,
