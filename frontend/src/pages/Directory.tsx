@@ -94,6 +94,7 @@ type AddEmployeeForm = {
   esetStatus: 'active' | 'inactive';
   biosDate: string;
   activityWatchStatus: 'installed' | 'missing';
+  deviceType: 'Windows' | 'MacOS' | string;
   windowsKey: string;
   dateHired?: string;
   isArchived?: boolean;
@@ -1545,7 +1546,7 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((field) => (
                         <ResizableHeader key={field.key} columnKey={field.key} onResize={handleResize} className={cn('h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
-                          <div className="truncate cursor-default select-none">{field.label}</div>
+                          <div className="truncate cursor-default select-none">{field.key === 'boEmail' ? 'Email' : field.label}</div>
                         </ResizableHeader>
                       ))}
                       <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
@@ -1620,11 +1621,11 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                   isActiveSort && 'text-[#111827]'
                                 )}
                               >
-                                <span className="truncate">{field.label}</span>
+                                <span className="truncate">{field.key === 'boEmail' ? 'Email' : field.label}</span>
                                 <SortIcon className={cn('h-3.5 w-3.5 shrink-0', isActiveSort ? 'text-[#111827]' : 'text-[#9CA3AF]')} />
                               </button>
                             ) : (
-                              <div className="truncate cursor-default select-none">{field.label}</div>
+                              <div className="truncate cursor-default select-none">{field.key === 'boEmail' ? 'Email' : field.label}</div>
                             )}
                           </ResizableHeader>
                         );
@@ -2069,16 +2070,18 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </AnimatePresence>
                               </div>
                             </Field>
-                            <Field label="Employee Status">
-                              <Select value={form.employeeStatus || 'Regular'} onChange={(value) => {
-                                updateForm('employeeStatus', value);
-                                updateForm('status', 'active');
-                              }}>
-                                <option value="Regular">Regular</option>
-                                <option value="Probationary">Probationary</option>
-                                <option value="Fix-Term">Fix-Term</option>
-                              </Select>
-                            </Field>
+                            {showHRFields && (
+                              <Field label="Employee Status">
+                                <Select value={form.employeeStatus || 'Regular'} onChange={(value) => {
+                                  updateForm('employeeStatus', value);
+                                  updateForm('status', 'active');
+                                }}>
+                                  <option value="Regular">Regular</option>
+                                  <option value="Probationary">Probationary</option>
+                                  <option value="Fix-Term">Fix-Term</option>
+                                </Select>
+                              </Field>
+                            )}
                             {showHRFields && (
                               <Field label="Date Hired">
                                 <Input
@@ -2124,6 +2127,12 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                                 </Field>
                                 <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
                                   <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="e.g. 123 456 789" />
+                                </Field>
+                                <Field label="Device Type">
+                                  <Select value={form.deviceType || 'Windows'} onChange={(v) => updateForm('deviceType', v as any)}>
+                                    <option value="Windows">Windows</option>
+                                    <option value="MacOS">MacOS</option>
+                                  </Select>
                                 </Field>
                                 <Field label="ESET Status">
                                   <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v as any)}>
@@ -2351,6 +2360,9 @@ const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
                               </Field>
                               <Field label="Remote ID (RustDesk)" error={formErrors.rustdeskId}>
                                 <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} />
+                              </Field>
+                              <Field label="Device Type">
+                                <Input value={form.deviceType || 'Windows'} onChange={(v) => updateForm('deviceType', v)} />
                               </Field>
                             </div>
                           </SectionCard>

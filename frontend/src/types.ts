@@ -18,6 +18,7 @@ export interface Employee {
   isReadyForArchive?: boolean;
   avatarUrl?: string;
   pcName: string;
+  deviceType: string;
   dateHired: string;
   biosDate: string;
   windowsKey: string;

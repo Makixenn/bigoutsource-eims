@@ -32,7 +32,7 @@ export const DeviceService = {
     const device = await DeviceModel.update(id, data);
     if (!device) throw new AppError('Device not found', 404);
 
-    const trackedFields = ['pcName', 'biosDate', 'windowsKey', 'rustdeskId', 'esetStatus', 'activityWatchStatus'];
+    const trackedFields = ['pcName', 'biosDate', 'deviceType', 'windowsKey', 'rustdeskId', 'esetStatus', 'activityWatchStatus'];
     const changes = trackedFields
       .map(field => ({
         field,

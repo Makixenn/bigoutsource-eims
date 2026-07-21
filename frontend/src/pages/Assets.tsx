@@ -17,11 +17,12 @@ import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 // sample comment
-export type AssetFieldKey = 'assigneeName' | 'pcName' | 'biosDate' | 'windowsKey' | 'rustdeskId' | 'activityWatchStatus' | 'esetStatus';
+export type AssetFieldKey = 'assigneeName' | 'pcName' | 'deviceType' | 'biosDate' | 'windowsKey' | 'rustdeskId' | 'activityWatchStatus' | 'esetStatus';
 
 export const assetFields: Array<{ key: AssetFieldKey; label: string; width: string }> = [
   { key: 'assigneeName', label: 'Assignee', width: 'w-[16%]' },
   { key: 'pcName', label: 'PC Name', width: 'w-[12%]' },
+  { key: 'deviceType', label: 'Device Type', width: 'w-[10%]' },
   { key: 'rustdeskId', label: 'Remote ID', width: 'w-[12%]' },
   { key: 'activityWatchStatus', label: 'Activity Watch', width: 'w-[10%]' },
   { key: 'esetStatus', label: 'ESET Status', width: 'w-[10%]' },
@@ -521,6 +522,11 @@ export default function Assets() {
                                 </div>
                               ) : field.key === 'pcName' ? (
                                 <p className="text-sm font-black text-[#111827] font-mono px-2 py-1">{device.pcName || 'Unassigned'}</p>
+                              ) : field.key === 'deviceType' ? (
+                                <select value={drafts[device.id]?.deviceType ?? (device.deviceType || 'Windows')} onChange={(e) => handleUpdateDraft(device.id, 'deviceType', e.target.value)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]">
+                                  <option value="Windows">Windows</option>
+                                  <option value="MacOS">MacOS</option>
+                                </select>
                               ) : field.key === 'rustdeskId' ? (
                                 <input type="text" value={drafts[device.id]?.rustdeskId ?? (device.rustdeskId || '')} onChange={(e) => handleUpdateDraft(device.id, 'rustdeskId', formatRustdeskId(e.target.value))} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="123 456 789" />
                               ) : field.key === 'activityWatchStatus' ? (
@@ -543,6 +549,13 @@ export default function Assets() {
                                 </div>
                               ) : field.key === 'pcName' ? (
                                 <p className="text-sm font-black text-[#111827] font-mono">{device.pcName || 'Unassigned'}</p>
+                              ) : field.key === 'deviceType' ? (
+                                <span className={cn(
+                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
+                                  device.deviceType === 'MacOS' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
+                                )}>
+                                  {device.deviceType || 'Windows'}
+                                </span>
                               ) : field.key === 'rustdeskId' ? (
                                 <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
                                   <p className="text-xs font-black text-[#111827] font-mono">{device.rustdeskId || 'No Remote ID'}</p>

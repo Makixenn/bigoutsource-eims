@@ -4,6 +4,7 @@ export const createDeviceValidator = {
   pcName: { required: false, type: 'string' },
   serialNumber: { required: false, type: 'string' },
   biosDate: { required: false, type: 'string' },
+  deviceType: { required: false, type: 'string' },
   windowsKey: { required: false, type: 'string' },
   rustdeskId: { required: false, type: 'string' },
   esetStatus: { required: false, type: 'string', enum: ['active', 'inactive'] },
