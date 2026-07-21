@@ -34,6 +34,8 @@ export interface Employee {
   mattermostAccount?: string;
   teamsAccount?: string;
   googleAccount?: string;
+  separationDate?: string;
+  separationReason?: string;
 }
 
 export interface AppUser {

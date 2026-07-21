@@ -10,6 +10,21 @@
     <script src="/theme-init.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Auto-reloader for Docker restarts
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        let serverDown = false;
+        setInterval(() => {
+          fetch('/', { method: 'HEAD', cache: 'no-store' })
+            .then(() => {
+              if (serverDown) location.reload();
+              serverDown = false;
+            })
+            .catch(() => {
+              serverDown = true;
+            });
+        }, 2000);
+      }
+    </script>
   </body>
 </html>
-
