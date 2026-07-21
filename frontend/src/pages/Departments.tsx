@@ -74,11 +74,11 @@ function suggestDepartmentCode(name = ''): string {
 }
 
 function sanitizeDepartmentCode(value = '') {
-  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 4);
+  return value.toLowerCase().replace(/[^a-z\/]/g, '').slice(0, 4);
 }
 
 function isValidDepartmentCode(code: string) {
-  return /^[a-z]{1,4}$/.test(code);
+  return /^[a-z]{1,4}$/.test(code) || code === 'n/a';
 }
 
 function normalizeDepartment(account: any): Department | null {
@@ -226,7 +226,7 @@ export default function Departments() {
   const internalDepts = filteredDepartments.filter((d) => d.accountType === 'internal');
   const externalDepts = filteredDepartments.filter((d) => d.accountType === 'external');
 
-  const isDuplicateAddCode = deptCode
+  const isDuplicateAddCode = deptCode && deptCode !== 'n/a'
     ? departments.some((d) => d.departmentCode === deptCode)
     : false;
   const isAddCodeValid = isValidDepartmentCode(deptCode);
@@ -236,7 +236,7 @@ export default function Departments() {
       (d) => d.id !== selectedDepartment?.id && d.name.toLowerCase() === editName.trim().toLowerCase()
     )
     : false;
-  const isDuplicateEditCode = editCode
+  const isDuplicateEditCode = editCode && editCode !== 'n/a'
     ? departments.some((d) => d.id !== selectedDepartment?.id && d.departmentCode === editCode)
     : false;
   const isEditCodeValid = isValidDepartmentCode(editCode);
@@ -311,7 +311,7 @@ export default function Departments() {
   const addDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deptName.trim()) { toast.error('Department name is required'); return; }
-    if (!isAddCodeValid) { toast.error('Department code must be 1-4 lowercase letters'); return; }
+    if (!isAddCodeValid) { toast.error('Department code must be 1-4 lowercase letters or n/a'); return; }
     if (isDuplicateAddCode) { toast.error('Department code already exists. Edit the code to resolve the collision.'); return; }
 
     setIsAddSaving(true);
@@ -338,7 +338,7 @@ export default function Departments() {
     if (!selectedDepartment) return;
     const name = editName.trim();
     if (!name) { toast.error('Department name is required'); return; }
-    if (!isEditCodeValid) { toast.error('Department code must be 1-4 lowercase letters'); return; }
+    if (!isEditCodeValid) { toast.error('Department code must be 1-4 lowercase letters or n/a'); return; }
     if (isDuplicateEditName) { toast.error('Department name already exists'); return; }
     if (isDuplicateEditCode) { toast.error('Department code already exists. Edit the code to resolve the collision.'); return; }
 
@@ -580,7 +580,7 @@ export default function Departments() {
                   : !deptCode
                     ? 'Auto-generated from the department name.'
                     : !isAddCodeValid
-                      ? 'Code must be 1-4 lowercase letters.'
+                      ? 'Code must be 1-4 lowercase letters or n/a.'
                       : 'Looks good!'
               }
               hintColor={
@@ -696,7 +696,7 @@ export default function Departments() {
                 isDuplicateEditCode
                   ? 'Code already taken — edit manually to resolve the collision (e.g. append a digit).'
                   : !isEditCodeValid
-                    ? 'Code must be 1-4 lowercase letters.'
+                    ? 'Code must be 1-4 lowercase letters or n/a.'
                     : 'Looks good!'
               }
               hintColor={isDuplicateEditCode || !isEditCodeValid ? 'error' : 'success'}

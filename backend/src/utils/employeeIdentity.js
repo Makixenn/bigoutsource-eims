@@ -11,7 +11,7 @@ export function sanitizeDepartmentCode(value = '') {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z]/g, '')
+    .replace(/[^a-z\/]/g, '')
     .slice(0, 4);
 }
 
@@ -31,7 +31,7 @@ export function suggestDepartmentCode(name = '') {
 }
 
 export function isValidDepartmentCode(code = '') {
-  return /^[a-z]{1,4}$/.test(String(code));
+  return /^[a-z]{1,4}$/.test(String(code)) || String(code) === 'n/a';
 }
 
 const KNOWN_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', 'md', 'm.d.', 'phd', 'ph.d.', 'esq', 'esq.']);
@@ -163,9 +163,13 @@ export function buildCompanyEmail(identifier, departmentCode, accountType) {
   const domain = accountType === 'internal' || !['hc', 'utd'].includes(departmentCode)
     ? accountType === 'internal' ? 'com' : 'ph'
     : 'team';
+  if (departmentCode === 'n/a') {
+    return `${identifier}@bigoutsource.${domain}`;
+  }
   return `${identifier}.${departmentCode}@bigoutsource.${domain}`;
 }
 
 export function buildPcName(identifier, departmentCode) {
-  return `${departmentCode}-${identifier}`;
+  const safeDeptCode = departmentCode === 'n/a' ? 'na' : departmentCode;
+  return `${safeDeptCode}-${identifier}`;
 }
