@@ -24,7 +24,7 @@ export default defineConfig(() => {
       },
       proxy: {
         '/api': {
-          target: 'http://backend:5001',
+          target: 'http://127.0.0.1:5001',
           changeOrigin: true
         }
       }
