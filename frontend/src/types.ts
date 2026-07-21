@@ -18,6 +18,7 @@ export interface Employee {
   isReadyForArchive?: boolean;
   avatarUrl?: string;
   pcName: string;
+  deviceType: string;
   dateHired: string;
   biosDate: string;
   windowsKey: string;
@@ -33,6 +34,8 @@ export interface Employee {
   mattermostAccount?: string;
   teamsAccount?: string;
   googleAccount?: string;
+  separationDate?: string;
+  separationReason?: string;
 }
 
 export interface AppUser {

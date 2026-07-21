@@ -211,6 +211,10 @@ export const AuthService = {
   },
 
   async loginMfa({ mfaToken, code }) {
+    if (!code) {
+      throw new AppError('MFA code is required', 400);
+    }
+    
     let decoded;
     try {
       decoded = jwt.verify(mfaToken, process.env.JWT_SECRET);
@@ -228,7 +232,8 @@ export const AuthService = {
       throw new AppError('Invalid MFA token format', 400);
     }
 
-    const isMatch = await bcrypt.compare(code, decoded.codeHash);
+    const trimmedCode = String(code).trim();
+    const isMatch = await bcrypt.compare(trimmedCode, decoded.codeHash);
     if (!isMatch) {
       throw new AppError('Invalid MFA code', 401);
     }
@@ -248,7 +253,7 @@ export const AuthService = {
     });
 
     const trustedDeviceToken = jwt.sign({ id: profile.id, mfaTrusted: true }, process.env.JWT_SECRET, {
-      expiresIn: '30d',
+      expiresIn: '30m',
     });
 
     return {

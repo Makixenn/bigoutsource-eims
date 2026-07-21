@@ -75,6 +75,7 @@ type EmployeeForm = {
   site: string;
   pcName: string;
   biosDate: string;
+  deviceType: 'Windows' | 'MacOS' | string;
   windowsKey: string;
   rustdeskId: string;
   esetStatus: 'active' | 'inactive';
@@ -113,6 +114,7 @@ const emptyEmployee: EmployeeForm = {
   site: '',
   pcName: '',
   biosDate: '',
+  deviceType: 'Windows',
   windowsKey: '',
   rustdeskId: '',
   esetStatus: 'inactive',
@@ -426,6 +428,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     site: emp?.site === 'HQ' ? 'HQ' : emp?.site || '',
     pcName: emp?.pcName || '',
     biosDate: emp?.biosDate ? String(emp.biosDate).slice(0, 10) : '',
+    deviceType: emp?.deviceType || 'Windows',
     windowsKey: formatWindowsLicenseKey(emp?.windowsKey || ''),
     rustdeskId: formatRustdeskId(emp?.rustdeskId || emp?.rustDeskId || ''),
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
@@ -532,7 +535,7 @@ export default function EmployeeProfile() {
   const canEditSecrets = can('employees.secrets.edit');
   const reqITFields = useMemo(() => ['admin', 'it'].includes(user?.role?.toLowerCase() || ''), [user]);
   const isSuperAdmin = ['super admin', 'superadmin', 'super_admin'].includes(user?.role?.toLowerCase() || '');
-  const canArchiveEmployee = (isSuperAdmin || canEditHR || canEditIT) && employee.status !== 'Separated';
+  const canArchiveEmployee = (isSuperAdmin || canEditHR || canEditIT) && employee.status !== 'separated';
   
   const hasActiveITAccounts = useMemo(() => {
     return [
@@ -842,6 +845,7 @@ export default function EmployeeProfile() {
         siteId: selectedSite?.id,
         siteName: selectedSite?.name,
         biosDate: form.biosDate || '',
+        deviceType: form.deviceType,
         windowsKey: form.windowsKey.trim(),
         rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
@@ -885,7 +889,7 @@ export default function EmployeeProfile() {
     if (!id) return;
 
     if (archiveIntent === 'archive' && archiveStep === 2) {
-      if (employee.isReadyForArchive) {
+      if (hasActiveITAccounts) {
         if (activeITAccountKeys.some(acc => !itCheckboxes[acc.key])) {
           toast.error("all fields must be cleared");
           return;
@@ -910,11 +914,10 @@ export default function EmployeeProfile() {
         const sepDate = isSeparated && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
         const flDate = isFloating && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
         
-        if (employee.isReadyForArchive) {
-          // IT Admin is finalizing the archive
+        if (hasActiveITAccounts) {
+          // IT Admin is clearing accounts
           updateData = {
-            is_archived: true,
-            is_ready_for_archive: false,
+            is_ready_for_archive: true,
           };
           
           if (itCheckboxes.boEmail) { updateData.boEmail = ''; updateData.emailPassword = ''; }
@@ -928,7 +931,7 @@ export default function EmployeeProfile() {
           if (itCheckboxes.rustdeskId) updateData.rustdeskId = '';
           
         } else {
-          // HR is initiating
+          // HR is finalizing
           updateData = {
             status: archiveStatusReason,
             separation_reason: separationReason,
@@ -938,13 +941,9 @@ export default function EmployeeProfile() {
             accountAssignment: '',
             siteId: null,
             siteName: '',
+            is_archived: true,
+            is_ready_for_archive: false,
           };
-          
-          if (hasActiveITAccounts) {
-            updateData.is_ready_for_archive = true;
-          } else {
-            updateData.is_archived = true;
-          }
         }
       } else {
         // Unarchive
@@ -973,7 +972,7 @@ export default function EmployeeProfile() {
       setForm(normalized);
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
 
-      toast.success(archiveIntent === 'unarchive' ? 'Employee unarchived' : (employee.isReadyForArchive || !hasActiveITAccounts) ? 'Employee archived' : 'Employee marked ready for IT Archive');
+      toast.success(archiveIntent === 'unarchive' ? 'Employee unarchived' : hasActiveITAccounts ? 'Employee marked ready for HR Archive' : 'Employee archived');
 
       setShowArchiveModal(false);
       setArchiveIntent(null);
@@ -1255,7 +1254,7 @@ export default function EmployeeProfile() {
                         )}
 
                         {(() => {
-                          const isArchiveReady = employee.isReadyForArchive;
+                          const isArchiveReady = !hasActiveITAccounts;
                           
                           let buttonText = 'Archive';
                           let buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
@@ -1267,14 +1266,10 @@ export default function EmployeeProfile() {
                             buttonColor = 'bg-green-600 text-white hover:bg-green-700 shadow-green-500/20';
                             isDisabled = !isSuperAdmin && !canEditHR;
                             icon = <RotateCcw className="w-4 h-4" />;
-                          } else if (isArchiveReady) {
-                            buttonText = 'Deactivate & Archive';
-                            buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
-                            isDisabled = !isSuperAdmin && !canEditIT;
                           } else if (hasActiveITAccounts) {
-                            buttonText = 'Ready For Archive, HR Admin';
+                            buttonText = 'Ready For Archive, IT Admin';
                             buttonColor = 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20';
-                            isDisabled = !isSuperAdmin && !canEditHR;
+                            isDisabled = !isSuperAdmin && !canEditIT;
                           } else {
                             buttonText = 'Archive';
                             buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
@@ -1295,7 +1290,7 @@ export default function EmployeeProfile() {
                                   setUnarchiveAccountAssignment(employee.accountAssignment || '');
                                   setUnarchiveSiteId(employee.siteId || '');
                                   setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
-                                } else if (employee.isReadyForArchive) {
+                                } else if (hasActiveITAccounts) {
                                   setArchiveStep(2);
                                 } else {
                                   setArchiveStep(1);
@@ -1746,6 +1741,16 @@ export default function EmployeeProfile() {
                             employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
                           )}
                         </ProfileField>
+                        <ProfileField label="Device Type" icon={Laptop} editing={editingIT}>
+                          {editingIT ? (
+                            <Select value={form.deviceType || 'Windows'} onChange={(v) => updateForm('deviceType', v as any)}>
+                              <option value="Windows">Windows</option>
+                              <option value="MacOS">MacOS</option>
+                            </Select>
+                          ) : (
+                            employee.deviceType || 'Windows'
+                          )}
+                        </ProfileField>
                         <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
                           {editingIT ? (
                             <div className="relative flex items-center w-full">
@@ -1764,7 +1769,7 @@ export default function EmployeeProfile() {
                         )}
                       </div>
 
-                      {canViewSecrets && (
+                      {canViewSecrets && form.deviceType !== 'MacOS' && (
                       <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
                           <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
@@ -2161,9 +2166,11 @@ export default function EmployeeProfile() {
                   <p className="mt-2 text-sm text-[#6B7280]">
                     {archiveIntent === 'unarchive'
                       ? 'This employee will be restored to the active directory. Please provide their required HR fields.'
-                      : archiveStep === 1 
-                        ? 'This employee will be removed from the active directory. Please select their new status below:' 
-                        : 'Would You like to clear the fields then check box'}
+                      : hasActiveITAccounts
+                        ? 'Would You like to clear the fields then check box'
+                        : archiveStep === 1 
+                          ? 'This employee will be removed from the active directory. Please select their new status below:' 
+                          : 'Please confirm you have cleared the required fields by checking the boxes below.'}
                   </p>
                   
                   {archiveIntent === 'unarchive' && (
@@ -2277,7 +2284,7 @@ export default function EmployeeProfile() {
 
                   {archiveIntent === 'archive' && archiveStep === 2 && (
                     <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-right-4">
-                      {employee.isReadyForArchive ? (
+                      {hasActiveITAccounts ? (
                         activeITAccountKeys.map(acc => (
                           <label key={acc.key} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                             <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={itCheckboxes[acc.key] || false} onChange={(e) => setItCheckboxes(prev => ({ ...prev, [acc.key]: e.target.checked }))} />
@@ -2338,7 +2345,7 @@ export default function EmployeeProfile() {
                     }
                     className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
                         ? 'bg-green-600 hover:bg-green-700'
-                        : employee.isReadyForArchive ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-500 hover:bg-orange-600'
+                        : !hasActiveITAccounts ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-500 hover:bg-orange-600'
                       }`}
                   >
                     {isArchiving ? (
@@ -2351,7 +2358,7 @@ export default function EmployeeProfile() {
 
                     {archiveIntent === 'unarchive'
                       ? 'Confirm Unarchive'
-                      : employee.isReadyForArchive ? 'Deactivate & Archive' : 'Ready for Archive'}
+                      : hasActiveITAccounts ? 'Deactivate & Archive' : 'Archive Employee'}
                   </button>
                 )}
               </div>
