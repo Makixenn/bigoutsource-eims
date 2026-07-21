@@ -40,3 +40,8 @@ export function emitTableChange(table, action = 'UPDATE', payload = {}) {
     emittedAt: new Date().toISOString(),
   });
 }
+
+export function emitSessionOverride(userId) {
+  if (!io || !userId) return;
+  io.to(userRoom(userId)).emit('session:override');
+}

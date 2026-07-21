@@ -3,7 +3,7 @@ import { AppUser } from '../types';
 import toast from 'react-hot-toast';
 import { authService } from '@/src/features/auth/services/authService';
 import { clearAuthToken, getAuthToken } from '@/src/lib/api';
-import { connectAccessSocket } from '@/src/services/realtimeService';
+import { connectAccessSocket, connectSessionSocket } from '@/src/services/realtimeService';
 import { userCan, type Capability } from '@/src/lib/permissions';
 
 interface AuthContextType {
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user?.uid) return undefined;
 
-    return connectAccessSocket({
+    const cleanupAccess = connectAccessSocket({
       onAccessUpdated: ({ user: apiUser }: { user?: any }) => {
         if (!apiUser) return;
 
@@ -119,6 +119,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         toast.error('Your account access was revoked.');
       },
     });
+
+    const cleanupSession = connectSessionSocket({
+      onOverride: () => {
+        clearAuthToken();
+        setUser(null);
+        toast.error('Someone logged in from another device. You have been logged out.');
+      }
+    });
+
+    return () => {
+      cleanupAccess();
+      cleanupSession();
+    };
   }, [user?.uid]);
 
   const login = async (email: string, pass: string) => {

@@ -23,6 +23,7 @@ model UserProfile {
   approvedUsers       UserProfile[] @relation("Approver")
   approvedAt          DateTime?     @map("approved_at")
   passwordSetupToken  String?       @unique @map("password_setup_token")
+  currentSessionId    String?       @map("current_session_id")
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
 

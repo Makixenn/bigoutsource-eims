@@ -25,6 +25,10 @@ export async function authenticate(req, res, next) {
     if (profile.status === 'pending') throw new AppError('Account pending approval', 403);
     if (profile.status === 'disabled') throw new AppError('Account disabled', 403);
 
+    if (profile.currentSessionId && profile.currentSessionId !== decoded.sessionId) {
+      throw new AppError('Session expired because of a new login', 401);
+    }
+
     req.user = {
       ...profile,
       id: profile.id,

@@ -180,13 +180,18 @@ export const AuthService = {
       try {
         const decoded = jwt.verify(trustedDeviceToken, process.env.JWT_SECRET);
         if (decoded.id === profile.id && decoded.mfaTrusted) {
-          const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+          const sessionId = crypto.randomUUID();
+          await prisma.userProfile.update({
+            where: { id: profile.id },
+            data: { currentSessionId: sessionId },
+          });
+          const token = jwt.sign({ id: profile.id, email: profile.email, sessionId }, process.env.JWT_SECRET, {
             expiresIn: '30m',
           });
-          const refreshToken = jwt.sign({ id: profile.id, type: 'refresh' }, process.env.JWT_SECRET, {
+          const refreshToken = jwt.sign({ id: profile.id, type: 'refresh', sessionId }, process.env.JWT_SECRET, {
             expiresIn: '12h',
           });
-          return { token, refreshToken, user: await publicUser(profile) };
+          return { token, refreshToken, user: await publicUser(profile), sessionId };
         }
       } catch (err) {
         // Ignore invalid/expired trusted token
@@ -228,11 +233,17 @@ export const AuthService = {
       throw new AppError('Invalid MFA code', 401);
     }
 
-    const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+    const sessionId = crypto.randomUUID();
+    await prisma.userProfile.update({
+      where: { id: profile.id },
+      data: { currentSessionId: sessionId },
+    });
+
+    const token = jwt.sign({ id: profile.id, email: profile.email, sessionId }, process.env.JWT_SECRET, {
       expiresIn: '30m',
     });
 
-    const refreshToken = jwt.sign({ id: profile.id, type: 'refresh' }, process.env.JWT_SECRET, {
+    const refreshToken = jwt.sign({ id: profile.id, type: 'refresh', sessionId }, process.env.JWT_SECRET, {
       expiresIn: '12h',
     });
 
@@ -245,6 +256,7 @@ export const AuthService = {
       refreshToken,
       trustedDeviceToken,
       user: await publicUser(profile),
+      sessionId,
     };
   },
 
@@ -302,7 +314,7 @@ export const AuthService = {
 
     const profile = await assertActiveProfile(decoded.id);
 
-    const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: profile.id, email: profile.email, sessionId: decoded.sessionId }, process.env.JWT_SECRET, {
       expiresIn: '30m',
     });
 
