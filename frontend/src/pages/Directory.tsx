@@ -1952,7 +1952,7 @@ export default function Directory() {
       contentClassName="w-full max-w-none"
       backFallback={hasAccountFilterParam ? "/departments" : undefined}
     >
-      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[14rem_minmax(0,1fr)]">
+      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[max-content_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block min-h-[80vh]">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
@@ -1974,7 +1974,7 @@ export default function Directory() {
               Reset
             </button>
           </div>
-          <div className="max-h-[78vh] space-y-3 overflow-y-auto pr-1 pb-4">
+          <div className="max-h-[78vh] space-y-3 overflow-y-auto pr-4 pb-4">
             {[
               "EMPLOYEE INFORMATION",
               "DEPARTMENT/CAMPAIGN.",
@@ -2032,7 +2032,7 @@ export default function Directory() {
                             className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
                           />
                           <span
-                            className="leading-snug flex-1 min-w-0 truncate"
+                            className="leading-snug flex-1 whitespace-nowrap"
                             title={field.label}
                           >
                             {field.label}
