@@ -11,7 +11,7 @@ import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/features/imports/components/ImportIssuesButton';
 import { InactiveEmployeesButton } from '@/src/features/employees/components/InactiveEmployeesButton';
 import { BackButton } from '@/src/components/layout/BackButton';
-import { usePresence } from '@/src/hooks/usePresence';
+import { usePresence } from '@/src/contexts/PresenceContext';
 import { useUsersQuery, useNotificationsQuery } from '@/src/hooks/queries';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
@@ -49,7 +49,7 @@ function formatNotificationTimestamp(value?: string) {
 
 export function Header({ title, backFallback }: { title: string, backFallback?: string }) {
   const { user } = useAuth();
-  const { onlineUsers } = usePresence(user);
+  const { onlineUsers } = usePresence();
   const name = user?.fullName || user?.email || 'User';
   const initials = name
     .split(/\s+/)
