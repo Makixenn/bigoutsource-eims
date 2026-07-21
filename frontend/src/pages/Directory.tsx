@@ -527,10 +527,18 @@ function generatedPreview(form: AddEmployeeForm, account?: AccountOption) {
   const identifier = `${firstInitials}${last}`;
   const domain = account?.accountType === 'internal' ? 'com' : ['hc', 'utd'].includes(code) ? 'team' : 'ph';
 
+  let boEmail = '';
+  let pcName = '';
+
+  if (identifier && code) {
+    boEmail = code === 'n/a' ? `${identifier}@bigoutsource.${domain}` : `${identifier}.${code}@bigoutsource.${domain}`;
+    pcName = code === 'n/a' ? `na-${identifier}` : `${code}-${identifier}`;
+  }
+
   return {
     lmsAccount: firstForLms && last ? `${firstForLms}.${last}` : '',
-    boEmail: identifier && code ? `${identifier}.${code}@bigoutsource.${domain}` : '',
-    pcName: identifier && code ? `${code}-${identifier}` : '',
+    boEmail,
+    pcName,
   };
 }
 

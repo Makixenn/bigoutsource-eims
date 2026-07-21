@@ -79,11 +79,11 @@ function suggestDepartmentCode(name = ''): string {
 }
 
 function sanitizeDepartmentCode(value = ''): string {
-  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 1);
+  return value.toLowerCase().replace(/[^a-z\/]/g, '').slice(0, 4);
 }
 
 function isValidDepartmentCode(code: string): boolean {
-  return /^[a-z]{1}$/.test(code);
+  return /^[a-z]{1,4}$/.test(code) || code === 'n/a';
 }
 
 const importReviewCache: {
@@ -1180,9 +1180,9 @@ function ResolveDepartmentsModal({
 
   const errors = departments.map((dept) => {
     const code = dept.code.trim().toLowerCase();
-    if (!isValidDepartmentCode(code)) return 'Code must be 2–3 letters';
-    if (existingCodes.has(code)) return 'Code already used by another department';
-    if ((codeCounts.get(code) || 0) > 1) return 'Duplicate code in this list';
+    if (!isValidDepartmentCode(code)) return 'Code must be 1-4 lowercase letters or n/a';
+    if (code !== 'n/a' && existingCodes.has(code)) return 'Code already used by another department';
+    if (code !== 'n/a' && (codeCounts.get(code) || 0) > 1) return 'Duplicate code in this list';
     return '';
   });
 

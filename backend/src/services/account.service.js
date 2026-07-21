@@ -39,7 +39,7 @@ export const AccountService = {
     }
 
     const existingCode = await AccountModel.findByDepartmentCode(departmentCode);
-    if (existingCode) {
+    if (existingCode && departmentCode !== 'n/a') {
       throw new AppError('Department code already exists. Enter a unique letters-only code.', 409);
     }
 
@@ -84,7 +84,7 @@ export const AccountService = {
     }
 
     const existingCode = await AccountModel.findByDepartmentCode(departmentCode);
-    if (existingCode && existingCode.id !== id) {
+    if (existingCode && existingCode.id !== id && departmentCode !== 'n/a') {
       throw new AppError('Department code already exists. Enter a unique letters-only code.', 409);
     }
 
