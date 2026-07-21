@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TextSizeProvider } from './contexts/TextSizeContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { PresenceProvider } from './contexts/PresenceContext';
 import React, { Suspense } from 'react';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import { GlobalNotifications } from './components/GlobalNotifications';
@@ -40,6 +41,7 @@ export default function App() {
   return (
     <QueryProvider>
     <AuthProvider>
+    <PresenceProvider>
     <ThemeProvider>
     <TextSizeProvider>
       <Router>
@@ -88,6 +90,7 @@ export default function App() {
       </Router>
     </TextSizeProvider>
     </ThemeProvider>
+    </PresenceProvider>
     </AuthProvider>
     </QueryProvider>
   );
