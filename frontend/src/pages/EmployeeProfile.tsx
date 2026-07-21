@@ -75,6 +75,7 @@ type EmployeeForm = {
   site: string;
   pcName: string;
   biosDate: string;
+  deviceType: 'Windows' | 'MacOS' | string;
   windowsKey: string;
   rustdeskId: string;
   esetStatus: 'active' | 'inactive';
@@ -113,6 +114,7 @@ const emptyEmployee: EmployeeForm = {
   site: '',
   pcName: '',
   biosDate: '',
+  deviceType: 'Windows',
   windowsKey: '',
   rustdeskId: '',
   esetStatus: 'inactive',
@@ -418,6 +420,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     site: emp?.site === 'HQ' ? 'HQ' : emp?.site || '',
     pcName: emp?.pcName || '',
     biosDate: emp?.biosDate ? String(emp.biosDate).slice(0, 10) : '',
+    deviceType: emp?.deviceType || 'Windows',
     windowsKey: formatWindowsLicenseKey(emp?.windowsKey || ''),
     rustdeskId: formatRustdeskId(emp?.rustdeskId || emp?.rustDeskId || ''),
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
@@ -834,6 +837,7 @@ export default function EmployeeProfile() {
         siteId: selectedSite?.id,
         siteName: selectedSite?.name,
         biosDate: form.biosDate || '',
+        deviceType: form.deviceType,
         windowsKey: form.windowsKey.trim(),
         rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
@@ -1738,6 +1742,16 @@ export default function EmployeeProfile() {
                             employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
                           )}
                         </ProfileField>
+                        <ProfileField label="Device Type" icon={Laptop} editing={editingIT}>
+                          {editingIT ? (
+                            <Select value={form.deviceType || 'Windows'} onChange={(v) => updateForm('deviceType', v as any)}>
+                              <option value="Windows">Windows</option>
+                              <option value="MacOS">MacOS</option>
+                            </Select>
+                          ) : (
+                            employee.deviceType || 'Windows'
+                          )}
+                        </ProfileField>
                         <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
                           {editingIT ? (
                             <div className="relative flex items-center w-full">
@@ -1756,7 +1770,7 @@ export default function EmployeeProfile() {
                         )}
                       </div>
 
-                      {canViewSecrets && (
+                      {canViewSecrets && form.deviceType !== 'MacOS' && (
                       <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
                           <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
