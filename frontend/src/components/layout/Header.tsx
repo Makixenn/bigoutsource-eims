@@ -100,7 +100,6 @@ function NotificationBell() {
   const queryClient = useQueryClient();
   const { can } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [notifyRegistrationAttempts, setNotifyRegistrationAttempts] = useState(true);
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -156,7 +155,7 @@ function NotificationBell() {
         )
       );
       notificationService.markAllRead().then(() => {
-        queryClient.setQueryData(['notifications', { limit: 30, refreshTrigger }], (old: any[]) => {
+        queryClient.setQueryData(['notifications', { limit: 30 }], (old: any[]) => {
           if (!old) return [];
           return old.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() }));
         });
@@ -177,7 +176,7 @@ function NotificationBell() {
 
     try {
       await notificationService.clearAll();
-      queryClient.setQueryData(['notifications', { limit: 30, refreshTrigger }], () => []);
+      queryClient.setQueryData(['notifications', { limit: 30 }], () => []);
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     } catch (error) {
       setEmployeeNotifications(previousNotifications);
@@ -187,10 +186,7 @@ function NotificationBell() {
   };
 
   const handleRefresh = async () => {
-    setIsLoading(true);
-    setRefreshTrigger(prev => prev + 1);
     await queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    setIsLoading(false);
   };
 
   const handleClearSingle = async (id: string, e: React.MouseEvent) => {
@@ -204,11 +200,10 @@ function NotificationBell() {
     }
   };
 
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
   const handleRealtimeChange = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  }, [queryClient]);
 
   useRealtimeSubscription({
     table: 'notifications',
@@ -220,8 +215,11 @@ function NotificationBell() {
     onChange: handleRealtimeChange
   });
 
-  const { data: fetchedUsers = [], isLoading: isUsersLoading } = useUsersQuery({ refreshTrigger });
-  const { data: fetchedNotifications = [], isLoading: isNotificationsLoading } = useNotificationsQuery({ limit: 30, refreshTrigger });
+  const { data: fetchedUsers = [], isPending: isUsersPending, isFetching: isUsersFetching } = useUsersQuery();
+  const { data: fetchedNotifications = [], isPending: isNotificationsPending, isFetching: isNotificationsFetching } = useNotificationsQuery({ limit: 30 });
+  
+  const isInitialLoading = isUsersPending || isNotificationsPending;
+  const isBackgroundFetching = isUsersFetching || isNotificationsFetching;
 
   useEffect(() => {
     if (!canManageUsers) return;
@@ -243,9 +241,8 @@ function NotificationBell() {
     if (canReceiveEmployeeAddedNotifications) {
       setEmployeeNotifications(fetchedNotifications);
     }
-    setIsLoading(isUsersLoading || isNotificationsLoading);
   }, [
-    fetchedUsers, fetchedNotifications, isUsersLoading, isNotificationsLoading, 
+    fetchedUsers, fetchedNotifications,
     canManageUsers, canReceiveEmployeeAddedNotifications
   ]);
 
@@ -293,11 +290,12 @@ function NotificationBell() {
                 <button
                   type="button"
                   onClick={handleRefresh}
-                  className="rounded-lg border px-2 py-1.5 transition-colors hover:bg-[#F9FAFB]"
+                  disabled={isBackgroundFetching}
+                  className="rounded-lg border px-2 py-1.5 transition-colors hover:bg-[#F9FAFB] disabled:opacity-50"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
                   title="Refresh"
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
+                  <RefreshCw className={`h-3.5 w-3.5 ${isBackgroundFetching ? 'animate-spin' : ''}`} />
                 </button>
                 {employeeNotifications.length > 0 && (
                   <button
@@ -323,7 +321,7 @@ function NotificationBell() {
             </div>
 
             <div className="max-h-[28rem] overflow-y-auto p-4">
-              {isLoading ? (
+              {isInitialLoading ? (
                 <div className="flex h-32 items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-[#9CA3AF]" />
                 </div>
