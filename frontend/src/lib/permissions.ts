@@ -17,6 +17,7 @@ export type Capability =
   | 'employees.create.it_fields.optional'
   | 'employees.edit'
   | 'employees.delete'
+  | 'employees.unarchive'
   | 'employees.it.view'
   | 'employees.it.edit'
   | 'employees.secrets.view'

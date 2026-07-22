@@ -14,7 +14,7 @@ router.post('/', requirePermission('employees.create'), validate(createEmployeeV
 // Any tier of edit may PATCH; the service filters the payload to the fields the user owns.
 router.put(
   '/:id',
-  requireAnyPermission(['employees.edit', 'employees.it.edit', 'employees.secrets.edit', 'employees.delete']),
+  requireAnyPermission(['employees.edit', 'employees.it.edit', 'employees.secrets.edit', 'employees.delete', 'employees.unarchive']),
   validate(updateEmployeeValidator),
   EmployeeController.update
 );
