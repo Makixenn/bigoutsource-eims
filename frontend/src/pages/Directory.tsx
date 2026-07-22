@@ -117,7 +117,7 @@ type FormErrors = Partial<Record<keyof AddEmployeeForm, string>>;
 
 type DirectoryFieldCategory =
   | "EMPLOYEE INFORMATION"
-  | "DEPARTMENT/CAMPAIGN."
+  | "DEPARTMENT/CAMPAIGN"
   | "DATES"
   | "ACCOUNTS"
   | "DEVICE & SECURITY";
@@ -463,17 +463,17 @@ const directoryFields: Array<DirectoryFieldDef> = [
     render: (emp) => emp.birthdate || "-",
   },
 
-  // DEPARTMENT/CAMPAIGN.
+  // DEPARTMENT/CAMPAIGN
   {
     key: "accountAssignment",
-    label: "Department/Campaign.",
-    category: "DEPARTMENT/CAMPAIGN.",
+    label: "Department/Campaign",
+    category: "DEPARTMENT/CAMPAIGN",
     render: (emp) => emp.accountAssignment || "-",
   },
   {
     key: "site",
     label: "Site",
-    category: "DEPARTMENT/CAMPAIGN.",
+    category: "DEPARTMENT/CAMPAIGN",
     render: (emp) => emp.site || "Unassigned",
   },
 
@@ -981,6 +981,7 @@ export default function Directory() {
   const [showMissingDepartmentModal, setShowMissingDepartmentModal] =
     useState(false);
   const [showClearDraftModal, setShowClearDraftModal] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1944,8 +1945,11 @@ export default function Directory() {
       setIsBoEmailEdited(false);
       setIsLmsAccountEdited(false);
       setIsPcNameEdited(false);
-      toast.success("Employee record added");
       setIsModalOpen(false);
+      setIsSuccessModalOpen(true);
+      setTimeout(() => {
+        setIsSuccessModalOpen(false);
+      }, 4000);
       setIsAccountDropdownOpen(false);
       setForm(initialForm);
       setActiveStep(0);
@@ -1991,7 +1995,7 @@ export default function Directory() {
           <div className="max-h-[78vh] space-y-3 overflow-y-auto pr-4 pb-4">
             {[
               "EMPLOYEE INFORMATION",
-              "DEPARTMENT/CAMPAIGN.",
+              "DEPARTMENT/CAMPAIGN",
               "DATES",
               "ACCOUNTS",
               "DEVICE & SECURITY",
@@ -3953,6 +3957,36 @@ export default function Directory() {
                     Clear Draft
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isSuccessModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="p-8 flex flex-col items-center text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+                <h2 className="text-xl font-black text-[#111827]">
+                  Employee Added
+                </h2>
+                <p className="mt-3 text-sm font-medium text-[#4B5563]">
+                  I have sent a Notification for HR and IT through the system and Email.
+                </p>
               </div>
             </motion.div>
           </motion.div>

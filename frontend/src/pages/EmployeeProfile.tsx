@@ -890,16 +890,18 @@ export default function EmployeeProfile() {
     if (!canArchiveEmployee) return;
     if (!id) return;
 
-    if (archiveIntent === 'archive' && archiveStep === 2) {
-      if (hasActiveITAccounts) {
+    if (archiveIntent === 'archive') {
+      if (!employee.isReadyForArchive) {
         if (activeITAccountKeys.some(acc => !itCheckboxes[acc.key])) {
           toast.error("all fields must be cleared");
           return;
         }
       } else {
-        if (!hrCheckboxes.jobTitle || !hrCheckboxes.accountAssignment || !hrCheckboxes.site) {
-          toast.error("all fields must be cleared");
-          return;
+        if (archiveStep === 2) {
+          if (!hrCheckboxes.jobTitle || !hrCheckboxes.accountAssignment || !hrCheckboxes.site) {
+            toast.error("all fields must be cleared");
+            return;
+          }
         }
       }
     }
@@ -910,14 +912,8 @@ export default function EmployeeProfile() {
       let updateData: any = {};
       
       if (archiveIntent === 'archive') {
-        const isFloating = archiveStatusReason === 'floating';
-        const isSeparated = archiveStatusReason === 'separated';
-        const separationReason = archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason;
-        const sepDate = isSeparated && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
-        const flDate = isFloating && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
-        
-        if (hasActiveITAccounts) {
-          // IT Admin is clearing accounts
+        if (!employee.isReadyForArchive) {
+          // IT Admin is initiating the archive request
           updateData = {
             is_ready_for_archive: true,
           };
@@ -933,7 +929,13 @@ export default function EmployeeProfile() {
           if (itCheckboxes.rustdeskId) updateData.rustdeskId = '';
           
         } else {
-          // HR is finalizing
+          // HR is finalizing the archive
+          const isFloating = archiveStatusReason === 'floating';
+          const isSeparated = archiveStatusReason === 'separated';
+          const separationReason = archiveSeparationReason === 'Other' ? archiveSeparationReasonOther : archiveSeparationReason;
+          const sepDate = isSeparated && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
+          const flDate = isFloating && archiveSeparationDate ? new Date(archiveSeparationDate).toISOString() : null;
+          
           updateData = {
             status: archiveStatusReason,
             separation_reason: separationReason,
@@ -974,7 +976,7 @@ export default function EmployeeProfile() {
       setForm(normalized);
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
 
-      toast.success(archiveIntent === 'unarchive' ? 'Employee unarchived' : hasActiveITAccounts ? 'Employee marked ready for HR Archive' : 'Employee archived');
+      toast.success(archiveIntent === 'unarchive' ? 'Employee unarchived' : !employee.isReadyForArchive ? 'Employee marked ready for HR Archive' : 'Employee finalized and archived');
 
       setShowArchiveModal(false);
       setArchiveIntent(null);
@@ -1256,10 +1258,8 @@ export default function EmployeeProfile() {
                         )}
 
                         {(() => {
-                          const isArchiveReady = !hasActiveITAccounts;
-                          
-                          let buttonText = 'Archive';
-                          let buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
+                          let buttonText = 'Archive Request';
+                          let buttonColor = 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20';
                           let isDisabled = false;
                           let icon = <Archive className="w-4 h-4" />;
                           
@@ -1268,14 +1268,14 @@ export default function EmployeeProfile() {
                             buttonColor = 'bg-green-600 text-white hover:bg-green-700 shadow-green-500/20';
                             isDisabled = !isSuperAdmin && !canUnarchivePermission;
                             icon = <RotateCcw className="w-4 h-4" />;
-                          } else if (hasActiveITAccounts) {
-                            buttonText = 'Ready For Archive, IT Admin';
+                          } else if (!employee.isReadyForArchive) {
+                            buttonText = 'Archive Request';
                             buttonColor = 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20';
-                            isDisabled = !isSuperAdmin && !canArchivePermission && !canEditIT;
+                            isDisabled = !isSuperAdmin && !canEditIT;
                           } else {
-                            buttonText = 'Archive';
+                            buttonText = 'Finalize Archive';
                             buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
-                            isDisabled = !isSuperAdmin && !canArchivePermission;
+                            isDisabled = !isSuperAdmin && (!canArchivePermission || !canEditHR);
                           }
 
                           if (!canArchiveEmployee || (isDisabled && !isSuperAdmin)) return null;
@@ -1292,7 +1292,7 @@ export default function EmployeeProfile() {
                                   setUnarchiveAccountAssignment(employee.accountAssignment || '');
                                   setUnarchiveSiteId(employee.siteId || '');
                                   setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
-                                } else if (hasActiveITAccounts) {
+                                } else if (!employee.isReadyForArchive) {
                                   setArchiveStep(2);
                                 } else {
                                   setArchiveStep(1);
@@ -1350,7 +1350,7 @@ export default function EmployeeProfile() {
                         employee.jobTitle || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
-                    <ProfileField label="Department/Campaign." icon={Briefcase} editing={editingHR}>
+                    <ProfileField label="Department/Campaign" icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
                         <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
                           <button
@@ -2168,8 +2168,8 @@ export default function EmployeeProfile() {
                   <p className="mt-2 text-sm text-[#6B7280]">
                     {archiveIntent === 'unarchive'
                       ? 'This employee will be restored to the active directory. Please provide their required HR fields.'
-                      : hasActiveITAccounts
-                        ? 'Would You like to clear the fields then check box'
+                      : !employee.isReadyForArchive
+                        ? 'Please confirm you have cleared the required fields by checking the boxes below to mark this employee for archiving.'
                         : archiveStep === 1 
                           ? 'This employee will be removed from the active directory. Please select their new status below:' 
                           : 'Please confirm you have cleared the required fields by checking the boxes below.'}
@@ -2200,13 +2200,13 @@ export default function EmployeeProfile() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">DEPARTMENT/CAMPAIGN.</label>
+                        <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">DEPARTMENT/CAMPAIGN</label>
                         <select
                           value={unarchiveAccountAssignment}
                           onChange={(e) => setUnarchiveAccountAssignment(e.target.value)}
                           className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
                         >
-                          <option value="">Select a Department/Campaign.</option>
+                          <option value="">Select a Department/Campaign</option>
                           {accounts.map(account => (
                             <option key={account.id} value={account.name}>{account.name}</option>
                           ))}
@@ -2228,7 +2228,7 @@ export default function EmployeeProfile() {
                     </div>
                   )}
                   
-                  {archiveIntent === 'archive' && archiveStep === 1 && (
+                  {archiveIntent === 'archive' && archiveStep === 1 && employee.isReadyForArchive && (
                     <div className="mt-4 animate-in fade-in">
                       <select
                         value={archiveStatusReason}
@@ -2284,9 +2284,9 @@ export default function EmployeeProfile() {
                     </div>
                   )}
 
-                  {archiveIntent === 'archive' && archiveStep === 2 && (
+                  {archiveIntent === 'archive' && (archiveStep === 2 || !employee.isReadyForArchive) && (
                     <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-right-4">
-                      {hasActiveITAccounts ? (
+                      {!employee.isReadyForArchive ? (
                         activeITAccountKeys.map(acc => (
                           <label key={acc.key} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                             <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={itCheckboxes[acc.key] || false} onChange={(e) => setItCheckboxes(prev => ({ ...prev, [acc.key]: e.target.checked }))} />
@@ -2328,7 +2328,7 @@ export default function EmployeeProfile() {
                   Cancel
                 </button>
 
-                {archiveIntent === 'archive' && archiveStep === 1 ? (
+                {archiveIntent === 'archive' && archiveStep === 1 && employee.isReadyForArchive ? (
                   <button
                     type="button"
                     onClick={() => setArchiveStep(2)}
@@ -2347,7 +2347,7 @@ export default function EmployeeProfile() {
                     }
                     className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
                         ? 'bg-green-600 hover:bg-green-700'
-                        : !hasActiveITAccounts ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-500 hover:bg-orange-600'
+                        : !employee.isReadyForArchive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-red-600 hover:bg-red-700'
                       }`}
                   >
                     {isArchiving ? (
@@ -2360,7 +2360,7 @@ export default function EmployeeProfile() {
 
                     {archiveIntent === 'unarchive'
                       ? 'Confirm Unarchive'
-                      : hasActiveITAccounts ? 'Deactivate & Archive' : 'Archive Employee'}
+                      : !employee.isReadyForArchive ? 'Deactivate & Send Archive Request' : 'Finalize & Archive Employee'}
                   </button>
                 )}
               </div>

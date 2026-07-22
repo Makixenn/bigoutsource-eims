@@ -252,6 +252,7 @@ export const EmployeeService = {
     const isHrArchiving = !before.isReadyForArchive && willBeReadyForArchive;
     const isItArchiving = !before.isArchived && willBeArchived;
     const isNewlyArchived = isHrArchiving || isItArchiving;
+    const isNewlyUnarchived = before.isArchived && !willBeArchived;
 
     const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
@@ -276,10 +277,24 @@ export const EmployeeService = {
       });
     }
 
+    if (isNewlyUnarchived) {
+      await NotificationService.notifyEmployeeUnarchived({ 
+        employee, 
+        actor
+      }).catch((error) => {
+        console.error('Unable to create employee-unarchived notifications', error);
+      });
+    }
+
     const changes = diffEmployee(before, employee);
+    
+    let auditAction = 'employee.update';
+    if (isNewlyUnarchived) auditAction = 'employee.unarchive';
+    else if (isNewlyArchived) auditAction = 'employee.archive';
+
     await AuditLogModel.create({
       ...actor,
-      action: 'employee.update',
+      action: auditAction,
       entityType: 'employees',
       entityId: id,
       entityLabel: employee.fullName || employee.employeeNumber || id,

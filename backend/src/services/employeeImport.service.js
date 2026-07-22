@@ -112,7 +112,7 @@ function normalizeRow(row) {
   return {
     employeeNumber: value(row, 'Employee ID', 'ID'),
     fullName: value(row, 'Full Name', 'Name', 'fullName'),
-    accountAssignment: value(row, 'Department/Campaign', 'DEPARTMENT/CAMPAIGN.', 'Department/Campaign.', 'Account'),
+    accountAssignment: value(row, 'Department/Campaign', 'DEPARTMENT/CAMPAIGN', 'Department/Campaign', 'Account'),
     phone: value(row, 'Phone', 'Phone Number'),
     address: value(row, 'Address'),
     boEmail: value(row, 'BO Email', 'Bigoutsource Email'),

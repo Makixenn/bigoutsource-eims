@@ -108,18 +108,19 @@ export const NotificationModel = {
     return normalize(row);
   },
 
-  async clearGlobalByEntity(entityType, entityId, type, missingFields) {
+  async clearGlobalByEntity(entityType, entityId, type, missingFields, isArchive) {
     const notifications = await prisma.notification.findMany({
       where: { entityType, entityId, type },
     });
 
     const toDelete = notifications.filter((n) => {
-      // Prisma JSON fields are parsed as objects/arrays automatically if supported, 
-      // or we might need to check the raw value. We use normalize() normally.
       const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
-      const mFields = parsed?.missingFields;
-      if (!missingFields) return !mFields;
-      return mFields === missingFields;
+      if (isArchive) {
+        return !!parsed?.isArchiveNotification;
+      } else if (missingFields) {
+        return parsed?.missingFields === missingFields;
+      }
+      return false; // Don't match other types if parameters are missing
     }).map((n) => n.id);
 
     if (toDelete.length > 0) {

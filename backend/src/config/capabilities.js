@@ -32,7 +32,37 @@ export const CAPABILITIES = {
   'auditlogs.view': 'View audit logs',
   'auditlogs.undo': 'Undo audit-logged actions',
   'notifications.hr_action': 'Receive HR action required notifications',
+  'notifications.hr_action.accountAssignment': 'Notify on Department/Campaign updates',
+  'notifications.hr_action.site': 'Notify on Site updates',
+  'notifications.hr_action.jobTitle': 'Notify on Job Title updates',
+  'notifications.hr_action.status': 'Notify on Status updates',
+  'notifications.hr_action.employeeStatus': 'Notify on Employment Status updates',
+  'notifications.hr_action.dateHired': 'Notify on Date Hired updates',
+  'notifications.hr_action.birthDate': 'Notify on Birthdate updates',
+  'notifications.hr_action.phoneNumber': 'Notify on Phone Number updates',
+  'notifications.hr_action.address': 'Notify on Address updates',
+  'notifications.hr_action.fullName': 'Notify on Name updates',
+  'notifications.hr_action.archive': 'Notify on Archive Actions',
   'notifications.it_action': 'Receive IT action required notifications',
+  'notifications.it_action.bigoutsourceEmail': 'Notify on Snappy Email updates',
+  'notifications.it_action.rustdeskId': 'Notify on Remote ID updates',
+  'notifications.it_action.pcName': 'Notify on PC Name updates',
+  'notifications.it_action.windowsKey': 'Notify on Windows License Key updates',
+  'notifications.it_action.esetStatus': 'Notify on ESET Status updates',
+  'notifications.it_action.activityWatchStatus': 'Notify on ActivityWatch Status updates',
+  'notifications.it_action.lmsAccount': 'Notify on LMS Account updates',
+  'notifications.it_action.emailPassword': 'Notify on Email Password updates',
+  'notifications.it_action.outlookEmail': 'Notify on Outlook Email updates',
+  'notifications.it_action.googleAccount': 'Notify on Google Account updates',
+  'notifications.it_action.teamsAccount': 'Notify on Teams Account updates',
+  'notifications.it_action.mattermostAccount': 'Notify on Mattermost Account updates',
+  'notifications.it_action.deviceType': 'Notify on Device Type updates',
+  'notifications.it_action.biosDate': 'Notify on BIOS Date updates',
+  'notifications.it_action.archive': 'Notify on Archive Actions',
+  
+  // Global Notifications
+  'notifications.employee_deleted': 'Notify on Permanent Deletion',
+
   // Meta — Super Admin only; never grantable to custom roles (Phase 4 guardrail).
   'users.manage': 'Manage user accounts',
   'roles.manage': 'Manage roles & permissions',
@@ -55,6 +85,9 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view', 'auditlogs.undo',
     'notifications.hr_action', 'notifications.it_action',
+    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.jobTitle', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.archive',
+    'notifications.it_action.bigoutsourceEmail', 'notifications.it_action.rustdeskId', 'notifications.it_action.pcName', 'notifications.it_action.windowsKey', 'notifications.it_action.esetStatus', 'notifications.it_action.activityWatchStatus', 'notifications.it_action.lmsAccount', 'notifications.it_action.emailPassword', 'notifications.it_action.outlookEmail', 'notifications.it_action.googleAccount', 'notifications.it_action.teamsAccount', 'notifications.it_action.mattermostAccount', 'notifications.it_action.deviceType', 'notifications.it_action.biosDate', 'notifications.it_action.archive',
+    'notifications.employee_deleted'
   ],
   hr_admin: [
     'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.delete', 'employees.unarchive',
@@ -63,6 +96,8 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view',
     'notifications.hr_action',
+    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.jobTitle', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.archive',
+    'notifications.employee_deleted'
   ],
   it_admin: [
     'employees.view', 'employees.create', 'employees.create.it_fields.required',
@@ -73,6 +108,8 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view',
     'notifications.it_action',
+    'notifications.it_action.bigoutsourceEmail', 'notifications.it_action.rustdeskId', 'notifications.it_action.pcName', 'notifications.it_action.windowsKey', 'notifications.it_action.esetStatus', 'notifications.it_action.activityWatchStatus', 'notifications.it_action.lmsAccount', 'notifications.it_action.emailPassword', 'notifications.it_action.outlookEmail', 'notifications.it_action.googleAccount', 'notifications.it_action.teamsAccount', 'notifications.it_action.mattermostAccount', 'notifications.it_action.deviceType', 'notifications.it_action.biosDate', 'notifications.it_action.archive',
+    'notifications.employee_deleted'
   ],
   viewer: [
     'employees.view',

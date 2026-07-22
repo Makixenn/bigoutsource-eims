@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { UserRole } from '@/src/types';
 import type { Capability } from '@/src/lib/permissions';
@@ -11,6 +11,8 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ roles, capability }: ProtectedRouteProps) {
   const { user, loading, can } = useAuth();
 
+  const location = useLocation();
+
   if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-[#F9FAFB]">
@@ -21,7 +23,7 @@ export default function ProtectedRoute({ roles, capability }: ProtectedRouteProp
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
   if (user.status === 'pending' || user.status === 'disabled') {

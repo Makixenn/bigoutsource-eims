@@ -3,7 +3,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { Clock, Mail, ShieldX } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logoUrl from '/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput } from '@/src/features/auth/components/authFields';
 import { LoginBackground } from '@/src/features/auth/components/LoginBackground';
@@ -12,6 +12,7 @@ export default function Login() {
   const { login, loginMfa, resendLoginMfa } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     document.documentElement.classList.remove('dark');
@@ -65,7 +66,8 @@ export default function Login() {
       
       setIsExiting(true);
       setTimeout(() => {
-        navigate('/', { replace: true });
+        const from = (location.state as any)?.from || '/';
+        navigate(from, { replace: true });
       }, 500);
     } catch (error: any) {
       const msg = error.message || 'Invalid email or password';
