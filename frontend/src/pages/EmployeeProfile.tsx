@@ -535,7 +535,9 @@ export default function EmployeeProfile() {
   const canEditSecrets = can('employees.secrets.edit');
   const reqITFields = useMemo(() => ['admin', 'it'].includes(user?.role?.toLowerCase() || ''), [user]);
   const isSuperAdmin = ['super admin', 'superadmin', 'super_admin'].includes(user?.role?.toLowerCase() || '');
-  const canArchiveEmployee = (isSuperAdmin || canEditHR || canEditIT) && employee.status !== 'separated';
+  const canArchivePermission = can('employees.delete');
+  const canUnarchivePermission = can('employees.unarchive');
+  const canArchiveEmployee = isSuperAdmin || canArchivePermission || canUnarchivePermission || canEditHR || canEditIT;
   
   const hasActiveITAccounts = useMemo(() => {
     return [
@@ -1264,16 +1266,16 @@ export default function EmployeeProfile() {
                           if (employee.isArchived) {
                             buttonText = 'Unarchive';
                             buttonColor = 'bg-green-600 text-white hover:bg-green-700 shadow-green-500/20';
-                            isDisabled = !isSuperAdmin && !canEditHR;
+                            isDisabled = !isSuperAdmin && !canUnarchivePermission;
                             icon = <RotateCcw className="w-4 h-4" />;
                           } else if (hasActiveITAccounts) {
                             buttonText = 'Ready For Archive, IT Admin';
                             buttonColor = 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20';
-                            isDisabled = !isSuperAdmin && !canEditIT;
+                            isDisabled = !isSuperAdmin && !canArchivePermission && !canEditIT;
                           } else {
                             buttonText = 'Archive';
                             buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
-                            isDisabled = !isSuperAdmin && !canEditHR;
+                            isDisabled = !isSuperAdmin && !canArchivePermission;
                           }
 
                           if (!canArchiveEmployee || (isDisabled && !isSuperAdmin)) return null;

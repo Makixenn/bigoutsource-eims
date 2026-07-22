@@ -938,6 +938,7 @@ export default function Directory() {
   const { can } = useAuth();
   const canViewHR = can("employees.edit");
   const canViewIT = can("employees.it.edit");
+  const canViewArchived = can("employees.delete") || can("employees.unarchive");
 
   const reqHRFields = can("employees.create.hr_fields.required");
   const optHRFields = can("employees.create.hr_fields.optional");
@@ -964,7 +965,7 @@ export default function Directory() {
   const [siteFilter, setSiteFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState(() => {
     const value = searchParams.get("status");
-    return value && ["Active", "Separated", "Floating"].includes(value)
+    return value && ["Active", "Separated", "Floating", "Archived"].includes(value)
       ? value
       : "All";
   });
@@ -1128,10 +1129,12 @@ export default function Directory() {
 
   const baseFilteredEmployees = employees
     .filter((emp) => {
+      if (!canViewArchived && emp.isArchived) return false;
       if (hasSearchTerm) return true;
       if (statusFilter === "All") return true;
+      if (statusFilter === "Archived") return emp.isArchived === true;
       if (statusFilter === "Active") return !emp.isArchived;
-      return true; // For Separated/Floating, we keep them here and filter by status below
+      return !emp.isArchived; // For Separated/Floating, we keep them here and filter by status below
     })
     .filter((emp) => {
       const searchableValues = [
@@ -1155,15 +1158,19 @@ export default function Directory() {
 
       let matchesStatus = true;
       if (statusFilter !== "All") {
-        const normalizedEmpStatus = (emp.status || "").toLowerCase();
-        if (statusFilter === "Separated") {
-          matchesStatus =
-            normalizedEmpStatus === "separated" ||
-            normalizedEmpStatus === "inactive" ||
-            normalizedEmpStatus === "terminated" ||
-            normalizedEmpStatus === "offboarding";
+        if (statusFilter === "Archived") {
+          matchesStatus = emp.isArchived === true;
         } else {
-          matchesStatus = normalizedEmpStatus === statusFilter.toLowerCase();
+          const normalizedEmpStatus = (emp.status || "").toLowerCase();
+          if (statusFilter === "Separated") {
+            matchesStatus =
+              normalizedEmpStatus === "separated" ||
+              normalizedEmpStatus === "inactive" ||
+              normalizedEmpStatus === "terminated" ||
+              normalizedEmpStatus === "offboarding";
+          } else {
+            matchesStatus = normalizedEmpStatus === statusFilter.toLowerCase();
+          }
         }
       }
 
@@ -2084,6 +2091,7 @@ export default function Directory() {
                     { value: "Active", label: "Active" },
                     { value: "Separated", label: "Separated" },
                     { value: "Floating", label: "Floating" },
+                    ...(canViewArchived ? [{ value: "Archived", label: "Archived" }] : []),
                   ]}
                 />
                 <AccountFilterDropdown

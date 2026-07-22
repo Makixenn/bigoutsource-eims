@@ -67,7 +67,7 @@ export function filterEmployeeWritePayload(data, user, isCreate = false) {
     }
     if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
-    if (caps.includes('employees.delete')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.delete') || caps.includes('employees.unarchive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
   }
 
   const filtered = {};
