@@ -104,7 +104,18 @@ type AddEmployeeForm = {
   windowsKey: string;
   dateHired?: string;
   isArchived?: boolean;
-  jobTitle: string;
+  position: string;
+  nickname: string;
+  sex: string;
+  civilStatus: string;
+  sssNo: string;
+  tinNo: string;
+  philhealthNo: string;
+  pagibigNo: string;
+  personalEmail: string;
+  mainContact: string;
+  emergencyContact: string;
+  emergencyContactNumber: string;
   birthdate: string;
   floatDate: string;
   outlookEmail: string;
@@ -127,7 +138,18 @@ type DirectoryFieldKey =
   | "employeeId"
   | "phone"
   | "address"
-  | "jobTitle"
+  | "position"
+  | "nickname"
+  | "sex"
+  | "civilStatus"
+  | "sssNo"
+  | "tinNo"
+  | "philhealthNo"
+  | "pagibigNo"
+  | "personalEmail"
+  | "mainContact"
+  | "emergencyContact"
+  | "emergencyContactNumber"
   | "employeeStatus"
   | "status"
   | "birthdate"
@@ -177,7 +199,18 @@ const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
   employeeId: 1,
   phone: 1.1,
   address: 2.0,
-  jobTitle: 1.2,
+  position: 1.2,
+  nickname: 1.0,
+  sex: 0.8,
+  civilStatus: 1.0,
+  sssNo: 1.0,
+  tinNo: 1.0,
+  philhealthNo: 1.0,
+  pagibigNo: 1.0,
+  personalEmail: 1.5,
+  mainContact: 1.2,
+  emergencyContact: 1.2,
+  emergencyContactNumber: 1.2,
   employeeStatus: 1.0,
   status: 0.8,
   birthdate: 1.0,
@@ -234,7 +267,7 @@ function calculateIncompleteData(employee: EmployeeRecord) {
     mildCount++;
     hrMissing++;
   }
-  if (!employee.jobTitle) {
+  if (!employee.position) {
     mildCount++;
     hrMissing++;
   }
@@ -400,11 +433,88 @@ const directoryFields: Array<DirectoryFieldDef> = [
     render: (emp) => emp.address || "-",
   },
   {
-    key: "jobTitle",
-    label: "Job Title",
+    key: "position",
+    label: "Position",
     category: "EMPLOYEE INFORMATION",
     requireHR: true,
-    render: (emp) => emp.jobTitle || "-",
+    render: (emp) => emp.position || "-",
+  },
+  {
+    key: "nickname",
+    label: "Nickname",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.nickname || "-",
+  },
+  {
+    key: "sex",
+    label: "Sex",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.sex || "-",
+  },
+  {
+    key: "civilStatus",
+    label: "Civil Status",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.civilStatus || "-",
+  },
+  {
+    key: "sssNo",
+    label: "SSS No.",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.sssNo || "-",
+  },
+  {
+    key: "tinNo",
+    label: "TIN No.",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.tinNo || "-",
+  },
+  {
+    key: "philhealthNo",
+    label: "PhilHealth No.",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.philhealthNo || "-",
+  },
+  {
+    key: "pagibigNo",
+    label: "Pag-Ibig No.",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.pagibigNo || "-",
+  },
+  {
+    key: "personalEmail",
+    label: "Personal Email Address",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.personalEmail || "-",
+  },
+  {
+    key: "mainContact",
+    label: "Main Contact",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.mainContact || "-",
+  },
+  {
+    key: "emergencyContact",
+    label: "Emergency Contact",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.emergencyContact || "-",
+  },
+  {
+    key: "emergencyContactNumber",
+    label: "Emergency Contact Number",
+    category: "EMPLOYEE INFORMATION",
+    requireHR: true,
+    render: (emp) => emp.emergencyContactNumber || "-",
   },
   {
     key: "employeeStatus",
@@ -642,7 +752,18 @@ const initialForm: AddEmployeeForm = {
   windowsKey: "",
   dateHired: getTodayDateInputValue(),
   isArchived: false,
-  jobTitle: "",
+  position: "",
+  nickname: "",
+  sex: "",
+  civilStatus: "",
+  sssNo: "",
+  tinNo: "",
+  philhealthNo: "",
+  pagibigNo: "",
+  personalEmail: "",
+  mainContact: "",
+  emergencyContact: "",
+  emergencyContactNumber: "",
   birthdate: "",
   floatDate: "",
   outlookEmail: "",
@@ -722,7 +843,18 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
       emp.activityWatchStatus || emp.activitywatch,
     ) as Employee["activityWatchStatus"],
     dateHired: emp.dateHired || "",
-    jobTitle: emp.jobTitle || "",
+    position: emp.position || "",
+    nickname: emp.nickname || "",
+    sex: emp.sex || "",
+    civilStatus: emp.civilStatus || emp.civil_status || "",
+    sssNo: emp.sssNo || emp.sss_no || "",
+    tinNo: emp.tinNo || emp.tin_no || "",
+    philhealthNo: emp.philhealthNo || emp.philhealth_no || "",
+    pagibigNo: emp.pagibigNo || emp.pagibig_no || "",
+    personalEmail: emp.personalEmail || emp.personal_email || "",
+    mainContact: emp.mainContact || emp.main_contact || "",
+    emergencyContact: emp.emergencyContact || emp.emergency_contact || "",
+    emergencyContactNumber: emp.emergencyContactNumber || emp.emergency_contact_number || "",
     birthdate: emp.birthdate || "",
     deviceType: emp.deviceType || emp.device_type || "Windows",
     employeeStatus: emp.employeeStatus || emp.employee_status || "Regular",
@@ -1739,8 +1871,8 @@ export default function Directory() {
           errors.phone = "Enter the employee phone number.";
         if (!form.address.trim())
           errors.address = "Enter the employee address.";
-        if (!form.jobTitle.trim())
-          errors.jobTitle = "Enter the employee job title.";
+        if (!form.position.trim())
+          errors.position = "Enter the employee position.";
         if (!form.birthdate) errors.birthdate = "Enter the employee birthdate.";
       }
       if (
@@ -1915,7 +2047,7 @@ export default function Directory() {
         activityWatchStatus: form.activityWatchStatus,
         windowsKey: form.windowsKey.trim() || undefined,
         dateHired: form.dateHired || undefined,
-        jobTitle: form.jobTitle.trim() || undefined,
+        position: form.position.trim() || undefined,
         birthdate: form.birthdate || undefined,
         floatDate:
           form.status === "floating" ? form.floatDate || undefined : undefined,
@@ -2711,15 +2843,15 @@ export default function Directory() {
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%] mt-[1px]">
                                   <Field
-                                    label="Job Title"
+                                    label="Position"
                                     required={reqHRFields}
-                                    isFilled={Boolean(form.jobTitle)}
-                                    error={formErrors.jobTitle as string}
+                                    isFilled={Boolean(form.position)}
+                                    error={formErrors.position as string}
                                   >
                                     <Input
-                                      value={form.jobTitle}
+                                      value={form.position}
                                       onChange={(value) =>
-                                        updateForm("jobTitle", value)
+                                        updateForm("position", value)
                                       }
                                       placeholder="e.g. Customer Service Rep"
                                     />
@@ -3371,13 +3503,13 @@ export default function Directory() {
                             {showHRFields && (
                               <>
                                 <Field
-                                  label="Job Title"
-                                  error={formErrors.jobTitle as string}
+                                  label="Position"
+                                  error={formErrors.position as string}
                                 >
                                   <Input
-                                    value={form.jobTitle}
+                                    value={form.position}
                                     onChange={(value) =>
-                                      updateForm("jobTitle", value)
+                                      updateForm("position", value)
                                     }
                                     placeholder="e.g. Customer Service Rep"
                                   />

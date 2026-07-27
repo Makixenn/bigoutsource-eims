@@ -86,7 +86,18 @@ type EmployeeForm = {
   isArchived?: boolean;
   isReadyForArchive?: boolean;
   avatarUrl?: string;
-  jobTitle: string;
+  position: string;
+  nickname: string;
+  sex: string;
+  civilStatus: string;
+  sssNo: string;
+  tinNo: string;
+  philhealthNo: string;
+  pagibigNo: string;
+  personalEmail: string;
+  mainContact: string;
+  emergencyContact: string;
+  emergencyContactNumber: string;
   birthdate: string;
   floatDate: string;
   outlookEmail: string;
@@ -125,7 +136,18 @@ const emptyEmployee: EmployeeForm = {
   isArchived: false,
   isReadyForArchive: false,
   avatarUrl: '',
-  jobTitle: '',
+  position: '',
+  nickname: '',
+  sex: '',
+  civilStatus: '',
+  sssNo: '',
+  tinNo: '',
+  philhealthNo: '',
+  pagibigNo: '',
+  personalEmail: '',
+  mainContact: '',
+  emergencyContact: '',
+  emergencyContactNumber: '',
   birthdate: '',
   floatDate: '',
   outlookEmail: '',
@@ -158,7 +180,18 @@ const editableFields: Array<keyof EmployeeForm> = [
   'dateHired',
   'separationDate',
   'separationReason',
-  'jobTitle',
+  'position',
+  'nickname',
+  'sex',
+  'civilStatus',
+  'sssNo',
+  'tinNo',
+  'philhealthNo',
+  'pagibigNo',
+  'personalEmail',
+  'mainContact',
+  'emergencyContact',
+  'emergencyContactNumber',
   'birthdate',
   'floatDate',
   'outlookEmail',
@@ -439,7 +472,18 @@ function normalizeEmployee(emp: any): EmployeeForm {
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
     isReadyForArchive: emp?.is_ready_for_archive ?? emp?.isReadyForArchive ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
-    jobTitle: emp?.jobTitle || '',
+    position: emp?.position || '',
+    nickname: emp?.nickname || '',
+    sex: emp?.sex || '',
+    civilStatus: emp?.civilStatus || emp?.civil_status || '',
+    sssNo: emp?.sssNo || emp?.sss_no || '',
+    tinNo: emp?.tinNo || emp?.tin_no || '',
+    philhealthNo: emp?.philhealthNo || emp?.philhealth_no || '',
+    pagibigNo: emp?.pagibigNo || emp?.pagibig_no || '',
+    personalEmail: emp?.personalEmail || emp?.personal_email || '',
+    mainContact: emp?.mainContact || emp?.main_contact || '',
+    emergencyContact: emp?.emergencyContact || emp?.emergency_contact || '',
+    emergencyContactNumber: emp?.emergencyContactNumber || emp?.emergency_contact_number || '',
     birthdate: emp?.birthdate || '',
     floatDate: emp?.floatDate || '',
     outlookEmail: emp?.outlookEmail || '',
@@ -855,7 +899,18 @@ export default function EmployeeProfile() {
         dateHired: form.dateHired,
         separationDate: form.separationDate,
         separationReason: form.separationReason,
-        jobTitle: form.jobTitle.trim(),
+        position: form.position.trim(),
+        nickname: form.nickname.trim(),
+        sex: form.sex,
+        civilStatus: form.civilStatus,
+        sssNo: form.sssNo.trim(),
+        tinNo: form.tinNo.trim(),
+        philhealthNo: form.philhealthNo.trim(),
+        pagibigNo: form.pagibigNo.trim(),
+        personalEmail: form.personalEmail.trim(),
+        mainContact: form.mainContact.trim(),
+        emergencyContact: form.emergencyContact.trim(),
+        emergencyContactNumber: form.emergencyContactNumber.trim(),
         birthdate: form.birthdate,
         floatDate: form.floatDate,
         outlookEmail: form.outlookEmail.trim(),
@@ -1288,7 +1343,7 @@ export default function EmployeeProfile() {
                                 
                                 if (employee.isArchived) {
                                   setArchiveStep(1);
-                                  setUnarchiveJobTitle(employee.jobTitle || '');
+                                  setUnarchiveJobTitle(employee.position || '');
                                   setUnarchiveAccountAssignment(employee.accountAssignment || '');
                                   setUnarchiveSiteId(employee.siteId || '');
                                   setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
@@ -1343,11 +1398,88 @@ export default function EmployeeProfile() {
               <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
                 <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="Job Title" icon={Briefcase} editing={editingHR}>
+                    <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
                       {editingHR ? (
-                        <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
+                        <Input value={form.position} onChange={(value) => updateForm('position', value)} placeholder="e.g. Customer Service Rep" />
                       ) : (
-                        employee.jobTitle || <span className="text-red-500 font-black">Not Assigned</span>
+                        employee.position || <span className="text-red-500 font-black">Not Assigned</span>
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Nickname" icon={User} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.nickname} onChange={(value) => updateForm('nickname', value)} placeholder="Nickname" />
+                      ) : (
+                        employee.nickname || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Sex" icon={User} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.sex} onChange={(value) => updateForm('sex', value)} placeholder="Male / Female" />
+                      ) : (
+                        employee.sex || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Civil Status" icon={User} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.civilStatus} onChange={(value) => updateForm('civilStatus', value)} placeholder="e.g. Single, Married" />
+                      ) : (
+                        employee.civilStatus || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="SSS No." icon={Briefcase} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.sssNo} onChange={(value) => updateForm('sssNo', value)} placeholder="SSS Number" />
+                      ) : (
+                        employee.sssNo || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="TIN No." icon={Briefcase} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.tinNo} onChange={(value) => updateForm('tinNo', value)} placeholder="TIN Number" />
+                      ) : (
+                        employee.tinNo || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="PhilHealth No." icon={Briefcase} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.philhealthNo} onChange={(value) => updateForm('philhealthNo', value)} placeholder="PhilHealth Number" />
+                      ) : (
+                        employee.philhealthNo || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Pag-Ibig No." icon={Briefcase} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.pagibigNo} onChange={(value) => updateForm('pagibigNo', value)} placeholder="Pag-Ibig Number" />
+                      ) : (
+                        employee.pagibigNo || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Personal Email" icon={Mail} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.personalEmail} onChange={(value) => updateForm('personalEmail', value)} placeholder="Personal Email Address" />
+                      ) : (
+                        employee.personalEmail || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Main Contact" icon={Phone} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.mainContact} onChange={(value) => updateForm('mainContact', value)} placeholder="Emergency Contact Name & Number" />
+                      ) : (
+                        employee.mainContact || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Emergency Contact" icon={User} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.emergencyContact} onChange={(value) => updateForm('emergencyContact', value)} placeholder="Emergency Contact Name" />
+                      ) : (
+                        employee.emergencyContact || '-'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Emergency Contact Number" icon={Phone} editing={editingHR}>
+                      {editingHR ? (
+                        <Input value={form.emergencyContactNumber} onChange={(value) => updateForm('emergencyContactNumber', value)} placeholder="Emergency Contact Number" />
+                      ) : (
+                        employee.emergencyContactNumber || '-'
                       )}
                     </ProfileField>
                     <ProfileField label="Department/Campaign." icon={Briefcase} editing={editingHR}>
