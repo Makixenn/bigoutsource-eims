@@ -1113,6 +1113,7 @@ export default function Directory() {
   const [showMissingDepartmentModal, setShowMissingDepartmentModal] =
     useState(false);
   const [showClearDraftModal, setShowClearDraftModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1620,7 +1621,7 @@ export default function Directory() {
     fileInputRef.current?.click();
   };
 
-  const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = async (templateType: 'HR' | 'IT') => {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "EIMS System";
     workbook.created = new Date();
@@ -1637,18 +1638,41 @@ export default function Directory() {
     listsSheet.getColumn(1).values = ["Sites", ...siteNames];
     listsSheet.getColumn(2).values = ["Accounts", ...accountNames];
 
-    const columns = [
+    const columns = templateType === 'HR' ? [
       "Employee ID",
       "Full Name",
+      "BO Email",
       "Status",
-      "Job Title",
+      "Position",
+      "Department/Campaign",
+      "Site",
+      "Phone",
+      "Address",
+      "Nickname",
+      "Sex",
+      "Civil Status",
+      "SSS No.",
+      "TIN No.",
+      "PhilHealth No.",
+      "Pag-Ibig No.",
+      "Personal Email",
+      "Main Contact",
+      "Emergency Contact",
+      "Emergency Number",
+      "Birthdate",
+      "Date Hired",
+      "Float Date",
+      "Separation Date",
+      "Separation Reason",
+      "Archived",
+    ] : [
+      "Employee ID",
+      "Full Name",
       "Department/Campaign",
       "Site",
       "BO Email",
       "Email Password",
       "LMS Account",
-      "Phone",
-      "Address",
       "PC Name",
       "Remote ID",
       "ESET Status",
@@ -1659,12 +1683,6 @@ export default function Directory() {
       "Google Account",
       "Teams Account",
       "Mattermost Account",
-      "Birthdate",
-      "Date Hired",
-      "Float Date",
-      "Separation Date",
-      "Separation Reason",
-      "Archived",
     ];
 
     ws.columns = columns.map((col) => ({
@@ -1684,52 +1702,81 @@ export default function Directory() {
 
     // Apply Data Validations
     const maxRows = 1000;
+    const getColLetter = (headerName: string) => {
+      const idx = columns.indexOf(headerName);
+      if (idx === -1) return null;
+      let temp = idx + 1;
+      let letter = '';
+      while (temp > 0) {
+        const mod = (temp - 1) % 26;
+        letter = String.fromCharCode(65 + mod) + letter;
+        temp = Math.floor((temp - mod) / 26);
+      }
+      return letter;
+    };
 
-    // C: Status
-    (ws as any).dataValidations.add(`C2:C${maxRows}`, {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"Active,Inactive,Floating,Separated"'],
-    });
+    const statusCol = getColLetter("Status");
+    if (statusCol) {
+      (ws as any).dataValidations.add(`${statusCol}2:${statusCol}${maxRows}`, {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Active,Inactive,Floating,Separated"'],
+      });
+    }
 
-    // E: Department/Campaign
-    if (accountNames.length > 0) {
-      (ws as any).dataValidations.add(`E2:E${maxRows}`, {
+    const deptCol = getColLetter("Department/Campaign");
+    if (deptCol && accountNames.length > 0) {
+      (ws as any).dataValidations.add(`${deptCol}2:${deptCol}${maxRows}`, {
         type: "list",
         allowBlank: true,
         formulae: [`Lists!$B$2:$B$${accountNames.length + 1}`],
       });
     }
 
-    // F: Site
-    if (siteNames.length > 0) {
-      (ws as any).dataValidations.add(`F2:F${maxRows}`, {
+    const siteCol = getColLetter("Site");
+    if (siteCol && siteNames.length > 0) {
+      (ws as any).dataValidations.add(`${siteCol}2:${siteCol}${maxRows}`, {
         type: "list",
         allowBlank: true,
         formulae: [`Lists!$A$2:$A$${siteNames.length + 1}`],
       });
     }
 
-    // N: ESET Status
-    (ws as any).dataValidations.add(`N2:N${maxRows}`, {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"Active,Inactive"'],
-    });
+    const esetCol = getColLetter("ESET Status");
+    if (esetCol) {
+      (ws as any).dataValidations.add(`${esetCol}2:${esetCol}${maxRows}`, {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Active,Inactive"'],
+      });
+    }
 
-    // O: Activity Watch
-    (ws as any).dataValidations.add(`O2:O${maxRows}`, {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"Installed,Missing"'],
-    });
+    const awCol = getColLetter("Activity Watch");
+    if (awCol) {
+      (ws as any).dataValidations.add(`${awCol}2:${awCol}${maxRows}`, {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Installed,Missing"'],
+      });
+    }
 
-    // AA: Archived
-    (ws as any).dataValidations.add(`AA2:AA${maxRows}`, {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"No,Yes"'],
-    });
+    const archivedCol = getColLetter("Archived");
+    if (archivedCol) {
+      (ws as any).dataValidations.add(`${archivedCol}2:${archivedCol}${maxRows}`, {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"No,Yes"'],
+      });
+    }
+
+    const sexCol = getColLetter("Sex");
+    if (sexCol) {
+      (ws as any).dataValidations.add(`${sexCol}2:${sexCol}${maxRows}`, {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Male,Female"'],
+      });
+    }
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -1738,7 +1785,7 @@ export default function Directory() {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "Employee_Import_Template.xlsx");
+    link.setAttribute("download", `Employee_Import_Template_${templateType}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.parentNode?.removeChild(link);
@@ -2055,6 +2102,17 @@ export default function Directory() {
         mattermostAccount: form.mattermostAccount.trim() || undefined,
         teamsAccount: form.teamsAccount.trim() || undefined,
         googleAccount: form.googleAccount.trim() || undefined,
+        nickname: form.nickname.trim() || undefined,
+        sex: form.sex || undefined,
+        civilStatus: form.civilStatus || undefined,
+        sssNo: form.sssNo.trim() || undefined,
+        tinNo: form.tinNo.trim() || undefined,
+        philhealthNo: form.philhealthNo.trim() || undefined,
+        pagibigNo: form.pagibigNo.trim() || undefined,
+        personalEmail: form.personalEmail.trim() || undefined,
+        mainContact: form.mainContact.trim() || undefined,
+        emergencyContact: form.emergencyContact.trim() || undefined,
+        emergencyContactNumber: form.emergencyContactNumber.trim() || undefined,
       });
 
       const createdEmployee = normalizeEmployee(created);
@@ -2248,7 +2306,7 @@ export default function Directory() {
                     }
                   />
                   <button
-                    onClick={handleDownloadTemplate}
+                    onClick={() => setShowTemplateModal(true)}
                     disabled={isStagingImport}
                     className="flex items-center gap-1.5 whitespace-nowrap px-3 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
                   >
@@ -2840,7 +2898,8 @@ export default function Directory() {
                               </div>
                             </div>
                             {showHRFields && (
-                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                              <>
+                                <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%] mt-[1px]">
                                   <Field
                                     label="Position"
@@ -2875,9 +2934,98 @@ export default function Directory() {
                                   </Field>
                                 </div>
                               </div>
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[32%]">
+                                  <Field
+                                    label="Nickname"
+                                    isFilled={Boolean(form.nickname)}
+                                    error={formErrors.nickname as string}
+                                  >
+                                    <Input
+                                      value={form.nickname}
+                                      onChange={(value) =>
+                                        updateForm("nickname", value)
+                                      }
+                                      placeholder="e.g. Johnny"
+                                    />
+                                  </Field>
+                                </div>
+                                <div className="md:w-[32%] mt-[1px]">
+                                  <Field
+                                    label="Sex"
+                                    required={reqHRFields}
+                                    isFilled={Boolean(form.sex)}
+                                    error={formErrors.sex as string}
+                                  >
+                                    <Select
+                                      value={form.sex || ""}
+                                      onChange={(value) =>
+                                        updateForm("sex", value)
+                                      }
+                                    >
+                                      <option value="">Select Sex</option>
+                                      <option value="Male">Male</option>
+                                      <option value="Female">Female</option>
+                                    </Select>
+                                  </Field>
+                                </div>
+                                <div className="md:w-[32%] mt-[1px]">
+                                  <Field
+                                    label="Civil Status"
+                                    required={reqHRFields}
+                                    isFilled={Boolean(form.civilStatus)}
+                                    error={formErrors.civilStatus as string}
+                                  >
+                                    <Select
+                                      value={form.civilStatus || ""}
+                                      onChange={(value) =>
+                                        updateForm("civilStatus", value)
+                                      }
+                                    >
+                                      <option value="">Select Status</option>
+                                      <option value="Single">Single</option>
+                                      <option value="Married">Married</option>
+                                      <option value="Widowed">Widowed</option>
+                                      <option value="Divorced">Divorced</option>
+                                    </Select>
+                                  </Field>
+                                </div>
+                              </div>
+                              </>
                             )}
                           </div>
                         </SectionCard>
+
+                        {showHRFields && (
+                          <SectionCard title="Government IDs" eyebrow="Manual">
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[48%]">
+                                  <Field label="SSS No." isFilled={Boolean(form.sssNo)} error={formErrors.sssNo as string}>
+                                    <Input value={form.sssNo} onChange={(value) => updateForm("sssNo", value)} placeholder="e.g. 12-3456789-0" />
+                                  </Field>
+                                </div>
+                                <div className="md:w-[48%]">
+                                  <Field label="TIN No." isFilled={Boolean(form.tinNo)} error={formErrors.tinNo as string}>
+                                    <Input value={form.tinNo} onChange={(value) => updateForm("tinNo", value)} placeholder="e.g. 123-456-789-000" />
+                                  </Field>
+                                </div>
+                              </div>
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[48%]">
+                                  <Field label="PhilHealth No." isFilled={Boolean(form.philhealthNo)} error={formErrors.philhealthNo as string}>
+                                    <Input value={form.philhealthNo} onChange={(value) => updateForm("philhealthNo", value)} placeholder="e.g. 12-3456789-0" />
+                                  </Field>
+                                </div>
+                                <div className="md:w-[48%]">
+                                  <Field label="Pag-Ibig No." isFilled={Boolean(form.pagibigNo)} error={formErrors.pagibigNo as string}>
+                                    <Input value={form.pagibigNo} onChange={(value) => updateForm("pagibigNo", value)} placeholder="e.g. 1234-5678-9012" />
+                                  </Field>
+                                </div>
+                              </div>
+                            </div>
+                          </SectionCard>
+                        )}
 
                         {showHRFields && (
                           <SectionCard title="Contact Details" eyebrow="Manual">
@@ -2911,6 +3059,34 @@ export default function Directory() {
                                   placeholder="e.g. 123 Main St, City"
                                   error={Boolean(formErrors.address)}
                                 />
+                              </Field>
+                              <Field
+                                label="Personal Email"
+                                isFilled={Boolean(form.personalEmail)}
+                                error={formErrors.personalEmail as string}
+                              >
+                                <Input
+                                  value={form.personalEmail}
+                                  onChange={(value) =>
+                                    updateForm("personalEmail", value)
+                                  }
+                                  placeholder="e.g. john.doe@gmail.com"
+                                />
+                              </Field>
+                              <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                                <div className="md:w-[48%]">
+                                  <Field label="Main Contact" required={reqHRFields} isFilled={Boolean(form.mainContact)} error={formErrors.mainContact as string}>
+                                    <Input value={form.mainContact} onChange={(value) => updateForm("mainContact", value)} placeholder="e.g. 09123456789" />
+                                  </Field>
+                                </div>
+                                <div className="md:w-[48%]">
+                                  <Field label="Emergency Number" required={reqHRFields} isFilled={Boolean(form.emergencyContactNumber)} error={formErrors.emergencyContactNumber as string}>
+                                    <Input value={form.emergencyContactNumber} onChange={(value) => updateForm("emergencyContactNumber", value)} placeholder="e.g. 09123456789" />
+                                  </Field>
+                                </div>
+                              </div>
+                              <Field label="Emergency Contact Name" required={reqHRFields} isFilled={Boolean(form.emergencyContact)} error={formErrors.emergencyContact as string}>
+                                <Input value={form.emergencyContact} onChange={(value) => updateForm("emergencyContact", value)} placeholder="e.g. Jane Doe" />
                               </Field>
                             </div>
                           </SectionCard>
@@ -4071,6 +4247,69 @@ export default function Directory() {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
                   >
                     Clear Draft
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTemplateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="p-6">
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <FileSpreadsheet className="h-8 w-8" />
+                  </div>
+                  <h2 className="text-xl font-black text-[#111827]">
+                    Download Import Template
+                  </h2>
+                  <p className="mt-2 text-sm text-[#4B5563]">
+                    Select which template you want to download based on your role.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 mb-6">
+                  <button
+                    onClick={() => {
+                      setShowTemplateModal(false);
+                      handleDownloadTemplate('HR');
+                    }}
+                    className="w-full text-left rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4 transition-all hover:border-[#2563EB] hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  >
+                    <div className="font-black text-[#111827]">HR Template</div>
+                    <div className="mt-1 text-xs text-[#6B7280]">Contains Employee Info, Assignment, and Date fields.</div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowTemplateModal(false);
+                      handleDownloadTemplate('IT');
+                    }}
+                    className="w-full text-left rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4 transition-all hover:border-[#2563EB] hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  >
+                    <div className="font-black text-[#111827]">IT Template</div>
+                    <div className="mt-1 text-xs text-[#6B7280]">Contains Accounts, Emails, and Device fields.</div>
+                  </button>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateModal(false)}
+                    className="w-full rounded-xl border border-[#D1D5DB] dark:border-[#3A4257] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  >
+                    Cancel
                   </button>
                 </div>
               </div>
