@@ -5,6 +5,7 @@ import { AccountModel } from '../models/account.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
+import { filterEmployeeWritePayload } from '../utils/employeeSecurity.js';
 
 const sourceSheet = 'IT Master Tracker';
 const mappedFields = [
@@ -174,9 +175,9 @@ function normalizeName(value) {
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-// A warning is advisory — it does not block a row from being "ready".
+// A warning or info is advisory — it does not block a row from being "ready".
 function isBlockingIssue(issue) {
-  return issue?.severity !== 'warning';
+  return !['warning', 'info'].includes(issue?.severity);
 }
 
 function statusFromIssues(issues = []) {
@@ -220,7 +221,7 @@ function validateRecord(
     issues.push({ code: 'duplicate_id', message: `Duplicate employee ID ${record.employeeNumber}` });
   }
   if (record.employeeNumber && existingIds.has(record.employeeNumber)) {
-    issues.push({ code: 'existing_id', message: `Employee ID ${record.employeeNumber} already exists in Employee Records` });
+    issues.push({ code: 'existing_id', message: `Matches existing employee (${record.employeeNumber}). Blank fields will be filled.`, severity: 'info' });
   }
 
   // Name duplicates are warnings, not blockers — two real people can share a name.
@@ -687,30 +688,80 @@ export const EmployeeImportService = {
     const results = { imported: 0, failed: 0, failures: [], departmentsCreated: createdDepartments.length };
 
     if (readyRows.length > 0) {
-      try {
-        const dataToInsert = readyRows.map(row => row.normalizedData);
-        await EmployeeModel.insertMany(dataToInsert);
-        
-        const rowIds = readyRows.map(row => row.id);
-        await EmployeeImportModel.removeByIds(rowIds);
-        
-        results.imported += readyRows.length;
-      } catch (bulkError) {
-        // Fallback: Sequential insert to isolate failures if bulk insert fails
-        for (const row of readyRows) {
-          try {
-            await EmployeeModel.create(row.normalizedData);
-            await EmployeeImportModel.remove(row.id);
-            results.imported += 1;
-          } catch (error) {
-            await EmployeeImportModel.update(row.id, {
-              ...row,
-              status: 'issue',
-              issues: [...row.issues, { code: 'database_error', message: error.message || 'Unable to import row' }],
-            });
-            results.failed += 1;
-            results.failures.push({ id: row.id, sourceRow: row.sourceRow, message: error.message });
+      const idsToSearch = [...new Set(readyRows.map(r => r.normalizedData?.employeeNumber).filter(Boolean))];
+      const existingRecords = await EmployeeModel.findByIdsOrNames(idsToSearch, []);
+      const existingMap = new Map(existingRecords.map(e => [e.employeeNumber, e]));
+
+      const newRows = [];
+      const mergeRows = [];
+
+      for (const row of readyRows) {
+        if (row.normalizedData.employeeNumber && existingMap.has(row.normalizedData.employeeNumber)) {
+          mergeRows.push({ row, existing: existingMap.get(row.normalizedData.employeeNumber) });
+        } else {
+          newRows.push(row);
+        }
+      }
+
+      // 1. Bulk insert new rows
+      if (newRows.length > 0) {
+        try {
+          const dataToInsert = newRows.map(row => row.normalizedData);
+          await EmployeeModel.insertMany(dataToInsert);
+          
+          const rowIds = newRows.map(row => row.id);
+          await EmployeeImportModel.removeByIds(rowIds);
+          
+          results.imported += newRows.length;
+        } catch (bulkError) {
+          // Fallback: Sequential insert to isolate failures if bulk insert fails
+          for (const row of newRows) {
+            try {
+              await EmployeeModel.create(row.normalizedData);
+              await EmployeeImportModel.remove(row.id);
+              results.imported += 1;
+            } catch (error) {
+              await EmployeeImportModel.update(row.id, {
+                ...row,
+                status: 'issue',
+                issues: [...row.issues, { code: 'database_error', message: error.message || 'Unable to import row' }],
+              });
+              results.failed += 1;
+              results.failures.push({ id: row.id, sourceRow: row.sourceRow, message: error.message });
+            }
           }
+        }
+      }
+
+      // 2. Merge existing rows
+      for (const { row, existing } of mergeRows) {
+        try {
+          const allowedIncomingData = filterEmployeeWritePayload(row.normalizedData, user, false);
+          const updates = {};
+          
+          for (const [key, value] of Object.entries(allowedIncomingData)) {
+            const isEmpty = existing[key] === null || existing[key] === undefined || existing[key] === '';
+            const isDefaultIT = (key === 'esetStatus' && existing[key] === 'inactive') || 
+                                (key === 'activityWatchStatus' && existing[key] === 'missing');
+            
+            if (value && (isEmpty || isDefaultIT)) {
+              updates[key] = value;
+            }
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await EmployeeModel.update(existing.id, updates);
+          }
+          await EmployeeImportModel.remove(row.id);
+          results.imported += 1;
+        } catch (error) {
+          await EmployeeImportModel.update(row.id, {
+            ...row,
+            status: 'issue',
+            issues: [...row.issues, { code: 'database_error', message: error.message || 'Unable to merge row' }],
+          });
+          results.failed += 1;
+          results.failures.push({ id: row.id, sourceRow: row.sourceRow, message: error.message });
         }
       }
     }

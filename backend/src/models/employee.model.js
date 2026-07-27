@@ -106,6 +106,18 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (data?.teamsAccount !== undefined) payload.teams_account = stringOrEmpty(data.teamsAccount);
   if (data?.mattermostAccount !== undefined) payload.mattermost_account = stringOrEmpty(data.mattermostAccount);
   if (data?.jobTitle !== undefined) payload.job_title = stringOrEmpty(data.jobTitle);
+  if (data?.position !== undefined) payload.position = stringOrEmpty(data.position);
+  if (data?.nickname !== undefined) payload.nickname = stringOrEmpty(data.nickname);
+  if (data?.sex !== undefined) payload.sex = stringOrEmpty(data.sex);
+  if (data?.civilStatus !== undefined) payload.civil_status = stringOrEmpty(data.civilStatus);
+  if (valueFrom(data, 'sssNo', 'sss_no') !== undefined) payload.sss_no = stringOrEmpty(valueFrom(data, 'sssNo', 'sss_no'));
+  if (valueFrom(data, 'tinNo', 'tin_no') !== undefined) payload.tin_no = stringOrEmpty(valueFrom(data, 'tinNo', 'tin_no'));
+  if (valueFrom(data, 'philhealthNo', 'philhealth_no') !== undefined) payload.philhealth_no = stringOrEmpty(valueFrom(data, 'philhealthNo', 'philhealth_no'));
+  if (valueFrom(data, 'pagibigNo', 'pagibig_no') !== undefined) payload.pagibig_no = stringOrEmpty(valueFrom(data, 'pagibigNo', 'pagibig_no'));
+  if (valueFrom(data, 'personalEmail', 'personal_email') !== undefined) payload.personal_email = stringOrEmpty(valueFrom(data, 'personalEmail', 'personal_email'));
+  if (valueFrom(data, 'mainContact', 'main_contact') !== undefined) payload.main_contact = stringOrEmpty(valueFrom(data, 'mainContact', 'main_contact'));
+  if (valueFrom(data, 'emergencyContact', 'emergency_contact') !== undefined) payload.emergency_contact = stringOrEmpty(valueFrom(data, 'emergencyContact', 'emergency_contact'));
+  if (valueFrom(data, 'emergencyContactNumber', 'emergency_contact_number') !== undefined) payload.emergency_contact_number = stringOrEmpty(valueFrom(data, 'emergencyContactNumber', 'emergency_contact_number'));
   if (data?.birthdate !== undefined) payload.birthdate = stringOrEmpty(data.birthdate);
   if (data?.floatDate !== undefined) payload.float_date = stringOrEmpty(data.floatDate);
   if (data?.employeeStatus !== undefined) payload.employee_status = stringOrEmpty(data.employeeStatus);
@@ -163,6 +175,18 @@ function normalize(row) {
     jobTitle: row.jobTitle || row.job_title || '',
     birthdate: row.birthdate || '',
     floatDate: row.floatDate || row.float_date || '',
+    position: row.position || '',
+    nickname: row.nickname || '',
+    sex: row.sex || '',
+    civilStatus: row.civilStatus || row.civil_status || '',
+    sssNo: row.sssNo || row.sss_no || '',
+    tinNo: row.tinNo || row.tin_no || '',
+    philhealthNo: row.philhealthNo || row.philhealth_no || '',
+    pagibigNo: row.pagibigNo || row.pagibig_no || '',
+    personalEmail: row.personalEmail || row.personal_email || '',
+    mainContact: row.mainContact || row.main_contact || '',
+    emergencyContact: row.emergencyContact || row.emergency_contact || '',
+    emergencyContactNumber: row.emergencyContactNumber || row.emergency_contact_number || '',
     isArchived: row.isArchived ?? row.is_archived ?? false,
     isReadyForArchive: row.isReadyForArchive ?? row.is_ready_for_archive ?? false,
     avatarUrl: row.avatarUrl || row.avatar_url || null,
@@ -266,6 +290,18 @@ export const EmployeeModel = {
       jobTitle: payload.job_title,
       birthdate: payload.birthdate,
       floatDate: payload.float_date,
+      position: payload.position,
+      nickname: payload.nickname,
+      sex: payload.sex,
+      civilStatus: payload.civil_status,
+      sssNo: payload.sss_no,
+      tinNo: payload.tin_no,
+      philhealthNo: payload.philhealth_no,
+      pagibigNo: payload.pagibig_no,
+      personalEmail: payload.personal_email,
+      mainContact: payload.main_contact,
+      emergencyContact: payload.emergency_contact,
+      emergencyContactNumber: payload.emergency_contact_number,
       isArchived: payload.is_archived,
       isReadyForArchive: payload.is_ready_for_archive,
       avatarUrl: payload.avatar_url,
@@ -311,6 +347,18 @@ export const EmployeeModel = {
         jobTitle: payload.job_title,
         birthdate: payload.birthdate,
         floatDate: payload.float_date,
+        position: payload.position,
+        nickname: payload.nickname,
+        sex: payload.sex,
+        civilStatus: payload.civil_status,
+        sssNo: payload.sss_no,
+        tinNo: payload.tin_no,
+        philhealthNo: payload.philhealth_no,
+        pagibigNo: payload.pagibig_no,
+        personalEmail: payload.personal_email,
+        mainContact: payload.main_contact,
+        emergencyContact: payload.emergency_contact,
+        emergencyContactNumber: payload.emergency_contact_number,
         windowsLicenseKey: payload.windows_license_key,
         deviceType: payload.device_type,
         isArchived: payload.is_archived,
@@ -364,6 +412,18 @@ export const EmployeeModel = {
       jobTitle: payload.job_title,
       birthdate: payload.birthdate,
       floatDate: payload.float_date,
+      position: payload.position,
+      nickname: payload.nickname,
+      sex: payload.sex,
+      civilStatus: payload.civil_status,
+      sssNo: payload.sss_no,
+      tinNo: payload.tin_no,
+      philhealthNo: payload.philhealth_no,
+      pagibigNo: payload.pagibig_no,
+      personalEmail: payload.personal_email,
+      mainContact: payload.main_contact,
+      emergencyContact: payload.emergency_contact,
+      emergencyContactNumber: payload.emergency_contact_number,
       isArchived: payload.is_archived,
       isReadyForArchive: payload.is_ready_for_archive,
       avatarUrl: payload.avatar_url,
