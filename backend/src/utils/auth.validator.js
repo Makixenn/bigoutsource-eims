@@ -49,3 +49,19 @@ export const changeUserPasswordValidator = {
     message: 'password must include uppercase, lowercase, number, and special character',
   },
 };
+
+export const forgotPasswordValidator = {
+  email: { required: true, type: 'string', email: true },
+};
+
+export const resetPasswordValidator = {
+  token: { required: true, type: 'string', min: 1 },
+  password: {
+    required: true,
+    type: 'string',
+    min: 12,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
+    message: 'password must include uppercase, lowercase, number, and special character',
+  },
+};
+
