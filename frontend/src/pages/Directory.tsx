@@ -2593,13 +2593,8 @@ export default function Directory() {
                   </div>
                 </div>
 
-                <div
-                  className={cn(
-                    "min-h-0 flex-1 px-6 py-6",
-                    activeStep === 3 ? "overflow-y-auto" : "overflow-visible",
-                  )}
-                >
-                  <div className="mx-auto min-h-[540px] w-full max-w-[1000px] transition-opacity duration-200">
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                  <div className="mx-auto w-full max-w-[1000px] transition-opacity duration-200">
                     {activeStep === 0 && (
                       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <SectionCard
@@ -2865,7 +2860,7 @@ export default function Directory() {
                         )}
 
                         {showITFields && showHRFields && (
-                          <div className="flex flex-col gap-5 max-h-[500px] overflow-y-auto pr-2">
+                          <div className="flex flex-col gap-5">
                             <SectionCard
                               title="Required Accounts"
                               eyebrow="Manual"
@@ -3185,14 +3180,7 @@ export default function Directory() {
                           </div>
                         </SectionCard>
 
-                        <div
-                          className={cn(
-                            "flex flex-col gap-5",
-                            showHRFields &&
-                              showITFields &&
-                              "max-h-[500px] overflow-y-auto pr-2",
-                          )}
-                        >
+                        <div className="flex flex-col gap-5">
                           {showHRFields && (
                             <SectionCard title="Snapshot" eyebrow="Status">
                               <ReviewGrid
