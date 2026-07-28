@@ -1667,17 +1667,8 @@ export default function EmployeeProfile() {
                           </ProfileField>
 
                           <div className="md:col-span-2">
-                            <ProfileField label="Status" icon={User} editing={editingHR}>
-                              {editingHR ? (
-                                <Select value={form.status} onChange={(v) => updateForm('status', v)}>
-                                  <option value="active">Active</option>
-                                  <option value="floating">Floating</option>
-                                  <option value="inactive">Inactive</option>
-                                  <option value="separated">Separated</option>
-                                </Select>
-                              ) : (
-                                <span className="font-bold capitalize">{employee.status || 'active'}</span>
-                              )}
+                            <ProfileField label="Status" icon={User} editing={false}>
+                              <span className="font-bold capitalize">{employee.status || 'active'}</span>
                             </ProfileField>
                           </div>
                         </div>
