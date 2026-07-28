@@ -10,6 +10,7 @@ const TurnoverRateModal = lazy(() => import('@/src/features/dashboard/components
 const AssignedAssetsModal = lazy(() => import('@/src/features/dashboard/components/modals/AssignedAssetsModal').then(m => ({ default: m.AssignedAssetsModal })));
 const WorkforceGrowthModal = lazy(() => import('@/src/features/dashboard/components/modals/WorkforceGrowthModal').then(m => ({ default: m.WorkforceGrowthModal })));
 const EmployeeTurnoverModal = lazy(() => import('@/src/features/dashboard/components/modals/EmployeeTurnoverModal').then(m => ({ default: m.EmployeeTurnoverModal })));
+const HmoEnrollmentModal = lazy(() => import('@/src/features/dashboard/components/modals/HmoEnrollmentModal').then(m => ({ default: m.HmoEnrollmentModal })));
 const DepartmentDistributionModal = lazy(() => import('@/src/features/dashboard/components/modals/DepartmentDistributionModal').then(m => ({ default: m.DepartmentDistributionModal })));
 const WorkArrangementModal = lazy(() => import('@/src/features/dashboard/components/modals/WorkArrangementModal').then(m => ({ default: m.WorkArrangementModal })));
 const RecentHiresPipelineModal = lazy(() => import('@/src/features/dashboard/components/modals/RecentHiresPipelineModal').then(m => ({ default: m.RecentHiresPipelineModal })));
@@ -188,6 +189,10 @@ export default function Dashboard() {
         return bDate - aDate;
       })
       .slice(0, 4);
+  }, [employees]);
+
+  const missingHmoCount = useMemo(() => {
+    return employees.filter(emp => !emp.hmoMemberCode || emp.hmoMemberCode.trim() === '').length;
   }, [employees]);
 
   const stats = useMemo(() => {
@@ -839,6 +844,48 @@ export default function Dashboard() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              <AnimatePresence mode="wait" initial={false}>
+                {employeesLoading ? (
+                  <motion.div key="skeleton-hmo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm animate-pulse relative flex flex-col xl:col-span-1">
+                    <div className="w-48 h-6 bg-slate-200 rounded-full mb-8" />
+                    <div className="flex-1 min-h-[300px] flex items-center justify-center">
+                      <div className="w-40 h-40 rounded-full border-[1.5rem] border-slate-100" />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div key="content-hmo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('HMO Enrollment Status'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col xl:col-span-1 cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
+                        <FileCheck className="w-5 h-5 text-[#9CA3AF]" />
+                        HMO Enrollment Status
+                      </h3>
+                      <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                        View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
+                    </div>
+                    <div className="flex-1 min-h-[300px] flex flex-col items-center justify-center relative">
+                      <div className="text-center">
+                        <span className="text-7xl font-black text-[#EA580C]">{missingHmoCount}</span>
+                        <p className="text-sm font-bold text-[#6B7280] mt-3 uppercase tracking-wider">Missing HMO ID</p>
+                      </div>
+                      
+                      <div className="mt-10 w-full bg-[#F9FAFB] rounded-xl p-5 border border-[#E5E7EB]">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs font-bold text-[#4B5563]">Enrolled Employees</span>
+                          <span className="text-sm font-black text-[#111827]">{employees.length - missingHmoCount} / {employees.length}</span>
+                        </div>
+                        <div className="w-full h-2.5 bg-[#E5E7EB] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-[#10B981] rounded-full" 
+                            style={{ width: `${employees.length > 0 ? ((employees.length - missingHmoCount) / employees.length) * 100 : 0}%` }} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -1011,6 +1058,7 @@ export default function Dashboard() {
 
         <WorkforceGrowthModal isOpen={activeModal === 'Workforce Growth Trend'} onClose={() => setActiveModal(null)} employees={employees} />
         <EmployeeTurnoverModal isOpen={activeModal === 'Employee Turnover'} onClose={() => setActiveModal(null)} inactiveEmployees={turnoverStats.inactiveList || []} attritionTimeline={attritionTimeline} />
+        <HmoEnrollmentModal isOpen={activeModal === 'HMO Enrollment Status'} onClose={() => setActiveModal(null)} employees={employees} />
 
         <DepartmentDistributionModal isOpen={activeModal === 'Department Distribution'} onClose={() => setActiveModal(null)} employees={employees} />
         <WorkArrangementModal isOpen={activeModal === 'Work Arrangement'} onClose={() => setActiveModal(null)} employees={employees} />
