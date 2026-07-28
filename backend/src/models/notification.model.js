@@ -1,4 +1,5 @@
 import { prisma } from '../config/db.js';
+import { emitTableChange } from '../realtime/accessEvents.js';
 
 function normalize(row) {
   if (!row) return null;
@@ -54,6 +55,7 @@ export const NotificationModel = {
     
     // In Prisma, createMany doesn't return the inserted rows.
     // Given the previous usage, let's just return an empty array or we would have to find them.
+    emitTableChange('notifications', 'INSERT');
     return [];
   },
 
@@ -67,6 +69,7 @@ export const NotificationModel = {
       data: { readAt: now },
     });
     // Returning empty since previous mapped the patched rows but typically not strictly required for a markAllRead.
+    emitTableChange('notifications', 'UPDATE');
     return [];
   },
 
@@ -83,6 +86,7 @@ export const NotificationModel = {
       await prisma.notification.deleteMany({
         where: { id: { in: toDelete } },
       });
+      emitTableChange('notifications', 'DELETE');
     }
     return [];
   },
@@ -98,6 +102,7 @@ export const NotificationModel = {
     await prisma.notification.deleteMany({
       where: { id, recipientId },
     });
+    emitTableChange('notifications', 'DELETE');
     return [];
   },
 
@@ -127,6 +132,7 @@ export const NotificationModel = {
       await prisma.notification.deleteMany({
         where: { id: { in: toDelete } },
       });
+      emitTableChange('notifications', 'DELETE');
     }
     return [];
   },
@@ -150,6 +156,9 @@ export const NotificationModel = {
           },
         });
       }
+    }
+    if (notifications.length > 0) {
+      emitTableChange('notifications', 'UPDATE');
     }
     return [];
   },

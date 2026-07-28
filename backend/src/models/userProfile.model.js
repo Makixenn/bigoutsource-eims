@@ -25,9 +25,11 @@ function normalize(row) {
     department: row.department || 'Unassigned',
     site: row.site || 'HQ',
     capabilityOverrides: overrides,
-    approvedBy: row.approvedById || null,
+    approvedById: row.approvedById || null,
     approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
     passwordSetupToken: row.passwordSetupToken || null,
+    resetPasswordToken: row.resetPasswordToken || null,
+    resetPasswordExpires: row.resetPasswordExpires ? row.resetPasswordExpires.toISOString() : null,
     createdAt: row.createdAt ? row.createdAt.toISOString() : '',
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };
@@ -66,6 +68,13 @@ export const UserProfileModel = {
     return normalize(row);
   },
 
+  async findByResetPasswordToken(token) {
+    const row = await prisma.userProfile.findUnique({
+      where: { resetPasswordToken: token },
+    });
+    return normalize(row);
+  },
+
   async create(data) {
     let capabilityOverrides = ['__INHERIT__'];
     if (data.capabilityOverrides === null) {
@@ -89,6 +98,8 @@ export const UserProfileModel = {
         capabilityOverrides,
         passwordHash: data.passwordHash || '',
         passwordSetupToken: data.passwordSetupToken || null,
+        resetPasswordToken: data.resetPasswordToken || null,
+        resetPasswordExpires: data.resetPasswordExpires ? new Date(data.resetPasswordExpires) : null,
       },
     });
     return normalize(row);
@@ -114,6 +125,8 @@ export const UserProfileModel = {
     }
     if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
     if (data.passwordSetupToken !== undefined) updateData.passwordSetupToken = data.passwordSetupToken;
+    if (data.resetPasswordToken !== undefined) updateData.resetPasswordToken = data.resetPasswordToken;
+    if (data.resetPasswordExpires !== undefined) updateData.resetPasswordExpires = data.resetPasswordExpires ? new Date(data.resetPasswordExpires) : null;
 
     const row = await prisma.userProfile.update({
       where: { id },

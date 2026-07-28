@@ -42,13 +42,24 @@ const trackedFields = [
   'googleAccount',
   'teamsAccount',
   'mattermostAccount',
-  'jobTitle',
+  'position',
   'birthdate',
   'floatDate',
   'separationDate',
   'separationReason',
   'isReadyForArchive',
   'avatarUrl',
+  'nickname',
+  'sex',
+  'civilStatus',
+  'sssNo',
+  'tinNo',
+  'philhealthNo',
+  'pagibigNo',
+  'personalEmail',
+  'mainContact',
+  'emergencyContact',
+  'emergencyContactNumber',
 ];
 
 function localEmailIdentifier(email = '') {
@@ -257,7 +268,7 @@ export const EmployeeService = {
     const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
 
-    const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.jobTitle;
+    const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.position;
     const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName;
 
     if (!isHrFieldsMissing) {

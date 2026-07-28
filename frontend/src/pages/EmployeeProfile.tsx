@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CheckCircle2,
   Clock,
+  Copy,
   Edit,
   Eye,
   EyeOff,
@@ -86,7 +87,18 @@ type EmployeeForm = {
   isArchived?: boolean;
   isReadyForArchive?: boolean;
   avatarUrl?: string;
-  jobTitle: string;
+  position: string;
+  nickname: string;
+  sex: string;
+  civilStatus: string;
+  sssNo: string;
+  tinNo: string;
+  philhealthNo: string;
+  pagibigNo: string;
+  personalEmail: string;
+  mainContact: string;
+  emergencyContact: string;
+  emergencyContactNumber: string;
   birthdate: string;
   floatDate: string;
   outlookEmail: string;
@@ -125,7 +137,18 @@ const emptyEmployee: EmployeeForm = {
   isArchived: false,
   isReadyForArchive: false,
   avatarUrl: '',
-  jobTitle: '',
+  position: '',
+  nickname: '',
+  sex: '',
+  civilStatus: '',
+  sssNo: '',
+  tinNo: '',
+  philhealthNo: '',
+  pagibigNo: '',
+  personalEmail: '',
+  mainContact: '',
+  emergencyContact: '',
+  emergencyContactNumber: '',
   birthdate: '',
   floatDate: '',
   outlookEmail: '',
@@ -158,7 +181,18 @@ const editableFields: Array<keyof EmployeeForm> = [
   'dateHired',
   'separationDate',
   'separationReason',
-  'jobTitle',
+  'position',
+  'nickname',
+  'sex',
+  'civilStatus',
+  'sssNo',
+  'tinNo',
+  'philhealthNo',
+  'pagibigNo',
+  'personalEmail',
+  'mainContact',
+  'emergencyContact',
+  'emergencyContactNumber',
   'birthdate',
   'floatDate',
   'outlookEmail',
@@ -439,7 +473,18 @@ function normalizeEmployee(emp: any): EmployeeForm {
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
     isReadyForArchive: emp?.is_ready_for_archive ?? emp?.isReadyForArchive ?? false,
     avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
-    jobTitle: emp?.jobTitle || '',
+    position: emp?.position || '',
+    nickname: emp?.nickname || '',
+    sex: emp?.sex || '',
+    civilStatus: emp?.civilStatus || emp?.civil_status || '',
+    sssNo: emp?.sssNo || emp?.sss_no || '',
+    tinNo: emp?.tinNo || emp?.tin_no || '',
+    philhealthNo: emp?.philhealthNo || emp?.philhealth_no || '',
+    pagibigNo: emp?.pagibigNo || emp?.pagibig_no || '',
+    personalEmail: emp?.personalEmail || emp?.personal_email || '',
+    mainContact: emp?.mainContact || emp?.main_contact || '',
+    emergencyContact: emp?.emergencyContact || emp?.emergency_contact || '',
+    emergencyContactNumber: emp?.emergencyContactNumber || emp?.emergency_contact_number || '',
     birthdate: emp?.birthdate || '',
     floatDate: emp?.floatDate || '',
     outlookEmail: emp?.outlookEmail || '',
@@ -502,6 +547,7 @@ export default function EmployeeProfile() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'personal' | 'employment' | 'accounts' | 'audit'>('personal');
 
   const generatedPreviewWithLms = (f: EmployeeForm, account?: AccountOption) => {
     const nameForLms = formatEmployeeName(f.firstName, f.lastName, '', '');
@@ -528,6 +574,7 @@ export default function EmployeeProfile() {
       setForm((current) => ({ ...current, pcName: suggestions.pcName }));
     }
   };
+  const canViewHR = true;
   const canViewIT = can('employees.it.view');
   const canViewSecrets = can('employees.secrets.view');
   const canEditHR = can('employees.edit');
@@ -790,6 +837,25 @@ export default function EmployeeProfile() {
     setFormErrors({});
   };
 
+  const renderEditButton = (canEditSection: boolean) => {
+    if (!canEditSection) return undefined;
+    return (
+      <button
+        type="button"
+        onClick={isEditing ? cancelEditing : startEditing}
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm",
+          isEditing
+            ? "bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200"
+            : "bg-white text-[#111827] border border-[#E5E7EB] hover:bg-[#F9FAFB] hover:border-[#D1D5DB]"
+        )}
+      >
+        {isEditing ? <X className="w-3.5 h-3.5" /> : <Edit className="w-3.5 h-3.5" />}
+        {isEditing ? "Exit Edit Mode" : "Edit Details"}
+      </button>
+    );
+  };
+
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
 
@@ -855,7 +921,18 @@ export default function EmployeeProfile() {
         dateHired: form.dateHired,
         separationDate: form.separationDate,
         separationReason: form.separationReason,
-        jobTitle: form.jobTitle.trim(),
+        position: form.position.trim(),
+        nickname: form.nickname.trim(),
+        sex: form.sex,
+        civilStatus: form.civilStatus,
+        sssNo: form.sssNo.trim(),
+        tinNo: form.tinNo.trim(),
+        philhealthNo: form.philhealthNo.trim(),
+        pagibigNo: form.pagibigNo.trim(),
+        personalEmail: form.personalEmail.trim(),
+        mainContact: form.mainContact.trim(),
+        emergencyContact: form.emergencyContact.trim(),
+        emergencyContactNumber: form.emergencyContactNumber.trim(),
         birthdate: form.birthdate,
         floatDate: form.floatDate,
         outlookEmail: form.outlookEmail.trim(),
@@ -1288,7 +1365,7 @@ export default function EmployeeProfile() {
                                 
                                 if (employee.isArchived) {
                                   setArchiveStep(1);
-                                  setUnarchiveJobTitle(employee.jobTitle || '');
+                                  setUnarchiveJobTitle(employee.position || '');
                                   setUnarchiveAccountAssignment(employee.accountAssignment || '');
                                   setUnarchiveSiteId(employee.siteId || '');
                                   setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
@@ -1339,782 +1416,680 @@ export default function EmployeeProfile() {
               </div>
             </div>
 
-            <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
-                <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    <ProfileField label="Job Title" icon={Briefcase} editing={editingHR}>
-                      {editingHR ? (
-                        <Input value={form.jobTitle} onChange={(value) => updateForm('jobTitle', value)} placeholder="e.g. Customer Service Rep" />
-                      ) : (
-                        employee.jobTitle || <span className="text-red-500 font-black">Not Assigned</span>
-                      )}
-                    </ProfileField>
-                    <ProfileField label="Department/Campaign" icon={Briefcase} editing={editingHR}>
-                      {editingHR ? (
-                        <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
-                          <button
-                            type="button"
-                            onClick={() => setIsAccountDropdownOpen((current) => !current)}
-                            className={cn(
-                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                              !form.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
-                            )}
-                          >
-                            <span className="truncate">{form.accountAssignment || 'Select department'}</span>
-                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isAccountDropdownOpen && 'rotate-90')} />
-                          </button>
-                          <AnimatePresence>
-                            {isAccountDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsAccountDropdownOpen(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
-                                >
-                                  {accounts.length ? (
-                                    <div className="max-h-64 overflow-y-auto">
-                                      <AccountDropdownGroup title="Internal" accounts={internalAccounts} selectedValue={form.accountAssignment} onSelect={(acc) => { updateForm('accountAssignment', acc.name); setIsAccountDropdownOpen(false); }} />
-                                      <AccountDropdownGroup title="External" accounts={externalAccounts} selectedValue={form.accountAssignment} onSelect={(acc) => { updateForm('accountAssignment', acc.name); setIsAccountDropdownOpen(false); }} />
-                                    </div>
-                                  ) : (
-                                    <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
-                                  )}
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ) : (
-                        employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>
-                      )}
-                    </ProfileField>
+            {/* 2. Top Horizontal Pill Navigation Bar (with Edit Details in the red box on the right!) */}
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-2 shadow-sm flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('personal')}
+                  className={cn(
+                    "flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-black transition-all duration-200 relative group",
+                    activeTab === 'personal'
+                      ? "bg-[#111827] text-white shadow-md shadow-[#11182715]"
+                      : "text-[#4B5563] hover:bg-[#F9FAFB] hover:text-[#111827]"
+                  )}
+                >
+                  <div className={cn(
+                    "p-1.5 rounded-lg shrink-0 transition-colors",
+                    activeTab === 'personal' ? "bg-white/10 text-white" : "bg-[#F3F4F6] text-[#4B5563] group-hover:bg-[#E5E7EB] group-hover:text-[#111827]"
+                  )}>
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Personal Details</span>
+                </button>
 
-                    <ProfileField label="Employee Status" icon={ShieldCheck} editing={editingHR}>
-                      {editingHR ? (
-                        <div className={cn("relative transition-all", isEmployeeStatusDropdownOpen ? "z-50" : "z-10")}>
-                          <button
-                            type="button"
-                            onClick={() => setIsEmployeeStatusDropdownOpen((current) => !current)}
-                            className={cn(
-                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                              !form.employeeStatus ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
-                            )}
-                          >
-                            <span className="truncate">{form.employeeStatus || 'Regular'}</span>
-                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isEmployeeStatusDropdownOpen && 'rotate-90')} />
-                          </button>
-                          <AnimatePresence>
-                            {isEmployeeStatusDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsEmployeeStatusDropdownOpen(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
-                                >
-                                  <div className="max-h-64 overflow-y-auto py-1">
-                                    {['Regular', 'Probationary', 'Fix-Term'].map((statusOption) => {
-                                      const isSelected = (form.employeeStatus || 'Regular') === statusOption;
-                                      return (
-                                        <button
-                                          key={statusOption}
-                                          type="button"
-                                          onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            updateForm('employeeStatus', statusOption);
-                                            setIsEmployeeStatusDropdownOpen(false);
-                                          }}
-                                          className={cn(
-                                            "flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[#F3F4F6]",
-                                            isSelected ? "bg-[#EFF6FF]" : ""
-                                          )}
-                                        >
-                                          <span className={cn("text-sm font-semibold truncate", isSelected ? "text-[#2563EB]" : "text-[#4B5563]")}>{statusOption}</span>
-                                          {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ) : (
-                        employee.isArchived 
-                          ? formatStatus(employee.status)
-                          : employee.employeeStatus || 'Regular'
-                      )}
-                    </ProfileField>
-                    <ProfileField label="Site" icon={MapPin} editing={editingHR}>
-                      {editingHR ? (
-                        <div className={cn("relative transition-all", isSiteDropdownOpen ? "z-50" : "z-10")}>
-                          <button
-                            type="button"
-                            onClick={() => setIsSiteDropdownOpen((current) => !current)}
-                            className={cn(
-                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                              !form.siteId ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
-                            )}
-                          >
-                            <span className="truncate">
-                              {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
-                            </span>
-                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isSiteDropdownOpen && 'rotate-90')} />
-                          </button>
-                          <AnimatePresence>
-                            {isSiteDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsSiteDropdownOpen(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
-                                >
-                                  <div className="max-h-64 overflow-y-auto py-1">
-                                    {sites.map((site) => {
-                                      const isSelected = form.siteId === site.id;
-                                      return (
-                                        <button
-                                          key={site.id}
-                                          type="button"
-                                          onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            updateForm('siteId', site.id);
-                                            setIsSiteDropdownOpen(false);
-                                          }}
-                                          className={cn(
-                                            "flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[#F3F4F6]",
-                                            isSelected ? "bg-[#EFF6FF]" : ""
-                                          )}
-                                        >
-                                          <span className={cn("text-sm font-semibold truncate", isSelected ? "text-[#2563EB]" : "text-[#4B5563]")}>{site.name}</span>
-                                          {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ) : (
-                        employee.site || <span className="text-red-500 font-black">Unassigned</span>
-                      )}
-                    </ProfileField>
-                    <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
-                      {editingHR ? (
-                        <div className="flex items-center gap-2 w-full">
-                          <Input
-                            type="date"
-                            value={form.dateHired}
-                            max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
-                            onChange={(value) => updateForm('dateHired', value)}
-                          />
-                        </div>
-                      ) : (
-                        employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
-                      )}
-                    </ProfileField>
-                    {(form.status === 'floating' || employee.status === 'floating') && (
-                      <ProfileField label="Float Date" icon={Calendar} editing={editingHR}>
-                        {editingHR ? (
-                          <div className="flex items-center gap-2 w-full">
-                            <Input
-                              type="date"
-                              value={form.floatDate}
-                              max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
-                              onChange={(value) => updateForm('floatDate', value)}
-                            />
+                {canViewHR && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('employment')}
+                    className={cn(
+                      "flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-black transition-all duration-200 relative group",
+                      activeTab === 'employment'
+                        ? "bg-[#111827] text-white shadow-md shadow-[#11182715]"
+                        : "text-[#4B5563] hover:bg-[#F9FAFB] hover:text-[#111827]"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1.5 rounded-lg shrink-0 transition-colors",
+                      activeTab === 'employment' ? "bg-white/10 text-white" : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
+                    )}>
+                      <Briefcase className="w-3.5 h-3.5" />
+                    </div>
+                    <span>Employment & HR</span>
+                  </button>
+                )}
+
+                {canViewIT && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('accounts')}
+                    className={cn(
+                      "flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-black transition-all duration-200 relative group",
+                      activeTab === 'accounts'
+                        ? "bg-[#111827] text-white shadow-md shadow-[#11182715]"
+                        : "text-[#4B5563] hover:bg-[#F9FAFB] hover:text-[#111827]"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1.5 rounded-lg shrink-0 transition-colors",
+                      activeTab === 'accounts' ? "bg-white/10 text-white" : "bg-purple-50 text-purple-600 group-hover:bg-purple-100"
+                    )}>
+                      <Laptop className="w-3.5 h-3.5" />
+                    </div>
+                    <span>Accounts & IT Security</span>
+                  </button>
+                )}
+
+                {can('auditlogs.view') && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('audit')}
+                    className={cn(
+                      "flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-black transition-all duration-200 relative group",
+                      activeTab === 'audit'
+                        ? "bg-[#111827] text-white shadow-md shadow-[#11182715]"
+                        : "text-[#4B5563] hover:bg-[#F9FAFB] hover:text-[#111827]"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1.5 rounded-lg shrink-0 transition-colors",
+                      activeTab === 'audit' ? "bg-white/10 text-white" : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100"
+                    )}>
+                      <Clock className="w-3.5 h-3.5" />
+                    </div>
+                    <span>Audit History</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Action Button in the Red Box (Top Right of Navigation Bar) */}
+              <div className="flex items-center gap-2 ml-auto pr-2">
+                {activeTab === 'personal' && renderEditButton(canEditHR)}
+                {activeTab === 'employment' && renderEditButton(canEditHR)}
+                {activeTab === 'accounts' && renderEditButton(canEditIT || canEditSecrets)}
+              </div>
+            </div>
+
+            {/* 3. Full-Width Active Section Workspace */}
+            <div className="w-full min-w-0">
+                <AnimatePresence mode="wait">
+                  {/* PANE 1: PERSONAL DETAILS */}
+                  {activeTab === 'personal' && (
+                    <motion.div
+                      key="pane-personal"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch"
+                    >
+                      {/* COLUMN 1: LEFT */}
+                      <div className="flex flex-col h-full">
+                        <ProfileSection icon={User} title="Personal Info" className="h-full flex flex-col justify-start">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
+                            <ProfileField label="Nickname" icon={User} editing={editingHR}>
+                              {editingHR ? <Input value={form.nickname} onChange={(v) => updateForm('nickname', v)} placeholder="Nickname" /> : employee.nickname || '-'}
+                            </ProfileField>
+                            <ProfileField label="Sex" icon={User} editing={editingHR}>
+                              {editingHR ? <Input value={form.sex} onChange={(v) => updateForm('sex', v)} placeholder="Male / Female" /> : employee.sex || '-'}
+                            </ProfileField>
+                            <ProfileField label="Civil Status" icon={User} editing={editingHR}>
+                              {editingHR ? (
+                                <Select value={form.civilStatus} onChange={(v) => updateForm('civilStatus', v)}>
+                                  <option value="">Select status</option>
+                                  <option value="Single">Single</option>
+                                  <option value="Married">Married</option>
+                                  <option value="Widowed">Widowed</option>
+                                  <option value="Separated">Separated</option>
+                                  <option value="Divorced">Divorced</option>
+                                </Select>
+                              ) : employee.civilStatus || <span className="text-[#9CA3AF]">Not Set</span>}
+                            </ProfileField>
+                            <ProfileField label="Birthdate" icon={Calendar} editing={editingHR}>
+                              {editingHR ? (
+                                <Input type="date" value={form.birthdate} onChange={(v) => updateForm('birthdate', v)} />
+                              ) : employee.birthdate ? new Date(employee.birthdate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                            </ProfileField>
                           </div>
-                        ) : (
-                          employee.floatDate ? new Date(employee.floatDate).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
-                        )}
-                      </ProfileField>
-                    )}
-
-                    {(form.status === 'inactive' || form.status === 'separated') && (
-                      <>
-                        <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
-                          {editingHR ? (
-                            <div className="flex items-center gap-2 w-full">
-                              <Input
-                                type="date"
-                                value={form.separationDate}
-                                onChange={(value) => updateForm('separationDate', value)}
-                              />
-                            </div>
-                          ) : (
-                            employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#6B7280] font-medium">Not Assigned</span>
-                          )}
-                        </ProfileField>
-                      </>
-                    )}
-                    
-                    {(form.status === 'inactive' || form.status === 'separated' || form.status === 'floating') && (
-                      <>
-                        <ProfileField label={form.status === 'floating' ? "Float Reason" : "Separation Reason"} icon={Info} editing={editingHR}>
-                          {editingHR ? (
-                            <div className="flex flex-col gap-2 w-full">
-                              <select
-                                value={
-                                  ['Resigned', 'AWOL', 'Terminated'].includes(form.separationReason)
-                                    ? form.separationReason
-                                    : form.separationReason ? 'Other' : ''
-                                }
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val !== 'Other') {
-                                    updateForm('separationReason', val);
-                                  } else {
-                                    updateForm('separationReason', 'Other (Please specify)');
-                                  }
-                                }}
-                                className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-[#111827] outline-none appearance-none cursor-pointer"
-                              >
-                                <option value="" disabled>Select Reason</option>
-                                <option value="Resigned">Resigned</option>
-                                <option value="AWOL">AWOL</option>
-                                <option value="Terminated">Terminated</option>
-                                <option value="Other">Other</option>
-                              </select>
-                              {(!['Resigned', 'AWOL', 'Terminated', ''].includes(form.separationReason)) && (
-                                <Input
-                                  value={form.separationReason === 'Other (Please specify)' ? '' : form.separationReason}
-                                  onChange={(value) => updateForm('separationReason', value)}
-                                  placeholder="Please specify the reason..."
-                                />
-                              )}
-                            </div>
-                          ) : (
-                            employee.separationReason || <span className="text-[#6B7280] font-medium">Not Assigned</span>
-                          )}
-                        </ProfileField>
-                      </>
-                    )}
-                  </div>
-                </ProfileSection>
-
-                {canViewIT && (
-                <ProfileSection icon={Laptop} title="ACCOUNT AND DEVICE INFORMATION" iconColorClass="text-purple-600 bg-purple-50" className="relative z-50">
-                  <div className="space-y-8">
-                    {/* Accounts */}
-                    <div>
-                      <h4 className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-4 pb-2 border-b border-[#F3F4F6]">Accounts</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                        <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
-                          {editingIT ? (
-                            <div className="flex items-center gap-2 w-full">
-                              <div className="flex-1">
-                                <Input
-                                  value={form.boEmail}
-                                  onChange={(value) => updateForm('boEmail', value)}
-                                  placeholder={accountBasedPreviewPlaceholder}
-                                />
-                              </div>
-                              {isBoEmailEdited && (
-                                <button
-                                  type="button"
-                                  onClick={() => regenerateField('boEmail')}
-                                  className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                  title="Reset to generated default"
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>
-                          )}
-                        </ProfileField>
-                        {canViewSecrets && (
-                        <ProfileField label="Email Default Password" icon={Key} editing={editingSecrets}>
-                          {editingSecrets ? (
-                            <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
-                          ) : (
-                            <div className="flex items-center justify-between gap-4 w-full">
-                              <span className="truncate overflow-hidden flex items-center">
-                                <AnimatePresence mode="popLayout" initial={false}>
-                                  <motion.span
-                                    key={showPassword ? 'visible' : 'hidden'}
-                                    initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
-                                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                    exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
-                                    transition={{ duration: 0.2 }}
-                                    className="inline-block"
-                                  >
-                                    {showPassword ? employee.emailPassword || <span className="text-red-500 font-black">Not Assigned</span> : (employee.emailPassword ? '********' : <span className="text-red-500 font-black">Not Assigned</span>)}
-                                  </motion.span>
-                                </AnimatePresence>
-                              </span>
-                              {employee.emailPassword && (
-                                <button
-                                  type="button"
-                                  onClick={togglePassword}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#4B5563] bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg hover:bg-[#F3F4F6] transition-colors shrink-0"
-                                >
-                                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                  {showPassword ? 'Hide' : 'Reveal'}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </ProfileField>
-                        )}
-
-                        <ProfileField label="LMS Account" icon={User} editing={editingIT}>
-                          {editingIT ? (
-                            <div className="flex items-center gap-2 w-full">
-                              <div className="flex-1">
-                                <Input
-                                  value={form.lmsAccount}
-                                  onChange={(value) => updateForm('lmsAccount', value)}
-                                  placeholder="Generated after name is entered"
-                                />
-                              </div>
-                              {isLmsAccountEdited && (
-                                <button
-                                  type="button"
-                                  onClick={() => regenerateField('lmsAccount')}
-                                  className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                  title="Reset to generated default"
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>
-                          )}
-                        </ProfileField>
-
-                        <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
-                          {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="e.g. user@outlook.com" /> : employee.outlookEmail || <span className="text-red-500 font-black">Not Assigned</span>}
-                        </ProfileField>
-                        <ProfileField label="Google Account" icon={Mail} editing={editingIT}>
-                          {editingIT ? <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="e.g. user@gmail.com" /> : employee.googleAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                        </ProfileField>
-                        <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
-                          {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="e.g. user@teams.microsoft.com" /> : employee.teamsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                        </ProfileField>
-                        <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
-                          {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="e.g. @username" /> : employee.mattermostAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                        </ProfileField>
-                      </div>
-                    </div>
-
-                    {/* Device Assets */}
-                    <div>
-                      <h4 className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-4 pb-2 border-b border-[#F3F4F6]">Device Assets</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                        <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
-                          {editingIT ? (
-                            <div className="flex items-center gap-2 w-full">
-                              <div className="flex-1">
-                                <Input
-                                  value={form.pcName}
-                                  onChange={(value) => updateForm('pcName', value)}
-                                  placeholder={accountBasedPreviewPlaceholder}
-                                />
-                              </div>
-                              {isPcNameEdited && (
-                                <button
-                                  type="button"
-                                  onClick={() => regenerateField('pcName')}
-                                  className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
-                                  title="Reset to generated default"
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
-                          )}
-                        </ProfileField>
-                        <ProfileField label="Device Type" icon={Laptop} editing={editingIT}>
-                          {editingIT ? (
-                            <Select value={form.deviceType || 'Windows'} onChange={(v) => updateForm('deviceType', v as any)}>
-                              <option value="Windows">Windows</option>
-                              <option value="MacOS">MacOS</option>
-                            </Select>
-                          ) : (
-                            employee.deviceType || 'Windows'
-                          )}
-                        </ProfileField>
-                        <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
-                          {editingIT ? (
-                            <div className="relative flex items-center w-full">
-                              <Input type="text" placeholder="YYYY-MM-DD or N/A" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
-                                <Calendar className="w-4 h-4 pointer-events-none absolute text-gray-500" />
-                                <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => { if (e.target.value) updateForm('biosDate', e.target.value); }} />
-                              </div>
-                            </div>
-                          ) : employee.biosDate ? (employee.biosDate.trim().toUpperCase() === 'N/A' || isNaN(Date.parse(employee.biosDate)) ? employee.biosDate : new Date(employee.biosDate).toLocaleDateString()) : <span className="text-red-500 font-black">Not Set</span>}
-                        </ProfileField>
-                        {canViewSecrets && (
-                        <ProfileField label="Remote ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
-                          {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
-                        </ProfileField>
-                        )}
+                        </ProfileSection>
                       </div>
 
-                      {canViewSecrets && form.deviceType !== 'MacOS' && (
-                      <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex-1">
-                          <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
-                          <AnimatePresence mode="popLayout" initial={false}>
-                            {editingSecrets ? (
-                              <motion.div
-                                key="edit-windows"
-                                initial={{ opacity: 0, y: -5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -5 }}
-                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                              >
-                                <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" error={Boolean(formErrors.windowsKey)} />
-                                {formErrors.windowsKey && <span className="mt-1.5 block text-xs font-bold text-red-600">{formErrors.windowsKey}</span>}
-                              </motion.div>
+                      {/* COLUMN 2: RIGHT */}
+                      <div className="space-y-8 flex flex-col justify-between">
+                        <ProfileSection icon={Phone} title="Contact & Location">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
+                            <ProfileField label="Main Contact" icon={Phone} editing={editingHR}>
+                              {editingHR ? <Input value={form.mainContact} onChange={(v) => updateForm('mainContact', v)} placeholder="e.g. 0917-123-4567" /> : employee.mainContact || <span className="text-red-500 font-black">Not Assigned</span>}
+                            </ProfileField>
+                            <ProfileField label="Personal Email" icon={Mail} editing={editingHR}>
+                              {editingHR ? <Input value={form.personalEmail} onChange={(v) => updateForm('personalEmail', v)} placeholder="e.g. john@gmail.com" /> : employee.personalEmail || <span className="text-red-500 font-black">Not Assigned</span>}
+                            </ProfileField>
+                            <div className="sm:col-span-2">
+                              <ProfileField label="Address" icon={MapPin} editing={editingHR}>
+                                {editingHR ? <Input value={form.address} onChange={(v) => updateForm('address', v)} placeholder="e.g. 123 Main St, City" /> : employee.address || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+                            </div>
+                          </div>
+                        </ProfileSection>
+
+                        <ProfileSection icon={ShieldAlert} title="Emergency Contact">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
+                            <ProfileField label="Contact Person Name" icon={User} editing={editingHR}>
+                              {editingHR ? <Input value={form.emergencyContact} onChange={(v) => updateForm('emergencyContact', v)} placeholder="Full Name" /> : employee.emergencyContact || <span className="text-red-500 font-black">Not Assigned</span>}
+                            </ProfileField>
+                            <ProfileField label="Contact Phone Number" icon={Phone} editing={editingHR}>
+                              {editingHR ? <Input value={form.emergencyContactNumber} onChange={(v) => updateForm('emergencyContactNumber', v)} placeholder="+63 900 000 0000" /> : employee.emergencyContactNumber || <span className="text-red-500 font-black">Not Assigned</span>}
+                            </ProfileField>
+                          </div>
+                        </ProfileSection>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* PANE 2: EMPLOYMENT & HR */}
+                  {activeTab === 'employment' && canViewHR && (
+                    <motion.div
+                      key="pane-employment"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      className="space-y-8"
+                    >
+                      <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
+                            {editingHR ? <Input value={form.position} onChange={(v) => updateForm('position', v)} placeholder="e.g. Customer Service Rep" /> : employee.position || <span className="text-red-500 font-black">Not Assigned</span>}
+                          </ProfileField>
+                          
+                          <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
+                            {editingHR ? (
+                              <div className="relative">
+                                <Input
+                                  value={form.accountAssignment}
+                                  onChange={(v) => {
+                                    updateForm('accountAssignment', v);
+                                    setIsAccountDropdownOpen(true);
+                                  }}
+                                  onFocus={() => setIsAccountDropdownOpen(true)}
+                                  onBlur={() => setTimeout(() => setIsAccountDropdownOpen(false), 200)}
+                                  placeholder="Type or select DEPARTMENT/CAMPAIGN."
+                                />
+                                {isAccountDropdownOpen && accounts.length > 0 && (
+                                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    {accounts
+                                      .filter(acc => acc.name.toLowerCase().includes((form.accountAssignment || '').toLowerCase()))
+                                      .map((acc) => (
+                                        <button
+                                          key={acc.id}
+                                          type="button"
+                                          className="w-full px-4 py-2 text-left text-xs font-bold text-[#374151] hover:bg-[#F3F4F6]"
+                                          onClick={() => {
+                                            updateForm('accountAssignment', acc.name);
+                                            setIsAccountDropdownOpen(false);
+                                          }}
+                                        >
+                                          {acc.name}
+                                        </button>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Site Assignment" icon={MapPin} editing={editingHR}>
+                            {editingHR ? (
+                              <Select value={form.siteId} onChange={(v) => {
+                                const sel = sites.find(s => s.id === v);
+                                setForm(curr => ({ ...curr, siteId: v, site: sel ? sel.name : v }));
+                              }}>
+                                <option value="">Select site</option>
+                                {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                              </Select>
+                            ) : employee.site || <span className="text-red-500 font-black">Not Assigned</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Employee Status" icon={User} editing={editingHR}>
+                            {editingHR ? (
+                              <Select value={form.employeeStatus} onChange={(v) => updateForm('employeeStatus', v)}>
+                                <option value="Regular">Regular</option>
+                                <option value="Probationary">Probationary</option>
+                                <option value="Contractual">Contractual</option>
+                                <option value="Project-Based">Project-Based</option>
+                                <option value="Intern">Intern</option>
+                              </Select>
+                            ) : employee.employeeStatus || 'Regular'}
+                          </ProfileField>
+
+                          <div className="md:col-span-2">
+                            <ProfileField label="Status" icon={User} editing={editingHR}>
+                              {editingHR ? (
+                                <Select value={form.status} onChange={(v) => updateForm('status', v)}>
+                                  <option value="active">Active</option>
+                                  <option value="floating">Floating</option>
+                                  <option value="inactive">Inactive</option>
+                                  <option value="separated">Separated</option>
+                                </Select>
+                              ) : (
+                                <span className="font-bold capitalize">{employee.status || 'active'}</span>
+                              )}
+                            </ProfileField>
+                          </div>
+                        </div>
+                      </ProfileSection>
+
+                      <ProfileSection icon={Calendar} title="Dates & Milestones" iconColorClass="text-amber-600 bg-amber-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
+                            {editingHR ? <Input type="date" value={form.dateHired} onChange={(v) => updateForm('dateHired', v)} /> : employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+
+                          {(form.status === 'floating' || employee.status === 'floating') && (
+                            <ProfileField label="Float Date" icon={Calendar} editing={editingHR}>
+                              {editingHR ? <Input type="date" value={form.floatDate} onChange={(v) => updateForm('floatDate', v)} /> : employee.floatDate ? new Date(employee.floatDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                            </ProfileField>
+                          )}
+
+                          {(form.status === 'inactive' || form.status === 'separated') && (
+                            <>
+                              <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
+                                {editingHR ? <Input type="date" value={form.separationDate} onChange={(v) => updateForm('separationDate', v)} /> : employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+                              <ProfileField label="Separation Reason" icon={Briefcase} editing={editingHR}>
+                                {editingHR ? <Input value={form.separationReason} onChange={(v) => updateForm('separationReason', v)} placeholder="Reason for separation" /> : employee.separationReason || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+                            </>
+                          )}
+                        </div>
+                      </ProfileSection>
+
+                      <ProfileSection icon={ShieldCheck} title="Government Identifiers" iconColorClass="text-emerald-600 bg-emerald-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="SSS Number" icon={ShieldCheck} editing={editingHR}>
+                            {editingHR ? <Input value={form.sssNo} onChange={(v) => updateForm('sssNo', v)} placeholder="00-0000000-0" /> : employee.sssNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+                          <ProfileField label="TIN Number" icon={ShieldCheck} editing={editingHR}>
+                            {editingHR ? <Input value={form.tinNo} onChange={(v) => updateForm('tinNo', v)} placeholder="000-000-000-000" /> : employee.tinNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+                          <ProfileField label="PhilHealth Number" icon={ShieldCheck} editing={editingHR}>
+                            {editingHR ? <Input value={form.philhealthNo} onChange={(v) => updateForm('philhealthNo', v)} placeholder="00-000000000-0" /> : employee.philhealthNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+                          <ProfileField label="Pag-IBIG Number" icon={ShieldCheck} editing={editingHR}>
+                            {editingHR ? <Input value={form.pagibigNo} onChange={(v) => updateForm('pagibigNo', v)} placeholder="0000-0000-0000" /> : employee.pagibigNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+                        </div>
+                      </ProfileSection>
+                    </motion.div>
+                  )}
+
+                  {/* PANE 3: ACCOUNTS & IT SECURITY */}
+                  {activeTab === 'accounts' && canViewIT && (
+                    <motion.div
+                      key="pane-accounts"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      className="space-y-8"
+                    >
+                      <ProfileSection icon={Laptop} title="System Accounts" iconColorClass="text-purple-600 bg-purple-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
+                            {editingIT ? (
+                              <div className="flex items-center gap-2">
+                                <Input value={form.boEmail} onChange={(v) => { updateForm('boEmail', v); setIsBoEmailEdited(true); }} placeholder="username@bigoutsource.com" />
+                                {!isBoEmailEdited && (
+                                  <button type="button" onClick={() => regenerateField('boEmail')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate email">
+                                    Auto
+                                  </button>
+                                )}
+                              </div>
+                            ) : employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Snappy Email Password" icon={Key} editing={editingIT}>
+                            {editingIT ? (
+                              <Input type="text" value={form.emailPassword} onChange={(v) => updateForm('emailPassword', v)} placeholder="Password" />
+                            ) : canViewSecrets ? (
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono">{showPassword ? employee.emailPassword || 'No password set' : '••••••••••••'}</span>
+                                {employee.emailPassword && (
+                                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700">
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                )}
+                              </div>
                             ) : (
-                              <motion.div
-                                key="view-windows"
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 5 }}
-                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                              >
-                                <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit overflow-hidden flex items-center">
-                                  <AnimatePresence mode="popLayout" initial={false}>
-                                    <motion.span
-                                      key={showSensitive ? 'visible' : 'hidden'}
-                                      initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
-                                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                      exit={{ opacity: 0, y: -5, filter: 'blur(4px)' }}
-                                      transition={{ duration: 0.2 }}
-                                      className="inline-block"
-                                    >
-                                      {showSensitive ? (employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>) : (employee.windowsKey ? '*****-*****-*****-*****-*****' : <span className="text-red-500 font-black">Not Assigned</span>)}
-                                    </motion.span>
-                                  </AnimatePresence>
-                                </p>
-                              </motion.div>
+                              <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
                             )}
-                          </AnimatePresence>
+                          </ProfileField>
+
+                          <ProfileField label="LMS Account" icon={Laptop} editing={editingIT}>
+                            {editingIT ? (
+                              <div className="flex items-center gap-2">
+                                <Input value={form.lmsAccount} onChange={(v) => { updateForm('lmsAccount', v); setIsLmsAccountEdited(true); }} placeholder="LMS Username" />
+                                {!isLmsAccountEdited && (
+                                  <button type="button" onClick={() => regenerateField('lmsAccount')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate LMS">
+                                    Auto
+                                  </button>
+                                )}
+                              </div>
+                            ) : employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
+                            {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="user@outlook.com" /> : employee.outlookEmail || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Google Account" icon={Mail} editing={editingIT}>
+                            {editingIT ? <Input value={form.googleAccount} onChange={(v) => updateForm('googleAccount', v)} placeholder="user@gmail.com" /> : employee.googleAccount || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
+                            {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="user@teams.com" /> : employee.teamsAccount || <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+
+                          <div className="md:col-span-2">
+                            <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
+                              {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="user@mattermost.com" /> : employee.mattermostAccount || <span className="text-[#9CA3AF]">Not Set</span>}
+                            </ProfileField>
+                          </div>
                         </div>
-                        <AnimatePresence mode="popLayout" initial={false}>
-                          {!isEditing && employee.windowsKey && (
-                            <motion.button
-                              key="reveal-button"
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                              type="button"
-                              onClick={handleReveal}
-                              className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-xl text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                            >
-                              {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              {showSensitive ? 'Hide' : 'Reveal Key'}
-                            </motion.button>
+                      </ProfileSection>
+
+                      <ProfileSection icon={Key} title="Device Assets & Credentials" iconColorClass="text-indigo-600 bg-indigo-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
+                            {editingIT ? (
+                              <div className="flex items-center gap-2">
+                                <Input value={form.pcName} onChange={(v) => { updateForm('pcName', v); setIsPcNameEdited(true); }} placeholder="BO-PC-XXXX" />
+                                {!isPcNameEdited && (
+                                  <button type="button" onClick={() => regenerateField('pcName')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate PC Name">
+                                    Auto
+                                  </button>
+                                )}
+                              </div>
+                            ) : employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>}
+                          </ProfileField>
+
+                          <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
+                            {editingIT ? <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                          </ProfileField>
+
+                          <ProfileField label="Device Type" icon={Laptop} editing={editingIT}>
+                            {editingIT ? (
+                              <Select value={form.deviceType} onChange={(v) => updateForm('deviceType', v)}>
+                                <option value="Windows">Windows</option>
+                                <option value="Mac">Mac</option>
+                                <option value="Linux">Linux</option>
+                              </Select>
+                            ) : employee.deviceType || 'Windows'}
+                          </ProfileField>
+
+                          <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
+                            {editingSecrets ? (
+                              <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                            ) : canViewSecrets ? (
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                {employee.windowsKey && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(employee.windowsKey);
+                                      toast.success('Windows key copied to clipboard');
+                                    }}
+                                    className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
+                                    title="Copy License Key"
+                                  >
+                                    <Copy className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
+                            )}
+                          </ProfileField>
+
+                          <div className="md:col-span-2">
+                            <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>
+                              {editingSecrets ? (
+                                <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="123 456 789" />
+                              ) : canViewSecrets ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-indigo-600">{employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                  {employee.rustdeskId && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(employee.rustdeskId);
+                                        toast.success('REMOTE ID copied to clipboard');
+                                      }}
+                                      className="p-1 text-indigo-600 hover:text-indigo-800 bg-indigo-50 rounded-md"
+                                      title="Copy REMOTE ID"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
+                              )}
+                            </ProfileField>
+                          </div>
+                        </div>
+                      </ProfileSection>
+
+                      <ProfileSection icon={ShieldAlert} title="Security Compliance" iconColorClass="text-rose-600 bg-rose-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
+                            {editingIT ? (
+                              <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
+                                <option value="active">Active (Protected)</option>
+                                <option value="uninstalled">Uninstalled / Missing</option>
+                                <option value="expired">Expired / Outdated</option>
+                              </Select>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                                employee.esetStatus === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                              }`}>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {employee.esetStatus || 'Unknown'}
+                              </span>
+                            )}
+                          </ProfileField>
+
+                          <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
+                            {editingIT ? (
+                              <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
+                                <option value="installed">Installed & Running</option>
+                                <option value="uninstalled">Uninstalled / Missing</option>
+                                <option value="error">Error / Not Reporting</option>
+                              </Select>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                                employee.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                              }`}>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {employee.activityWatchStatus || 'Unknown'}
+                              </span>
+                            )}
+                          </ProfileField>
+                        </div>
+                      </ProfileSection>
+                    </motion.div>
+                  )}
+
+                  {/* PANE 4: AUDIT HISTORY */}
+                  {activeTab === 'audit' && can('auditlogs.view') && (
+                    <motion.div
+                      key="pane-audit"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      className="space-y-8"
+                    >
+                      <ProfileSection icon={Clock} title="Audit History" iconColorClass="text-indigo-600 bg-indigo-50">
+                        <div className="relative pl-4 md:pl-0">
+                          {auditLogs.length ? (
+                            <>
+                              <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#E5E7EB] before:via-[#E5E7EB] before:to-transparent">
+                                <AnimatePresence initial={false}>
+                                  {auditLogs.slice(0, visibleLogsCount).map((log) => (
+                                    <motion.div
+                                      key={log.id}
+                                      initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                      animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                      exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                      className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
+                                    >
+                                      {/* Timeline node */}
+                                      <div className="flex flex-col items-center gap-2 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow">
+                                          <Clock className="w-4 h-4" />
+                                        </div>
+                                      </div>
+
+                                      {/* Card */}
+                                      <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                                        <div className="flex flex-col gap-1 mb-3">
+                                          <div className="flex items-center justify-between gap-4">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
+                                              {can('auditlogs.undo') && log.action.endsWith('.update') && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUndo(log);
+                                                  }}
+                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 hover:text-indigo-700 rounded-lg transition-all uppercase tracking-widest shadow-sm group/undo"
+                                                  title="Undo Action"
+                                                >
+                                                  <Undo2 className="w-3 h-3 transition-transform group-hover/undo:-rotate-45" />
+                                                  Undo
+                                                </button>
+                                              )}
+                                            </div>
+                                            <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-wider shrink-0">{formatDate(log.createdAt)}</p>
+                                          </div>
+                                          <p className="text-xs font-bold text-[#6B7280]">by {actorLabel(log)}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                          {detailsText(log.details).map((item: any, index: number) => (
+                                            <div
+                                              key={index}
+                                              className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] px-4 py-3"
+                                            >
+                                              {'to' in item ? (
+                                                <div className="flex flex-col gap-1 text-sm">
+                                                  <span className="font-black text-[#111827]">
+                                                    {item.field}
+                                                  </span>
+
+                                                  <div className="flex flex-wrap items-center gap-2 text-[#6B7280]">
+                                                    <span className="line-through text-red-500 break-all">
+                                                      {item.from}
+                                                    </span>
+
+                                                    <span className="font-bold text-[#9CA3AF]">&rarr;</span>
+
+                                                    <span className="font-bold text-green-600 break-all">
+                                                      {item.to}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <div className="flex justify-between text-sm">
+                                                  <span className="font-black text-[#111827]">
+                                                    {item.field}
+                                                  </span>
+
+                                                  <span className="text-[#4B5563] font-medium">
+                                                    {item.value}
+                                                  </span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  ))}
+                                </AnimatePresence>
+                              </div>
+                              <div className="mt-8 flex justify-center gap-4">
+                                {visibleLogsCount > 3 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setVisibleLogsCount(prev => Math.max(3, prev - 3))}
+                                    className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
+                                  >
+                                    View less
+                                  </button>
+                                )}
+                                {visibleLogsCount < auditLogs.length && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setVisibleLogsCount(prev => Math.min(prev + 3, auditLogs.length))}
+                                    className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
+                                  >
+                                    View {Math.min(3, auditLogs.length - visibleLogsCount)} more {auditLogs.length - visibleLogsCount === 1 ? 'record' : 'records'}
+                                  </button>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm font-bold text-[#9CA3AF]">No audit history for this employee yet.</p>
                           )}
-                        </AnimatePresence>
-                      </div>
-                      )}
+                        </div>
+                      </ProfileSection>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+            </div>
+            {/* Floating Sticky Save Bar (when editing and dirty) */}
+            <AnimatePresence>
+              {isEditing && hasChanges && (
+                <motion.div
+                  initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 50, scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#111827] text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-6 max-w-lg w-[90%] justify-between backdrop-blur-xl bg-opacity-95"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-amber-400">Unsaved Changes</p>
+                      <p className="text-[11px] text-gray-300 font-medium">You have edited records in this profile</p>
                     </div>
                   </div>
-                </ProfileSection>
-                )}
-              </motion.div>
 
-              <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8 relative z-50">
-                <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
-                  <div className="space-y-6">
-                    <ProfileField label="Birthdate" icon={Calendar} editing={editingHR} error={formErrors.birthdate as string}>
-                      {editingHR ? (
-                        <Input
-                          type="date"
-                          value={form.birthdate}
-                          max={new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
-                          onChange={(value) => updateForm('birthdate', value)}
-                          error={Boolean(formErrors.birthdate)}
-                        />
-                      ) : employee.birthdate ? new Date(employee.birthdate).toLocaleDateString() : 'Not Assigned'}
-                    </ProfileField>
-                    <ProfileField label="Phone Number" editing={editingHR} error={formErrors.phone}>
-                      {editingHR ? (
-                        <Input
-                          value={form.phone}
-                          onChange={(value) => updateForm('phone', value)}
-                          placeholder="e.g. 09123456789"
-                          error={Boolean(formErrors.phone)}
-                        />
-                      ) : employee.phone || 'Not Assigned'}
-                    </ProfileField>
-                    <ProfileField label="Address" editing={editingHR}>
-                      {editingHR ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
-                    </ProfileField>
-                  </div>
-                </ProfileSection>
-
-                {canViewIT && (
-                <ProfileSection icon={ShieldAlert} title="Security Compliance" compact iconColorClass="text-amber-600 bg-amber-50" className="relative z-50">
-                  <div className="space-y-4">
-                    <ComplianceField
-                      label="ESET Status"
-                      value={employee.esetStatus === 'active' ? 'Active' : 'Inactive'}
-                      editing={editingIT}
-                      status={employee.esetStatus === 'active'}
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={cancelEditing}
+                      disabled={isSaving}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-50"
                     >
-                      <div className={cn("relative transition-all", isEsetDropdownOpen ? "z-50" : "z-10")}>
-                        <button
-                          type="button"
-                          onClick={() => setIsEsetDropdownOpen((current) => !current)}
-                          className={cn(
-                            'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                            'border-[#E5E7EB]'
-                          )}
-                        >
-                          <span className="truncate">{form.esetStatus === 'active' ? 'Active' : 'Inactive'}</span>
-                          <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isEsetDropdownOpen && 'rotate-90')} />
-                        </button>
-                        <AnimatePresence>
-                          {isEsetDropdownOpen && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setIsEsetDropdownOpen(false)} />
-                              <motion.div
-                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                transition={{ duration: 0.15, ease: 'easeOut' }}
-                                className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
-                              >
-                                <div className="max-h-64 overflow-y-auto py-1">
-                                  {[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }].map((opt) => {
-                                    const isSelected = form.esetStatus === opt.id;
-                                    return (
-                                      <button
-                                        key={opt.id}
-                                        type="button"
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          updateForm('esetStatus', opt.id as any);
-                                          setIsEsetDropdownOpen(false);
-                                        }}
-                                        className={cn(
-                                          "flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[#F3F4F6]",
-                                          isSelected ? "bg-[#EFF6FF]" : ""
-                                        )}
-                                      >
-                                        <span className={cn("text-sm font-semibold", isSelected ? "text-[#2563EB]" : "text-[#4B5563]")}>{opt.name}</span>
-                                        {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </ComplianceField>
-                    <ComplianceField
-                      label="Activity Watch"
-                      value={employee.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}
-                      editing={editingIT}
-                      status={employee.activityWatchStatus === 'installed'}
+                      Discard
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving || !hasChanges}
+                      className="flex items-center gap-1.5 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-xs font-black transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
                     >
-                      <div className={cn("relative transition-all", isActivityWatchDropdownOpen ? "z-50" : "z-10")}>
-                        <button
-                          type="button"
-                          onClick={() => setIsActivityWatchDropdownOpen((current) => !current)}
-                          className={cn(
-                            'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                            'border-[#E5E7EB]'
-                          )}
-                        >
-                          <span className="truncate">{form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}</span>
-                          <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isActivityWatchDropdownOpen && 'rotate-90')} />
-                        </button>
-                        <AnimatePresence>
-                          {isActivityWatchDropdownOpen && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setIsActivityWatchDropdownOpen(false)} />
-                              <motion.div
-                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                transition={{ duration: 0.15, ease: 'easeOut' }}
-                                className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
-                              >
-                                <div className="max-h-64 overflow-y-auto py-1">
-                                  {[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }].map((opt) => {
-                                    const isSelected = form.activityWatchStatus === opt.id;
-                                    return (
-                                      <button
-                                        key={opt.id}
-                                        type="button"
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          updateForm('activityWatchStatus', opt.id as any);
-                                          setIsActivityWatchDropdownOpen(false);
-                                        }}
-                                        className={cn(
-                                          "flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[#F3F4F6]",
-                                          isSelected ? "bg-[#EFF6FF]" : ""
-                                        )}
-                                      >
-                                        <span className={cn("text-sm font-semibold", isSelected ? "text-[#2563EB]" : "text-[#4B5563]")}>{opt.name}</span>
-                                        {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </ComplianceField>
+                      {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      <span>Save Changes</span>
+                    </button>
                   </div>
-                </ProfileSection>
-                )}
-              </motion.div>
-
-              {can('auditlogs.view') && (
-              <motion.div variants={itemVariants} className="lg:col-span-12">
-                <ProfileSection icon={Clock} title="Audit History" iconColorClass="text-indigo-600 bg-indigo-50">
-                  <div className="relative pl-4 md:pl-0">
-                    {auditLogs.length ? (
-                      <>
-                        <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#E5E7EB] before:via-[#E5E7EB] before:to-transparent">
-                          <AnimatePresence initial={false}>
-                            {auditLogs.slice(0, visibleLogsCount).map((log) => (
-                              <motion.div
-                                key={log.id}
-                                initial={{ opacity: 0, height: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, height: 'auto', scale: 1 }}
-                                exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                                className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
-                              >
-                                {/* Timeline node */}
-                                <div className="flex flex-col items-center gap-2 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow">
-                                    <Clock className="w-4 h-4" />
-                                  </div>
-                                </div>
-
-                                {/* Card */}
-                                <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                                  <div className="flex flex-col gap-1 mb-3">
-                                    <div className="flex items-center justify-between gap-4">
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
-                                        {can('auditlogs.undo') && log.action.endsWith('.update') && (
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleUndo(log);
-                                            }}
-                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 hover:text-indigo-700 rounded-lg transition-all uppercase tracking-widest shadow-sm group/undo"
-                                            title="Undo Action"
-                                          >
-                                            <Undo2 className="w-3 h-3 transition-transform group-hover/undo:-rotate-45" />
-                                            Undo
-                                          </button>
-                                        )}
-                                      </div>
-                                      <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-wider shrink-0">{formatDate(log.createdAt)}</p>
-                                    </div>
-                                    <p className="text-xs font-bold text-[#6B7280]">by {actorLabel(log)}</p>
-                                  </div>
-                                  <div className="space-y-2">
-                                    {detailsText(log.details).map((item: any, index: number) => (
-                                      <div
-                                        key={index}
-                                        className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] px-4 py-3"
-                                      >
-                                        {'to' in item ? (
-                                          <div className="flex flex-col gap-1 text-sm">
-                                            <span className="font-black text-[#111827]">
-                                              {item.field}
-                                            </span>
-
-                                            <div className="flex flex-wrap items-center gap-2 text-[#6B7280]">
-                                              <span className="line-through text-red-500 break-all">
-                                                {item.from}
-                                              </span>
-
-                                              <span className="font-bold text-[#9CA3AF]">&rarr;</span>
-
-                                              <span className="font-bold text-green-600 break-all">
-                                                {item.to}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <div className="flex justify-between text-sm">
-                                            <span className="font-black text-[#111827]">
-                                              {item.field}
-                                            </span>
-
-                                            <span className="text-[#4B5563] font-medium">
-                                              {item.value}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </AnimatePresence>
-                        </div>
-                        <div className="mt-8 flex justify-center gap-4">
-                          {visibleLogsCount > 3 && (
-                            <button
-                              type="button"
-                              onClick={() => setVisibleLogsCount(prev => Math.max(3, prev - 3))}
-                              className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
-                            >
-                              View less
-                            </button>
-                          )}
-                          {visibleLogsCount < auditLogs.length && (
-                            <button
-                              type="button"
-                              onClick={() => setVisibleLogsCount(prev => Math.min(prev + 3, auditLogs.length))}
-                              className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
-                            >
-                              View {Math.min(3, auditLogs.length - visibleLogsCount)} more {auditLogs.length - visibleLogsCount === 1 ? 'record' : 'records'}
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-sm font-bold text-[#9CA3AF]">No audit history for this employee yet.</p>
-                    )}
-                  </div>
-                </ProfileSection>
-              </motion.div>
+                </motion.div>
               )}
-            </motion.div>
+            </AnimatePresence>
           </motion.form>
         )}
       </AnimatePresence>
@@ -2526,6 +2501,7 @@ function ProfileSection({
   compact = false,
   iconColorClass = 'text-[#111827] bg-[#F3F4F6]',
   className,
+  action,
 }: {
   icon: ElementType;
   title: string;
@@ -2533,17 +2509,21 @@ function ProfileSection({
   compact?: boolean;
   iconColorClass?: string;
   className?: string;
+  action?: ReactNode;
 }) {
   return (
     <motion.section
       whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
       className={cn('bg-white rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-xl transition-shadow duration-300', compact ? 'p-6' : 'p-8', className)}
     >
-      <div className="flex items-center gap-3 mb-8">
-        <div className={cn('p-2 rounded-xl', iconColorClass)}>
-          <Icon className="w-5 h-5" />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className={cn('p-2 rounded-xl', iconColorClass)}>
+            <Icon className="w-5 h-5" />
+          </div>
+          <h3 className="text-lg font-black text-[#111827]">{title}</h3>
         </div>
-        <h3 className="text-lg font-black text-[#111827]">{title}</h3>
+        {action}
       </div>
       {children}
     </motion.section>
@@ -2594,10 +2574,10 @@ function ProfileField({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            className="flex items-center gap-3 w-full"
+            className="flex items-center gap-3 w-full min-w-0"
           >
             {Icon && <Icon className={cn("w-4 h-4 transition-colors shrink-0", isMissing ? "text-red-400 group-hover:text-red-500" : "text-[#D1D5DB] group-hover:text-[#9CA3AF]")} />}
-            <span className={cn("text-sm font-bold flex items-center gap-1.5 w-full", isMissing ? "text-red-600" : "text-[#111827]")}>
+            <span className={cn("text-sm font-bold flex items-center gap-1.5 w-full min-w-0 break-all", isMissing ? "text-red-600" : "text-[#111827]")}>
               {children}
               {isMissing && <ShieldAlert className="w-3.5 h-3.5" />}
             </span>
@@ -2685,6 +2665,10 @@ function Input({
   error = false,
   max,
   onAppendSpecialChar,
+  onFocus,
+  onBlur,
+  className,
+  disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -2693,6 +2677,10 @@ function Input({
   error?: boolean;
   max?: string;
   onAppendSpecialChar?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  className?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="relative w-full">
@@ -2701,11 +2689,15 @@ function Input({
         value={value}
         placeholder={placeholder}
         max={max}
+        disabled={disabled}
+        onFocus={onFocus}
+        onBlur={onBlur}
         onChange={(event) => onChange(event.target.value)}
         className={cn(
           'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
           error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]',
-          onAppendSpecialChar ? "pr-10" : ""
+          onAppendSpecialChar ? "pr-10" : "",
+          className
         )}
       />
       {onAppendSpecialChar && (

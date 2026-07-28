@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import type { ReactNode, ElementType } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   Edit,
@@ -130,16 +130,24 @@ function completeness(row: ImportRow) {
 }
 
 function blockingIssues(row: ImportRow) {
-  return (row.issues || []).filter((issue) => issue.severity !== 'warning');
+  return (row.issues || []).filter((issue) => issue.severity !== 'warning' && issue.severity !== 'info');
 }
 
 function rowWarnings(row: ImportRow) {
   return (row.issues || []).filter((issue) => issue.severity === 'warning');
 }
 
+function rowInfos(row: ImportRow) {
+  return (row.issues || []).filter((issue) => issue.severity === 'info');
+}
+
 function issueText(row: ImportRow) {
   const blocking = blockingIssues(row);
   return blocking.length ? blocking.map((issue) => issue.message).join(', ') : 'Needs review';
+}
+
+function infoText(row: ImportRow) {
+  return rowInfos(row).map((issue) => issue.message).join(', ');
 }
 
 function warningText(row: ImportRow) {
@@ -179,6 +187,7 @@ function mergeDefaults(rows: ImportRow[]) {
 
 export default function EmployeeImportReview() {
   const { batchId } = useParams();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<ImportRow[]>(() => importReviewCache.rows);
   const [isLoading, setIsLoading] = useState(() => !importReviewCache.hasLoaded);
   const [isImporting, setIsImporting] = useState(false);
@@ -347,6 +356,7 @@ export default function EmployeeImportReview() {
       }
 
       await loadRows();
+      navigate('/directory');
       return true;
     } catch (error: any) {
       toast.error(error.message || 'Unable to import ready records');
@@ -1123,8 +1133,16 @@ function IssueTable({
             </td>
             <td className="px-4 py-3 text-sm font-bold text-[#4B5563]">
               <div className="flex flex-col items-start gap-1.5">
-                <span>{ready ? `${completeness(row)}/${fieldLabels.length}` : issueText(row)}</span>
+                <div className="flex items-center gap-2">
+                  <span>{ready ? `${completeness(row)}/${fieldLabels.length}` : issueText(row)}</span>
+                  {ready && rowInfos(row).length > 0 && (
+                    <span className="rounded-lg bg-blue-50 px-2 py-1 text-[0.625rem] font-black uppercase tracking-widest text-blue-700 border border-blue-200">
+                      MERGE
+                    </span>
+                  )}
+                </div>
                 {rowWarnings(row).length > 0 && <WarningChip text={warningText(row)} />}
+                {rowInfos(row).length > 0 && !ready && <WarningChip text={infoText(row)} />}
               </div>
             </td>
             <td className="px-4 py-3 text-right">
@@ -1470,6 +1488,38 @@ function EditRowModal({
                   required
                   placeholder="Select site"
                 />
+                <Field label="Position">
+                  <Input value={form.position || ''} onChange={(val) => onChange('position', val)} placeholder="e.g. CSR" />
+                </Field>
+                <Field label="Nickname">
+                  <Input value={form.nickname || ''} onChange={(val) => onChange('nickname', val)} placeholder="e.g. Johnny" />
+                </Field>
+                <SelectDropdown
+                  label="Sex"
+                  value={form.sex || ''}
+                  options={[{ id: 'Male', name: 'Male' }, { id: 'Female', name: 'Female' }]}
+                  onSelect={(val) => onChange('sex', val)}
+                  placeholder="Select sex"
+                />
+                <SelectDropdown
+                  label="Civil Status"
+                  value={form.civilStatus || ''}
+                  options={[{ id: 'Single', name: 'Single' }, { id: 'Married', name: 'Married' }, { id: 'Widowed', name: 'Widowed' }, { id: 'Divorced', name: 'Divorced' }]}
+                  onSelect={(val) => onChange('civilStatus', val)}
+                  placeholder="Select civil status"
+                />
+                <Field label="SSS No.">
+                  <Input value={form.sssNo || ''} onChange={(val) => onChange('sssNo', val)} placeholder="e.g. 12-3456789-0" />
+                </Field>
+                <Field label="TIN No.">
+                  <Input value={form.tinNo || ''} onChange={(val) => onChange('tinNo', val)} placeholder="e.g. 123-456-789-000" />
+                </Field>
+                <Field label="PhilHealth No.">
+                  <Input value={form.philhealthNo || ''} onChange={(val) => onChange('philhealthNo', val)} placeholder="e.g. 12-3456789-0" />
+                </Field>
+                <Field label="Pag-Ibig No.">
+                  <Input value={form.pagibigNo || ''} onChange={(val) => onChange('pagibigNo', val)} placeholder="e.g. 1234-5678-9012" />
+                </Field>
               </div>
             </ProfileSection>
 
@@ -1492,6 +1542,18 @@ function EditRowModal({
                 </Field>
                 <Field label="Mattermost Account">
                   <Input value={form.mattermostAccount || ''} onChange={(val) => onChange('mattermostAccount', val)} placeholder="e.g. john.mattermost" />
+                </Field>
+                <Field label="Personal Email">
+                  <Input value={form.personalEmail || ''} onChange={(val) => onChange('personalEmail', val)} placeholder="e.g. john@gmail.com" />
+                </Field>
+                <Field label="Main Contact">
+                  <Input value={form.mainContact || ''} onChange={(val) => onChange('mainContact', val)} placeholder="e.g. 09123456789" />
+                </Field>
+                <Field label="Emergency Contact">
+                  <Input value={form.emergencyContact || ''} onChange={(val) => onChange('emergencyContact', val)} placeholder="e.g. Jane Doe" />
+                </Field>
+                <Field label="Emergency Number">
+                  <Input value={form.emergencyContactNumber || ''} onChange={(val) => onChange('emergencyContactNumber', val)} placeholder="e.g. 09123456789" />
                 </Field>
               </div>
             </ProfileSection>

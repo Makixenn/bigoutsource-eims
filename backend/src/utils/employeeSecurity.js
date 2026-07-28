@@ -21,7 +21,11 @@ const HR_WRITE_FIELDS = [
   'phone', 'phoneNumber', 'address',
   'status', 'employeeStatus', 'site', 'siteId', 'siteName', 'avatarUrl', 'dateHired',
   'separationDate', 'separation_date', 'separationReason', 'separation_reason',
-  'jobTitle', 'birthdate', 'floatDate'
+  'position', 'birthdate', 'floatDate',
+  'nickname', 'sex', 'civilStatus', 'civil_status', 'sssNo', 'sss_no',
+  'tinNo', 'tin_no', 'philhealthNo', 'philhealth_no', 'pagibigNo', 'pagibig_no',
+  'personalEmail', 'personal_email', 'mainContact', 'main_contact',
+  'emergencyContact', 'emergency_contact', 'emergencyContactNumber', 'emergency_contact_number'
 ];
 const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];

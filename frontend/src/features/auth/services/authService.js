@@ -93,4 +93,22 @@ export const authService = {
       body: JSON.stringify({ token, password }),
     });
   },
+
+  forgotPassword(email) {
+    return apiRequest('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  verifyResetPasswordToken(token) {
+    return apiRequest(`/auth/reset-password/verify?token=${encodeURIComponent(token)}`);
+  },
+
+  resetPassword(token, password) {
+    return apiRequest('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
 };

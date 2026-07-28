@@ -160,6 +160,112 @@ export const AuthService = {
     return { requiresMfa: true, mfaToken };
   },
 
+  async forgotPassword({ email }) {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (
+      !normalizedEmail.endsWith('@bigoutsource.com') &&
+      !normalizedEmail.endsWith('@outlook.com') &&
+      !normalizedEmail.endsWith('@bigoutsource.ph') &&
+      !normalizedEmail.endsWith('@outlook.ph')
+    ) {
+      throw new AppError('Only @bigoutsource.com, @outlook.com, @bigoutsource.ph, and @outlook.ph email addresses are allowed.', 400);
+    }
+
+    const profile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
+
+    if (!profile) {
+      throw new AppError('No registered account found with this email address.', 404);
+    }
+
+    if (profile.status === 'pending') {
+      throw new AppError('Your account is pending administrator approval.', 403);
+    }
+
+    if (profile.status === 'disabled') {
+      throw new AppError('Your account has been disabled. Please contact your administrator.', 403);
+    }
+
+    const resetPasswordToken = crypto.randomBytes(32).toString('hex');
+    const resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await prisma.userProfile.update({
+      where: { id: profile.id },
+      data: {
+        resetPasswordToken,
+        resetPasswordExpires,
+      },
+    });
+
+    await EmailService.sendPasswordResetEmail(profile.email, resetPasswordToken);
+
+    return {
+      message: 'Password reset instructions have been sent to your email.',
+    };
+  },
+
+  async verifyResetPasswordToken(token) {
+    if (!token) return { valid: false, message: 'Token is required' };
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { resetPasswordToken: token },
+    });
+
+    if (!profile) {
+      return { valid: false, message: 'Invalid or expired password reset link' };
+    }
+
+    if (!profile.resetPasswordExpires || new Date(profile.resetPasswordExpires) < new Date()) {
+      return { valid: false, message: 'Password reset link has expired' };
+    }
+
+    return { valid: true };
+  },
+
+  async resetPassword({ token, password }) {
+    if (!token) throw new AppError('Token is required', 400);
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { resetPasswordToken: token },
+    });
+
+    if (!profile || !profile.resetPasswordExpires || new Date(profile.resetPasswordExpires) < new Date()) {
+      throw new AppError('Invalid or expired password reset link', 400);
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await prisma.userProfile.update({
+      where: { id: profile.id },
+      data: {
+        passwordHash,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    await AuditLogModel.create({
+      action: 'user.password_reset',
+      entityType: 'users',
+      entityId: profile.id,
+      entityLabel: profile.fullName || profile.email,
+      details: { message: 'User reset their password via email link.' },
+      userEmail: profile.email,
+      userId: profile.id,
+    });
+
+    const code = generateRandomCode();
+    const codeHash = await bcrypt.hash(code, 10);
+
+    await EmailService.sendMfaOtpEmail(profile.email, code);
+
+    const mfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
+      expiresIn: '5m',
+    });
+
+    return { requiresMfa: true, mfaToken };
+  },
+
   async login({ email, password, trustedDeviceToken }) {
     const normalizedEmail = normalizeEmail(email);
     const profile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });

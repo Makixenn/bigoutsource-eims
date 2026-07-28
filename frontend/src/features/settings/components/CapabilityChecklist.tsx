@@ -181,7 +181,7 @@ export function CapabilityChecklist({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white p-3 shadow-sm transition-colors hover:border-[#D1D5DB]">
               <div className="min-w-0 flex-1">
                 <h6 className="text-sm font-black text-[#111827]">Employee Information</h6>
-                <p className="mt-0.5 text-[0.6875rem] font-bold text-[#9CA3AF]">Employee ID · Job Title · Birthdate · Phone Number · Address · Employment Status · Float Date</p>
+                <p className="mt-0.5 text-[0.6875rem] font-bold text-[#9CA3AF]">Employee ID · Job Title · Birthdate · Phone Number · Address · Employment Status · Float Date · Nickname · Sex · Civil Status · SSS/TIN/PhilHealth/Pag-Ibig · Personal Email · Contacts</p>
               </div>
               <SegmentedControl
                 value={getSubCapState('employees.create.hr_fields')}

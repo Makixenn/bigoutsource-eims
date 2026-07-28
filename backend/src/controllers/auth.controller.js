@@ -109,4 +109,31 @@ export const AuthController = {
     }
   },
 
+  async forgotPassword(req, res, next) {
+    try {
+      const data = await AuthService.forgotPassword(req.body);
+      return success(res, data, data.message);
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async verifyResetPasswordToken(req, res, next) {
+    try {
+      const data = await AuthService.verifyResetPasswordToken(req.query.token);
+      return success(res, data, 'Token verification complete');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async resetPassword(req, res, next) {
+    try {
+      const data = await AuthService.resetPassword(req.body);
+      return success(res, data, 'Password reset complete');
+    } catch (error) {
+      return next(error);
+    }
+  },
 };
+

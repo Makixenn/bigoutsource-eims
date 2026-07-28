@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import logoUrl from '/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput } from '@/src/features/auth/components/authFields';
 import { LoginBackground } from '@/src/features/auth/components/LoginBackground';
+import { ForgotPasswordModal } from '@/src/features/auth/components/ForgotPasswordModal';
 
 export default function Login() {
   const { login, loginMfa, resendLoginMfa } = useAuth();
@@ -33,6 +34,7 @@ export default function Login() {
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -179,6 +181,15 @@ export default function Login() {
                   onToggleVisibility={() => setShowPassword(!showPassword)}
                   error={loginError || undefined}
                 />
+                <div className="flex justify-end pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(true)}
+                    className="text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-colors cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </>
             )}
             <button
@@ -204,6 +215,12 @@ export default function Login() {
           </div>
         </div>
       </motion.div>
+
+      <ForgotPasswordModal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+        initialEmail={email}
+      />
 
       <AnimatePresence>
         {authStatusError && (
