@@ -41,6 +41,9 @@ export const NotificationService = {
       if (notification.type === EMPLOYEE_ADDED_TYPE) {
         return hasCapability(user.capabilities, 'notifications.hr_action') || hasCapability(user.capabilities, 'notifications.it_action');
       }
+      if (notification.type === 'eval_due') {
+        return hasCapability(user.capabilities, 'employees.evaluations.manage');
+      }
       return true;
     });
   },
@@ -202,5 +205,47 @@ export const NotificationService = {
       return NotificationModel.createMany(notificationsToCreate);
     }
     return [];
+  },
+
+  async notifyEvaluationDue({ employee, milestone, dateStr }) {
+    const recipients = await UserProfileModel.findAll({ status: 'active' });
+    
+    const eligibleRecipients = [];
+    for (const recipient of recipients) {
+      const capabilities = await RoleService.resolveUserCapabilities(recipient);
+      if (hasCapability(capabilities, 'employees.evaluations.manage')) {
+        eligibleRecipients.push(recipient);
+      }
+    }
+
+    if (eligibleRecipients.length === 0) return [];
+
+    const employeeLabel = employee.name || employee.employeeNumber || employee.id;
+    const message = `Evaluation (${milestone}) for ${employeeLabel} is due on ${dateStr}.`;
+
+    const baseNotification = {
+      type: 'eval_due',
+      actorId: null,
+      actorName: 'System',
+      actorRole: 'System',
+      message,
+      entityType: 'employees',
+      entityId: employee.id,
+      entityLabel: employeeLabel,
+      actionUrl: `/employee/${employee.id}`,
+    };
+
+    const notificationsToCreate = eligibleRecipients.map(r => ({
+      ...baseNotification,
+      recipientId: r.id,
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.name,
+        milestone,
+        dueDate: dateStr
+      }
+    }));
+
+    return NotificationModel.createMany(notificationsToCreate);
   },
 };

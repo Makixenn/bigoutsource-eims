@@ -60,6 +60,15 @@ const trackedFields = [
   'mainContact',
   'emergencyContact',
   'emergencyContactNumber',
+  'idIssuance',
+  'hoodieIssuance',
+  'hmoEnrollment',
+  'hmoMemberCode',
+  'evalFirstMonth',
+  'evalThirdMonth',
+  'evalFifthMonth',
+  'evalSixthMonth',
+  'evalAnniversary',
 ];
 
 function localEmailIdentifier(email = '') {
