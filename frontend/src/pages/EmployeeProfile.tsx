@@ -3,6 +3,7 @@ import type { ElementType, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
+  AlertCircle,
   Archive,
   ArrowLeft,
   Briefcase,
@@ -105,6 +106,11 @@ type EmployeeForm = {
   mattermostAccount: string;
   teamsAccount: string;
   googleAccount: string;
+  evalFirstMonth?: string;
+  evalThirdMonth?: string;
+  evalFifthMonth?: string;
+  evalSixthMonth?: string;
+  evalAnniversary?: string;
 };
 
 const emptyEmployee: EmployeeForm = {
@@ -155,6 +161,11 @@ const emptyEmployee: EmployeeForm = {
   mattermostAccount: '',
   teamsAccount: '',
   googleAccount: '',
+  evalFirstMonth: '',
+  evalThirdMonth: '',
+  evalFifthMonth: '',
+  evalSixthMonth: '',
+  evalAnniversary: '',
 };
 
 const editableFields: Array<keyof EmployeeForm> = [
@@ -198,7 +209,12 @@ const editableFields: Array<keyof EmployeeForm> = [
   'outlookEmail',
   'mattermostAccount',
   'teamsAccount',
-  'googleAccount'
+  'googleAccount',
+  'evalFirstMonth',
+  'evalThirdMonth',
+  'evalFifthMonth',
+  'evalSixthMonth',
+  'evalAnniversary'
 ];
 
 const suffixOptions = ['Sr.', 'Jr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -491,6 +507,11 @@ function normalizeEmployee(emp: any): EmployeeForm {
     mattermostAccount: emp?.mattermostAccount || '',
     teamsAccount: emp?.teamsAccount || '',
     googleAccount: emp?.googleAccount || '',
+    evalFirstMonth: emp?.evalFirstMonth || emp?.eval_first_month || '',
+    evalThirdMonth: emp?.evalThirdMonth || emp?.eval_third_month || '',
+    evalFifthMonth: emp?.evalFifthMonth || emp?.eval_fifth_month || '',
+    evalSixthMonth: emp?.evalSixthMonth || emp?.eval_sixth_month || '',
+    evalAnniversary: emp?.evalAnniversary || emp?.eval_anniversary || '',
   };
 }
 
@@ -523,6 +544,7 @@ export default function EmployeeProfile() {
   const [unarchiveEmployeeStatus, setUnarchiveEmployeeStatus] = useState('');
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
@@ -799,6 +821,21 @@ export default function EmployeeProfile() {
         }
       }
 
+      if (field === 'evalFirstMonth' && value) {
+        const firstDate = new Date(value);
+        if (!isNaN(firstDate.getTime())) {
+          const addMonths = (date: Date, months: number) => {
+            const d = new Date(date);
+            d.setMonth(d.getMonth() + months);
+            return d.toISOString().split('T')[0];
+          };
+          nextForm.evalThirdMonth = addMonths(firstDate, 2);
+          nextForm.evalFifthMonth = addMonths(firstDate, 4);
+          nextForm.evalSixthMonth = addMonths(firstDate, 5);
+          nextForm.evalAnniversary = addMonths(firstDate, 11);
+        }
+      }
+
       return nextForm;
     });
 
@@ -832,6 +869,10 @@ export default function EmployeeProfile() {
   };
 
   const cancelEditing = () => {
+    if (hasChanges) {
+      setShowExitConfirm(true);
+      return;
+    }
     setForm(employee);
     setIsEditing(false);
     setFormErrors({});
@@ -856,8 +897,8 @@ export default function EmployeeProfile() {
     );
   };
 
-  const saveProfile = async (event: FormEvent) => {
-    event.preventDefault();
+  const saveProfile = async (event?: FormEvent) => {
+    if (event) event.preventDefault();
 
     if (!canManageEmployee) return;
 
@@ -865,10 +906,18 @@ export default function EmployeeProfile() {
 
     if (!hasChanges) return;
 
-    const missingCore = !form.firstName.trim() || !form.lastName.trim();
-    const missingHR = canEditHR && (!form.employeeNumber.trim() || !form.accountAssignment.trim() || !form.siteId);
-    if (missingCore || missingHR) {
-      toast.error('Please fill in all required fields');
+    const missingFields: string[] = [];
+    if (!form.firstName.trim()) missingFields.push('First Name');
+    if (!form.lastName.trim()) missingFields.push('Last Name');
+    
+    if (canEditHR) {
+      if (!form.employeeNumber.trim()) missingFields.push('Employee ID');
+      if (!form.accountAssignment.trim()) missingFields.push('Department/Campaign');
+      if (!form.siteId) missingFields.push('Site');
+    }
+
+    if (missingFields.length > 0) {
+      toast.error(`Please fill in required fields: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -938,7 +987,12 @@ export default function EmployeeProfile() {
         outlookEmail: form.outlookEmail.trim(),
         googleAccount: form.googleAccount.trim(),
         teamsAccount: form.teamsAccount.trim(),
-        mattermostAccount: form.mattermostAccount.trim()
+        mattermostAccount: form.mattermostAccount.trim(),
+        evalFirstMonth: form.evalFirstMonth,
+        evalThirdMonth: form.evalThirdMonth,
+        evalFifthMonth: form.evalFifthMonth,
+        evalSixthMonth: form.evalSixthMonth,
+        evalAnniversary: form.evalAnniversary
       });
 
       const normalized = normalizeEmployee(updated);
@@ -950,6 +1004,7 @@ export default function EmployeeProfile() {
       setForm(normalized);
       setAuditLogs(Array.isArray(refreshedLogs) ? refreshedLogs : []);
       setIsEditing(false);
+      setShowExitConfirm(false);
       toast.success('Employee record updated');
       
       const newId = form.employeeNumber.trim();
@@ -1285,26 +1340,7 @@ export default function EmployeeProfile() {
 
                 <div className="flex gap-3">
                   <AnimatePresence mode="popLayout" initial={false}>
-                    {isEditing ? (
-                      <motion.div
-                        key="edit-actions"
-                        initial={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
-                        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                        exit={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                        className="flex gap-3"
-                      >
-
-                        <button
-                          type="submit"
-                          disabled={isSaving || !hasChanges}
-                          className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] disabled:bg-[#D1D5DB] disabled:shadow-none disabled:cursor-not-allowed transition-all shadow-lg shadow-[#11182720]"
-                        >
-                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                          Save Changes
-                        </button>
-                      </motion.div>
-                    ) : canUseEmployeeActions ? (
+                    {isEditing ? null : canUseEmployeeActions ? (
                       <motion.div
                         key="view-actions"
                         initial={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
@@ -1715,6 +1751,29 @@ export default function EmployeeProfile() {
                           </ProfileField>
                         </div>
                       </ProfileSection>
+
+                      <ProfileSection icon={Briefcase} title="Issuances" iconColorClass="text-purple-600 bg-purple-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="ID Issuance" icon={Briefcase} editing={editingHR}>
+                            {editingHR ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                          </ProfileField>
+                          <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={editingHR}>
+                            {editingHR ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                          </ProfileField>
+                        </div>
+                      </ProfileSection>
+
+                      <ProfileSection icon={ShieldCheck} title="HMO Information" iconColorClass="text-blue-600 bg-blue-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="HMO Enrollment" icon={Calendar} editing={editingHR}>
+                            {editingHR ? <Input type="date" value={form.hmoEnrollment || ''} onChange={(v) => updateForm('hmoEnrollment', v)} /> : employee.hmoEnrollment ? new Date(employee.hmoEnrollment).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                          </ProfileField>
+                          <ProfileField label="HMO Member Code" icon={Briefcase} editing={editingHR}>
+                            {editingHR ? <Input value={form.hmoMemberCode || ''} onChange={(v) => updateForm('hmoMemberCode', v)} placeholder="Code" /> : employee.hmoMemberCode || <span className="text-[#9CA3AF]">-</span>}
+                          </ProfileField>
+                        </div>
+                      </ProfileSection>
+
                       <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
@@ -1926,56 +1985,29 @@ export default function EmployeeProfile() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                      className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch"
+                      className="space-y-8"
                     >
-                      {/* COLUMN 1: LEFT */}
-                      <div className="flex flex-col gap-8 h-full">
-                        <ProfileSection icon={Briefcase} title="Issuances">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
-                            <ProfileField label="ID Issuance" icon={Briefcase} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : '-'}
-                            </ProfileField>
-                            <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : '-'}
-                            </ProfileField>
-                          </div>
-                        </ProfileSection>
-
-                        <ProfileSection icon={ShieldCheck} title="HMO Information">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
-                            <ProfileField label="HMO Enrollment" icon={Calendar} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.hmoEnrollment || ''} onChange={(v) => updateForm('hmoEnrollment', v)} /> : employee.hmoEnrollment ? new Date(employee.hmoEnrollment).toLocaleDateString() : '-'}
-                            </ProfileField>
-                            <ProfileField label="HMO Member Code" icon={Briefcase} editing={isEditing}>
-                              {isEditing ? <Input value={form.hmoMemberCode || ''} onChange={(v) => updateForm('hmoMemberCode', v)} placeholder="Code" /> : employee.hmoMemberCode || '-'}
-                            </ProfileField>
-                          </div>
-                        </ProfileSection>
-                      </div>
-
-                      {/* COLUMN 2: RIGHT */}
-                      <div className="flex flex-col h-full">
-                        <ProfileSection icon={Calendar} title="Evaluation Dates" className="h-full flex flex-col justify-start">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
-                            <ProfileField label="1st Month" icon={Calendar} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.evalFirstMonth || ''} onChange={(v) => updateForm('evalFirstMonth', v)} /> : employee.evalFirstMonth ? new Date(employee.evalFirstMonth).toLocaleDateString() : '-'}
-                            </ProfileField>
-                            <ProfileField label="3rd Month" icon={Calendar} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.evalThirdMonth || ''} onChange={(v) => updateForm('evalThirdMonth', v)} /> : employee.evalThirdMonth ? new Date(employee.evalThirdMonth).toLocaleDateString() : '-'}
-                            </ProfileField>
-                            <ProfileField label="5th Month" icon={Calendar} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.evalFifthMonth || ''} onChange={(v) => updateForm('evalFifthMonth', v)} /> : employee.evalFifthMonth ? new Date(employee.evalFifthMonth).toLocaleDateString() : '-'}
-                            </ProfileField>
-                            <ProfileField label="6th Month" icon={Calendar} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.evalSixthMonth || ''} onChange={(v) => updateForm('evalSixthMonth', v)} /> : employee.evalSixthMonth ? new Date(employee.evalSixthMonth).toLocaleDateString() : '-'}
-                            </ProfileField>
-                            <ProfileField label="Anniversary" icon={Calendar} editing={isEditing}>
-                              {isEditing ? <Input type="date" value={form.evalAnniversary || ''} onChange={(v) => updateForm('evalAnniversary', v)} /> : employee.evalAnniversary ? new Date(employee.evalAnniversary).toLocaleDateString() : '-'}
-                            </ProfileField>
-                          </div>
-                        </ProfileSection>
-                        <div className="h-[150px] shrink-0 w-full" />
-                      </div>
+                      <ProfileSection icon={Calendar} title="Evaluation Dates" iconColorClass="text-orange-600 bg-orange-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="1st Month" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalFirstMonth || ''} onChange={(v) => updateForm('evalFirstMonth', v)} /> : employee.evalFirstMonth ? new Date(employee.evalFirstMonth).toLocaleDateString() : '-'}
+                          </ProfileField>
+                          <ProfileField label="3rd Month" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalThirdMonth || ''} onChange={(v) => updateForm('evalThirdMonth', v)} /> : employee.evalThirdMonth ? new Date(employee.evalThirdMonth).toLocaleDateString() : '-'}
+                          </ProfileField>
+                          <ProfileField label="5th Month" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalFifthMonth || ''} onChange={(v) => updateForm('evalFifthMonth', v)} /> : employee.evalFifthMonth ? new Date(employee.evalFifthMonth).toLocaleDateString() : '-'}
+                          </ProfileField>
+                          <ProfileField label="6th Month" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalSixthMonth || ''} onChange={(v) => updateForm('evalSixthMonth', v)} /> : employee.evalSixthMonth ? new Date(employee.evalSixthMonth).toLocaleDateString() : '-'}
+                          </ProfileField>
+                          <ProfileField label="Anniversary" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalAnniversary || ''} onChange={(v) => updateForm('evalAnniversary', v)} /> : employee.evalAnniversary ? new Date(employee.evalAnniversary).toLocaleDateString() : '-'}
+                          </ProfileField>
+                        </div>
+                      </ProfileSection>
+                      
+                      <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
 
@@ -2110,45 +2142,7 @@ export default function EmployeeProfile() {
                   )}
                 </AnimatePresence>
             </div>
-            {/* Floating Sticky Save Bar (when editing and dirty) */}
-            <AnimatePresence>
-              {isEditing && hasChanges && (
-                <motion.div
-                  initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#111827] text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-6 max-w-lg w-[90%] justify-between backdrop-blur-xl bg-opacity-95"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-amber-400">Unsaved Changes</p>
-                      <p className="text-[11px] text-gray-300 font-medium">You have edited records in this profile</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={cancelEditing}
-                      disabled={isSaving}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-50"
-                    >
-                      Discard
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSaving || !hasChanges}
-                      className="flex items-center gap-1.5 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-xs font-black transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
-                    >
-                      {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      <span>Save Changes</span>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Removed sticky save bar per user request */}
           </motion.form>
         )}
       </AnimatePresence>
@@ -2547,6 +2541,59 @@ export default function EmployeeProfile() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
+            >
+              <div className="px-6 py-6 border-b border-gray-100 flex items-center gap-3">
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-black text-gray-900">Unsaved Changes</h3>
+              </div>
+              <div className="px-6 py-6 text-sm text-gray-600">
+                You have unsaved changes. Do you want to save them before exiting edit mode?
+              </div>
+              <div className="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3 rounded-b-2xl">
+                <button
+                  type="button"
+                  onClick={() => setShowExitConfirm(false)}
+                  className="px-4 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm(employee);
+                    setIsEditing(false);
+                    setFormErrors({});
+                    setShowExitConfirm(false);
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                >
+                  Discard Changes
+                </button>
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={async () => {
+                    await saveProfile();
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Save & Exit
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </PageLayout>
