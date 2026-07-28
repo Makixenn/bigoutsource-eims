@@ -547,7 +547,7 @@ export default function EmployeeProfile() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'personal' | 'employment' | 'accounts' | 'audit'>('personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'employment' | 'accounts' | 'audit' | 'notifications'>('personal');
 
   const generatedPreviewWithLms = (f: EmployeeForm, account?: AccountOption) => {
     const nameForLms = formatEmployeeName(f.firstName, f.lastName, '', '');
@@ -1321,17 +1321,6 @@ export default function EmployeeProfile() {
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                         className="flex gap-3"
                       >
-                        {canManageEmployee && (
-                          <button
-                            type="button"
-                            onClick={startEditing}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Update Record
-                          </button>
-                        )}
-
                         {(() => {
                           const isArchiveReady = !hasActiveITAccounts;
                           
@@ -1480,6 +1469,27 @@ export default function EmployeeProfile() {
                   </button>
                 )}
 
+                {can('employees.evaluations.manage') && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('notifications')}
+                    className={cn(
+                      "flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-black transition-all duration-200 relative group",
+                      activeTab === 'notifications'
+                        ? "bg-[#111827] text-white shadow-md shadow-[#11182715]"
+                        : "text-[#4B5563] hover:bg-[#F9FAFB] hover:text-[#111827]"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1.5 rounded-lg shrink-0 transition-colors",
+                      activeTab === 'notifications' ? "bg-white/10 text-white" : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100"
+                    )}>
+                      <Calendar className="w-3.5 h-3.5" />
+                    </div>
+                    <span>Notification Calendar</span>
+                  </button>
+                )}
+
                 {can('auditlogs.view') && (
                   <button
                     type="button"
@@ -1507,6 +1517,7 @@ export default function EmployeeProfile() {
                 {activeTab === 'personal' && renderEditButton(canEditHR)}
                 {activeTab === 'employment' && renderEditButton(canEditHR)}
                 {activeTab === 'accounts' && renderEditButton(canEditIT || canEditSecrets)}
+                {activeTab === 'notifications' && renderEditButton(can('employees.evaluations.manage'))}
               </div>
             </div>
 
@@ -1583,6 +1594,7 @@ export default function EmployeeProfile() {
                           </div>
                         </ProfileSection>
                       </div>
+                      <div className="h-[150px] shrink-0 w-full lg:col-span-2" />
                     </motion.div>
                   )}
 
@@ -1720,6 +1732,7 @@ export default function EmployeeProfile() {
                           </ProfileField>
                         </div>
                       </ProfileSection>
+                      <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
 
@@ -1918,10 +1931,72 @@ export default function EmployeeProfile() {
                           </ProfileField>
                         </div>
                       </ProfileSection>
+                      <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
 
-                  {/* PANE 4: AUDIT HISTORY */}
+                  {/* PANE 5: NOTIFICATION CALENDAR */}
+                  {activeTab === 'notifications' && can('employees.evaluations.manage') && (
+                    <motion.div
+                      key="pane-notifications"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch"
+                    >
+                      {/* COLUMN 1: LEFT */}
+                      <div className="flex flex-col gap-8 h-full">
+                        <ProfileSection icon={Briefcase} title="Issuances">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
+                            <ProfileField label="ID Issuance" icon={Briefcase} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : '-'}
+                            </ProfileField>
+                            <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : '-'}
+                            </ProfileField>
+                          </div>
+                        </ProfileSection>
+
+                        <ProfileSection icon={ShieldCheck} title="HMO Information">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
+                            <ProfileField label="HMO Enrollment" icon={Calendar} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.hmoEnrollment || ''} onChange={(v) => updateForm('hmoEnrollment', v)} /> : employee.hmoEnrollment ? new Date(employee.hmoEnrollment).toLocaleDateString() : '-'}
+                            </ProfileField>
+                            <ProfileField label="HMO Member Code" icon={Briefcase} editing={isEditing}>
+                              {isEditing ? <Input value={form.hmoMemberCode || ''} onChange={(v) => updateForm('hmoMemberCode', v)} placeholder="Code" /> : employee.hmoMemberCode || '-'}
+                            </ProfileField>
+                          </div>
+                        </ProfileSection>
+                      </div>
+
+                      {/* COLUMN 2: RIGHT */}
+                      <div className="flex flex-col h-full">
+                        <ProfileSection icon={Calendar} title="Evaluation Dates" className="h-full flex flex-col justify-start">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
+                            <ProfileField label="1st Month" icon={Calendar} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.evalFirstMonth || ''} onChange={(v) => updateForm('evalFirstMonth', v)} /> : employee.evalFirstMonth ? new Date(employee.evalFirstMonth).toLocaleDateString() : '-'}
+                            </ProfileField>
+                            <ProfileField label="3rd Month" icon={Calendar} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.evalThirdMonth || ''} onChange={(v) => updateForm('evalThirdMonth', v)} /> : employee.evalThirdMonth ? new Date(employee.evalThirdMonth).toLocaleDateString() : '-'}
+                            </ProfileField>
+                            <ProfileField label="5th Month" icon={Calendar} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.evalFifthMonth || ''} onChange={(v) => updateForm('evalFifthMonth', v)} /> : employee.evalFifthMonth ? new Date(employee.evalFifthMonth).toLocaleDateString() : '-'}
+                            </ProfileField>
+                            <ProfileField label="6th Month" icon={Calendar} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.evalSixthMonth || ''} onChange={(v) => updateForm('evalSixthMonth', v)} /> : employee.evalSixthMonth ? new Date(employee.evalSixthMonth).toLocaleDateString() : '-'}
+                            </ProfileField>
+                            <ProfileField label="Anniversary" icon={Calendar} editing={isEditing}>
+                              {isEditing ? <Input type="date" value={form.evalAnniversary || ''} onChange={(v) => updateForm('evalAnniversary', v)} /> : employee.evalAnniversary ? new Date(employee.evalAnniversary).toLocaleDateString() : '-'}
+                            </ProfileField>
+                          </div>
+                        </ProfileSection>
+                        <div className="h-[150px] shrink-0 w-full" />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* PANE 6: AUDIT HISTORY */}
                   {activeTab === 'audit' && can('auditlogs.view') && (
                     <motion.div
                       key="pane-audit"
@@ -2047,6 +2122,7 @@ export default function EmployeeProfile() {
                           )}
                         </div>
                       </ProfileSection>
+                      <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
                 </AnimatePresence>
