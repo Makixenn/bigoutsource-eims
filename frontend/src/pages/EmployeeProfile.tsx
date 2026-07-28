@@ -1294,15 +1294,7 @@ export default function EmployeeProfile() {
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                         className="flex gap-3"
                       >
-                        <button
-                          type="button"
-                          onClick={cancelEditing}
-                          disabled={isSaving}
-                          className="flex items-center gap-2 px-5 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                        >
-                          <X className="w-4 h-4" />
-                          Cancel
-                        </button>
+
                         <button
                           type="submit"
                           disabled={isSaving || !hasChanges}
