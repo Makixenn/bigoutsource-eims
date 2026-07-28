@@ -47,6 +47,15 @@ export interface Employee {
   googleAccount?: string;
   separationDate?: string;
   separationReason?: string;
+  idIssuance?: string;
+  hoodieIssuance?: string;
+  hmoEnrollment?: string;
+  hmoMemberCode?: string;
+  evalFirstMonth?: string;
+  evalThirdMonth?: string;
+  evalFifthMonth?: string;
+  evalSixthMonth?: string;
+  evalAnniversary?: string;
 }
 
 export interface AppUser {
