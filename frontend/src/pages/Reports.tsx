@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import ExcelJS from 'exceljs';
-import { FileText, Download, PieChart, BarChart, ShieldAlert, Trash2, Loader2, TrendingUp, ClipboardList, X, Users, ArrowLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { FileText, Download, PieChart, BarChart, ShieldAlert, Trash2, Loader2, TrendingUp, ClipboardList, X, Users, ArrowLeft, ChevronRight, CheckCircle2, Columns } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -697,6 +697,27 @@ export default function Reports() {
   const [departmentScope, setDepartmentScope] = useState('all');
   const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   const [lastReport, setLastReport] = useState<{ report: ReportDef, scope: string } | null>(null);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+
+  const filteredPreviewData = useMemo(() => {
+    if (!previewData) return null;
+    return {
+      ...previewData,
+      sheets: previewData.sheets.map(sheet => ({
+        ...sheet,
+        rows: sheet.rows.map(row => {
+          const newRow: Record<string, string | number> = {};
+          Object.keys(row).forEach(key => {
+            if (selectedColumns.includes(key)) {
+              newRow[key] = row[key];
+            }
+          });
+          return newRow;
+        })
+      }))
+    };
+  }, [previewData, selectedColumns]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 500);
@@ -740,6 +761,13 @@ export default function Reports() {
       setSelectedReport(null);
       setLastReport({ report, scope });
       
+      const uniqueKeys = new Set<string>();
+      data.sheets.forEach(sheet => {
+        sheet.rows.forEach(row => {
+          Object.keys(row).forEach(key => uniqueKeys.add(key));
+        });
+      });
+      setSelectedColumns(Array.from(uniqueKeys));
       setPreviewData(data);
       setSelectedFormat(format);
       toast.success('Preview generated', { id: toastId });
@@ -752,7 +780,7 @@ export default function Reports() {
   }
 
   async function confirmDownload() {
-    if (!previewData || !selectedFormat) return;
+    if (!filteredPreviewData || !selectedFormat) return;
     if (!(await hasFreshExportPermission())) {
       setPreviewData(null);
       setSelectedFormat(null);
@@ -760,8 +788,8 @@ export default function Reports() {
       return;
     }
     try {
-      await buildWorkbook(previewData.sheets, previewData.filename, selectedFormat);
-      toast.success(previewData.message);
+      await buildWorkbook(filteredPreviewData.sheets, filteredPreviewData.filename, selectedFormat);
+      toast.success(filteredPreviewData.message);
     } catch (err: any) {
       toast.error('Failed to download file');
     } finally {
@@ -1051,18 +1079,128 @@ export default function Reports() {
               </div>
 
               <div className="p-6 overflow-auto flex-1">
-                {previewData.sheets.length > 0 && previewData.sheets[0].rows.length > 0 ? (
+                <div className="mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                    <button
+                      onClick={() => setIsColumnPickerOpen(!isColumnPickerOpen)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#111827] hover:bg-[#F9FAFB] hover:border-[#D1D5DB] transition-all shadow-sm w-max"
+                    >
+                      <Columns className="w-4 h-4 text-[#6B7280]" />
+                      Customize Columns
+                      <span className="bg-[#F3F4F6] text-[#4B5563] px-2 py-0.5 rounded-md text-xs">{selectedColumns.length} Selected</span>
+                      <ChevronRight className={cn('w-4 h-4 text-[#9CA3AF] transition-transform ml-1', isColumnPickerOpen && 'rotate-90')} />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {isColumnPickerOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-3"
+                        >
+                          <button
+                            onClick={() => {
+                              const allKeys = new Set<string>();
+                              previewData.sheets.forEach(sheet => sheet.rows.forEach(row => Object.keys(row).forEach(k => allKeys.add(k))));
+                              setSelectedColumns(Array.from(allKeys));
+                            }}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                          >
+                            Select All
+                          </button>
+                          <button
+                            onClick={() => setSelectedColumns([])}
+                            className="text-xs font-bold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                          >
+                            Deselect All
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <AnimatePresence>
+                    {isColumnPickerOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] space-y-6">
+                          {(() => {
+                            const allAvailableColumns = Array.from(new Set(previewData.sheets.flatMap(s => s.rows.flatMap(r => Object.keys(r)))));
+                            const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'Email Password', 'LMS Account'];
+                            const hrColumns = allAvailableColumns.filter(c => !itFieldNames.includes(c));
+                            const itColumns = allAvailableColumns.filter(c => itFieldNames.includes(c));
+
+                            const renderColumnButton = (col: string) => {
+                              const isSelected = selectedColumns.includes(col);
+                              return (
+                                <button
+                                  key={col}
+                                  onClick={() => {
+                                    if (isSelected) setSelectedColumns(selectedColumns.filter(c => c !== col));
+                                    else setSelectedColumns([...selectedColumns, col]);
+                                  }}
+                                  className={cn(
+                                    "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border text-sm font-semibold transition-all text-left group",
+                                    isSelected 
+                                      ? "bg-[#111827] border-[#111827] text-white shadow-md shadow-gray-900/10" 
+                                      : "bg-white border-[#E5E7EB] text-[#4B5563] hover:border-[#D1D5DB] hover:bg-gray-50 hover:shadow-sm"
+                                  )}
+                                >
+                                  <div className={cn(
+                                    "flex items-center justify-center w-5 h-5 rounded-full border transition-colors shrink-0",
+                                    isSelected ? "bg-white border-white" : "border-[#D1D5DB] group-hover:border-[#9CA3AF] bg-white"
+                                  )}>
+                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-[#111827]" />}
+                                  </div>
+                                  <span className="truncate">{col}</span>
+                                </button>
+                              );
+                            };
+
+                            return (
+                              <>
+                                {hrColumns.length > 0 && (
+                                  <div>
+                                    <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">EMPLOYEE INFORMATION</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                      {hrColumns.map(renderColumnButton)}
+                                    </div>
+                                  </div>
+                                )}
+                                {itColumns.length > 0 && (
+                                  <div>
+                                    <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">IT INFORMATION</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                      {itColumns.map(renderColumnButton)}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {filteredPreviewData && filteredPreviewData.sheets.length > 0 && filteredPreviewData.sheets[0].rows.length > 0 && Object.keys(filteredPreviewData.sheets[0].rows[0]).length > 0 ? (
                   <div className="rounded-xl border border-[#E5E7EB] overflow-x-auto">
                     <table className="w-full text-left text-sm text-[#4B5563] min-w-max">
                       <thead className="bg-[#F9FAFB] text-xs uppercase text-[#6B7280] font-black tracking-widest border-b border-[#E5E7EB]">
                         <tr>
-                          {Object.keys(previewData.sheets[0].rows[0]).map(key => (
+                          {Object.keys(filteredPreviewData.sheets[0].rows[0]).map(key => (
                             <th key={key} className="px-4 py-3 whitespace-nowrap">{key}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E5E7EB] bg-white">
-                        {previewData.sheets[0].rows.slice(0, 10).map((row, i) => (
+                        {filteredPreviewData.sheets[0].rows.slice(0, 10).map((row, i) => (
                           <tr key={i} className="hover:bg-[#F9FAFB] transition-colors">
                             {Object.values(row).map((val, j) => (
                               <td key={j} className="px-4 py-3 whitespace-nowrap max-w-xs truncate" title={String(val)}>{val}</td>
@@ -1073,12 +1211,12 @@ export default function Reports() {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-[#6B7280] text-sm font-semibold">No data available for preview.</div>
+                  <div className="text-center py-10 text-[#6B7280] text-sm font-semibold">No columns selected or no data available for preview.</div>
                 )}
                 
-                {previewData.sheets.length > 0 && previewData.sheets[0].rows.length > 10 && (
+                {filteredPreviewData && filteredPreviewData.sheets.length > 0 && filteredPreviewData.sheets[0].rows.length > 10 && (
                   <p className="mt-4 text-xs font-semibold text-center text-[#9CA3AF]">
-                    Showing 10 of {previewData.sheets[0].rows.length} total rows in this sheet.
+                    Showing 10 of {filteredPreviewData.sheets[0].rows.length} total rows in this sheet.
                   </p>
                 )}
               </div>
