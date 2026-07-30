@@ -111,6 +111,10 @@ type EmployeeForm = {
   evalFifthMonth?: string;
   evalSixthMonth?: string;
   evalAnniversary?: string;
+  idIssuance?: string;
+  hoodieIssuance?: string;
+  hmoEnrollment?: string;
+  hmoMemberCode?: string;
 };
 
 const emptyEmployee: EmployeeForm = {
@@ -166,6 +170,10 @@ const emptyEmployee: EmployeeForm = {
   evalFifthMonth: '',
   evalSixthMonth: '',
   evalAnniversary: '',
+  idIssuance: '',
+  hoodieIssuance: '',
+  hmoEnrollment: '',
+  hmoMemberCode: '',
 };
 
 const editableFields: Array<keyof EmployeeForm> = [
@@ -214,7 +222,11 @@ const editableFields: Array<keyof EmployeeForm> = [
   'evalThirdMonth',
   'evalFifthMonth',
   'evalSixthMonth',
-  'evalAnniversary'
+  'evalAnniversary',
+  'idIssuance',
+  'hoodieIssuance',
+  'hmoEnrollment',
+  'hmoMemberCode'
 ];
 
 const suffixOptions = ['Sr.', 'Jr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -1634,9 +1646,11 @@ export default function EmployeeProfile() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                      className="space-y-8"
+                      className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch"
                     >
-                      <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50">
+                      {/* COLUMN 1: LEFT */}
+                      <div className="flex flex-col gap-8 h-full">
+                        <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                           <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
                             {editingHR ? <Input value={form.position} onChange={(v) => updateForm('position', v)} placeholder="e.g. Customer Service Rep" /> : employee.position || <span className="text-red-500 font-black">Not Assigned</span>}
@@ -1702,16 +1716,10 @@ export default function EmployeeProfile() {
                             ) : employee.employeeStatus || 'Regular'}
                           </ProfileField>
 
-                          <div className="md:col-span-2">
-                            <ProfileField label="Status" icon={User} editing={false}>
-                              <span className="font-bold capitalize">{employee.status || 'active'}</span>
-                            </ProfileField>
-                          </div>
-                        </div>
-                      </ProfileSection>
+                          <ProfileField label="Status" icon={User} editing={false}>
+                            <span className="font-bold capitalize">{employee.status || 'active'}</span>
+                          </ProfileField>
 
-                      <ProfileSection icon={Calendar} title="Dates & Milestones" iconColorClass="text-amber-600 bg-amber-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                           <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
                             {editingHR ? <Input type="date" value={form.dateHired} onChange={(v) => updateForm('dateHired', v)} /> : employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
                           </ProfileField>
@@ -1735,7 +1743,21 @@ export default function EmployeeProfile() {
                         </div>
                       </ProfileSection>
 
-                      <ProfileSection icon={ShieldCheck} title="Government Identifiers" iconColorClass="text-emerald-600 bg-emerald-50">
+                      <ProfileSection icon={Briefcase} title="Issuances" iconColorClass="text-purple-600 bg-purple-50" className="flex-1 flex flex-col justify-start">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <ProfileField label="ID Issuance" icon={Briefcase} editing={editingHR}>
+                            {editingHR ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                          </ProfileField>
+                          <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={editingHR}>
+                            {editingHR ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                          </ProfileField>
+                        </div>
+                      </ProfileSection>
+                      </div>
+
+                      {/* COLUMN 2: RIGHT */}
+                      <div className="flex flex-col gap-8 h-full">
+                        <ProfileSection icon={ShieldCheck} title="Government Identifiers" iconColorClass="text-emerald-600 bg-emerald-50" className="flex-1 flex flex-col justify-start">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                           <ProfileField label="SSS Number" icon={ShieldCheck} editing={editingHR}>
                             {editingHR ? <Input value={form.sssNo} onChange={(v) => updateForm('sssNo', v)} placeholder="00-0000000-0" /> : employee.sssNo || <span className="text-[#9CA3AF]">Not Set</span>}
@@ -1752,18 +1774,7 @@ export default function EmployeeProfile() {
                         </div>
                       </ProfileSection>
 
-                      <ProfileSection icon={Briefcase} title="Issuances" iconColorClass="text-purple-600 bg-purple-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="ID Issuance" icon={Briefcase} editing={editingHR}>
-                            {editingHR ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
-                          </ProfileField>
-                          <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={editingHR}>
-                            {editingHR ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
-                          </ProfileField>
-                        </div>
-                      </ProfileSection>
-
-                      <ProfileSection icon={ShieldCheck} title="HMO Information" iconColorClass="text-blue-600 bg-blue-50">
+                      <ProfileSection icon={ShieldCheck} title="HMO Information" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                           <ProfileField label="HMO Enrollment" icon={Calendar} editing={editingHR}>
                             {editingHR ? <Input type="date" value={form.hmoEnrollment || ''} onChange={(v) => updateForm('hmoEnrollment', v)} /> : employee.hmoEnrollment ? new Date(employee.hmoEnrollment).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
@@ -1773,8 +1784,9 @@ export default function EmployeeProfile() {
                           </ProfileField>
                         </div>
                       </ProfileSection>
+                      </div>
 
-                      <div className="h-[150px] shrink-0 w-full" />
+                      <div className="col-span-1 lg:col-span-2 h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
 
