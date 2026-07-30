@@ -188,6 +188,7 @@ export default function Settings() {
 
 
 
+
   return (
     <PageLayout title="System Settings">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -240,6 +241,7 @@ export default function Settings() {
                   </span>
                   <TextSizeSelector value={textSize} onChange={setTextSize} />
                 </div>
+
               </div>
             </motion.aside>
           )}

@@ -250,6 +250,7 @@ export const EmployeeService = {
 
   async update(id, data, user, meta = {}) {
     const actor = auditActor(user);
+    const muteNotification = meta.muteNotification || false;
     const submittedFieldCount = data && typeof data === 'object' ? Object.keys(data).length : 0;
     data = filterEmployeeWritePayload(data, user);
     if (!Object.keys(data || {}).length) {
@@ -272,12 +273,22 @@ export const EmployeeService = {
     const isHrArchiving = !before.isReadyForArchive && willBeReadyForArchive;
     const isItArchiving = !before.isArchived && willBeArchived;
     const isNewlyArchived = isHrArchiving || isItArchiving;
+    const isNewlyUnarchived = before.isArchived && !willBeArchived;
 
     const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
 
-    const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.position;
-    const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName;
+    const isHrFieldsMissing = !employee.fullName || !employee.accountAssignment || !employee.site || !employee.jobTitle || !employee.status || !employee.employeeStatus || !employee.dateHired || 
+      (employee.status === 'floating' && !employee.floatDate) || 
+      ((employee.status === 'inactive' || employee.status === 'separated') && !employee.separationDate) || 
+      ((employee.status === 'inactive' || employee.status === 'separated') && !employee.separationReason) || 
+      !employee.sssNo || !employee.tinNo || !employee.philhealthNo || !employee.pagibigNo;
+      
+    const isItFieldsMissing = !employee.boEmail || !employee.rustdeskId || !employee.pcName || !employee.windowsLicenseKey || 
+      !employee.esetStatus || employee.esetStatus.toLowerCase() !== 'active' || 
+      !employee.activityWatchStatus || employee.activityWatchStatus.toLowerCase() !== 'installed' || 
+      !employee.lmsAccount || !employee.emailPassword || !employee.outlookEmail || !employee.teamsAccount || 
+      !employee.mattermostAccount || !employee.deviceType || !employee.biosDate;
 
     if (!isHrFieldsMissing) {
       await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'hr_action', 'HR').catch(console.error);
@@ -296,10 +307,37 @@ export const EmployeeService = {
       });
     }
 
+    if (isNewlyUnarchived) {
+      await NotificationService.notifyEmployeeUnarchived({ 
+        employee, 
+        actor
+      }).catch((error) => {
+        console.error('Unable to create employee-unarchived notifications', error);
+      });
+    }
+
     const changes = diffEmployee(before, employee);
-    await AuditLogModel.create({
+    
+    // Check for Handoff status changes
+    const beforeStatus = before.provisioningStatus;
+    const afterStatus = employee.provisioningStatus;
+    if (beforeStatus !== afterStatus) {
+      if (afterStatus === 'pending_it') {
+        await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'hr_action', 'HR').catch(console.error);
+        await NotificationService.notifyITForProvisioning({ employee, actor }).catch(console.error);
+      } else if (afterStatus === 'provisioned') {
+        await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'it_action', 'IT').catch(console.error);
+        await NotificationService.notifyHRProvisioningComplete({ employee, actor }).catch(console.error);
+      }
+    }
+
+    let auditAction = 'employee.update';
+    if (isNewlyUnarchived) auditAction = 'employee.unarchive';
+    else if (isNewlyArchived) auditAction = 'employee.archive';
+
+    const auditLog = await AuditLogModel.create({
       ...actor,
-      action: 'employee.update',
+      action: auditAction,
       entityType: 'employees',
       entityId: id,
       entityLabel: employee.fullName || employee.employeeNumber || id,
@@ -310,6 +348,17 @@ export const EmployeeService = {
       },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
+    });
+
+    // Call notifyEmployeeUpdated
+    await NotificationService.notifyEmployeeUpdated({ 
+      employee, 
+      actor, 
+      changes, 
+      muteNotification,
+      auditLogId: auditLog.id
+    }).catch((error) => {
+      console.error('Unable to create employee-updated notifications', error);
     });
 
     return employee;
@@ -335,5 +384,81 @@ export const EmployeeService = {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
+  },
+
+  async notifyIT(id, user, meta = {}) {
+    const actor = auditActor(user);
+    const before = await EmployeeModel.findById(id);
+    if (!before) throw new AppError('Employee not found', 404);
+    if (before.provisioningStatus === 'pending_it') {
+      throw new AppError('Employee is already pending IT. Use Remind IT instead.', 400);
+    }
+    
+    const note = meta.note || '';
+
+    // Update DB
+    const employee = await EmployeeModel.update(id, { provisioningStatus: 'pending_it' });
+
+    // Mark previous notifications as complete
+    await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'hr_action', 'HR').catch(console.error);
+    await NotificationModel.markAsCompleteGlobalByEntity('employees', employee.id, 'it_action', 'IT').catch(console.error);
+
+    // Send Notification with note
+    await NotificationService.notifyITForProvisioning({ employee, actor, note }).catch(console.error);
+
+    // Audit log
+    await AuditLogModel.create({
+      ...actor,
+      action: 'employee.notify_it',
+      entityType: 'employees',
+      entityId: id,
+      entityLabel: employee.fullName || employee.employeeNumber || id,
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.fullName,
+        note,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return employee;
+  },
+
+  async remindIT(id, user, meta = {}) {
+    const actor = auditActor(user);
+    const employee = await EmployeeModel.findById(id);
+    if (!employee) throw new AppError('Employee not found', 404);
+
+    if (employee.provisioningStatus !== 'pending_it') {
+      throw new AppError('Can only remind IT for employees pending provisioning', 400);
+    }
+
+    const note = meta.note || '';
+
+    // Trigger notification manually as a reminder
+    await NotificationService.notifyITForProvisioning({ 
+      employee, 
+      actor, 
+      isReminder: true,
+      note
+    }).catch(console.error);
+
+    await AuditLogModel.create({
+      ...actor,
+      action: 'employee.remind_it',
+      entityType: 'employees',
+      entityId: id,
+      entityLabel: employee.fullName || employee.employeeNumber || id,
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.fullName,
+        note,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return { success: true };
   },
 };

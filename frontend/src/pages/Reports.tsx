@@ -180,7 +180,6 @@ async function generateEmployeeMasterList(params?: any): Promise<ReportData> {
       'Windows Key': na(e.windowsKey),
       'BIOS Date': na(e.biosDate),
       'Outlook Email': na(e.outlookEmail),
-      'Google Account': na(e.googleAccount),
       'Teams Account': na(e.teamsAccount),
       'Mattermost Account': na(e.mattermostAccount),
       'Birthdate': na(e.birthdate),

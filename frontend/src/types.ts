@@ -16,6 +16,7 @@ export interface Employee {
   // IT Data
   isArchived: boolean;
   isReadyForArchive?: boolean;
+  provisioningStatus?: string;
   avatarUrl?: string;
   pcName: string;
   deviceType: string;
@@ -44,7 +45,6 @@ export interface Employee {
   outlookEmail?: string;
   mattermostAccount?: string;
   teamsAccount?: string;
-  googleAccount?: string;
   separationDate?: string;
   separationReason?: string;
   idIssuance?: string;
@@ -71,6 +71,7 @@ export interface AppUser {
   /** Per-account capability override; null/undefined means "inherit from role". */
   capabilityOverrides?: string[] | null;
   mfaEnabled?: boolean;
+
 }
 
 interface AuditLog {

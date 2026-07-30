@@ -102,10 +102,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
     payload.device_type = stringOrEmpty(data.deviceType);
   }
   if (data?.outlookEmail !== undefined) payload.outlook_email = stringOrEmpty(data.outlookEmail);
-  if (data?.googleAccount !== undefined) payload.google_account = stringOrEmpty(data.googleAccount);
   if (data?.teamsAccount !== undefined) payload.teams_account = stringOrEmpty(data.teamsAccount);
   if (data?.mattermostAccount !== undefined) payload.mattermost_account = stringOrEmpty(data.mattermostAccount);
-  if (data?.jobTitle !== undefined) payload.job_title = stringOrEmpty(data.jobTitle);
+  if (data?.jobTitle !== undefined) payload.position = stringOrEmpty(data.jobTitle);
   if (data?.position !== undefined) payload.position = stringOrEmpty(data.position);
   if (data?.nickname !== undefined) payload.nickname = stringOrEmpty(data.nickname);
   if (data?.sex !== undefined) payload.sex = stringOrEmpty(data.sex);
@@ -128,6 +127,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   const isReadyForArchive = valueFrom(data, 'is_ready_for_archive', 'isReadyForArchive');
   if (isReadyForArchive !== undefined) {
     payload.is_ready_for_archive = toBoolean(isReadyForArchive);
+  }
+  if (data?.provisioningStatus !== undefined) {
+    payload.provisioning_status = stringOrEmpty(data.provisioningStatus);
   }
   if (data?.idIssuance !== undefined) payload.id_issuance = stringOrEmpty(data.idIssuance);
   if (data?.hoodieIssuance !== undefined) payload.hoodie_issuance = stringOrEmpty(data.hoodieIssuance);
@@ -178,10 +180,9 @@ function normalize(row) {
     activityWatchStatus: row.activitywatch || 'missing',
     activitywatch: row.activitywatch || 'missing',
     outlookEmail: row.outlookEmail || row.outlook_email || '',
-    googleAccount: row.googleAccount || row.google_account || '',
     teamsAccount: row.teamsAccount || row.teams_account || '',
     mattermostAccount: row.mattermostAccount || row.mattermost_account || '',
-    jobTitle: row.jobTitle || row.job_title || '',
+    jobTitle: row.position || '',
     birthdate: row.birthdate || '',
     floatDate: row.floatDate || row.float_date || '',
     position: row.position || '',
@@ -198,6 +199,7 @@ function normalize(row) {
     emergencyContactNumber: row.emergencyContactNumber || row.emergency_contact_number || '',
     isArchived: row.isArchived ?? row.is_archived ?? false,
     isReadyForArchive: row.isReadyForArchive ?? row.is_ready_for_archive ?? false,
+    provisioningStatus: row.provisioningStatus || row.provisioning_status || 'pending_hr',
     idIssuance: row.idIssuance || row.id_issuance || '',
     hoodieIssuance: row.hoodieIssuance || row.hoodie_issuance || '',
     hmoEnrollment: row.hmoEnrollment || row.hmo_enrollment || '',
@@ -302,7 +304,6 @@ export const EmployeeModel = {
       windowsLicenseKey: payload.windows_license_key,
       deviceType: payload.device_type,
       outlookEmail: payload.outlook_email,
-      googleAccount: payload.google_account,
       teamsAccount: payload.teams_account,
       mattermostAccount: payload.mattermost_account,
       jobTitle: payload.job_title,
@@ -322,6 +323,7 @@ export const EmployeeModel = {
       emergencyContactNumber: payload.emergency_contact_number,
       isArchived: payload.is_archived,
       isReadyForArchive: payload.is_ready_for_archive,
+      provisioningStatus: payload.provisioning_status,
       idIssuance: payload.id_issuance,
       hoodieIssuance: payload.hoodie_issuance,
       hmoEnrollment: payload.hmo_enrollment,
@@ -368,7 +370,6 @@ export const EmployeeModel = {
         separationReason: payload.separation_reason,
         activitywatch: payload.activitywatch,
         outlookEmail: payload.outlook_email,
-        googleAccount: payload.google_account,
         teamsAccount: payload.teams_account,
         mattermostAccount: payload.mattermost_account,
         jobTitle: payload.job_title,
@@ -390,6 +391,7 @@ export const EmployeeModel = {
         deviceType: payload.device_type,
         isArchived: payload.is_archived,
         isReadyForArchive: payload.is_ready_for_archive,
+        provisioningStatus: payload.provisioning_status,
         idIssuance: payload.id_issuance,
         hoodieIssuance: payload.hoodie_issuance,
         hmoEnrollment: payload.hmo_enrollment,
@@ -442,7 +444,6 @@ export const EmployeeModel = {
       windowsLicenseKey: payload.windows_license_key,
       deviceType: payload.device_type,
       outlookEmail: payload.outlook_email,
-      googleAccount: payload.google_account,
       teamsAccount: payload.teams_account,
       mattermostAccount: payload.mattermost_account,
       jobTitle: payload.job_title,
@@ -462,6 +463,7 @@ export const EmployeeModel = {
       emergencyContactNumber: payload.emergency_contact_number,
       isArchived: payload.is_archived,
       isReadyForArchive: payload.is_ready_for_archive,
+      provisioningStatus: payload.provisioning_status,
       idIssuance: payload.id_issuance,
       hoodieIssuance: payload.hoodie_issuance,
       hmoEnrollment: payload.hmo_enrollment,

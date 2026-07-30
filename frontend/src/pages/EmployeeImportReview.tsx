@@ -101,7 +101,7 @@ const importReviewCache: {
 const fieldLabels: Array<[string, string]> = [
   ['employeeNumber', 'ID'],
   ['fullName', 'Name'],
-  ['accountAssignment', 'Department/Campaign.'],
+  ['accountAssignment', 'Department/Campaign'],
   ['phone', 'Phone'],
   ['address', 'Address'],
   ['boEmail', 'Email'],
@@ -1545,9 +1545,6 @@ function EditRowModal({
                 </Field>
                 <Field label="Outlook Email">
                   <Input value={form.outlookEmail || ''} onChange={(val) => onChange('outlookEmail', val)} placeholder="e.g. john@outlook.com" />
-                </Field>
-                <Field label="Google Account">
-                  <Input value={form.googleAccount || ''} onChange={(val) => onChange('googleAccount', val)} placeholder="e.g. john@gmail.com" />
                 </Field>
                 <Field label="Teams Account">
                   <Input value={form.teamsAccount || ''} onChange={(val) => onChange('teamsAccount', val)} placeholder="e.g. john.teams" />

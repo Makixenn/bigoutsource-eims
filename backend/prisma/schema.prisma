@@ -26,6 +26,7 @@ model UserProfile {
   resetPasswordToken  String?       @unique @map("reset_password_token")
   resetPasswordExpires DateTime?    @map("reset_password_expires")
   currentSessionId    String?       @map("current_session_id")
+
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
 
@@ -73,11 +74,11 @@ model Employee {
   birthdate         String   @default("")
   floatDate         String   @default("") @map("float_date")
   isReadyForArchive Boolean  @default(false) @map("is_ready_for_archive")
+  provisioningStatus String  @default("pending_hr") @map("provisioning_status")
 
   outlookEmail      String   @default("") @map("outlook_email")
   mattermostAccount String   @default("") @map("mattermost_account")
   teamsAccount      String   @default("") @map("teams_account")
-  googleAccount     String   @default("") @map("google_account")
   avatarUrl         String?  @map("avatar_url")
   idIssuance        String   @default("") @map("id_issuance")
   hoodieIssuance    String   @default("") @map("hoodie_issuance")
@@ -122,6 +123,7 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
 
 model Notification {
   id          String       @id @default(uuid())
