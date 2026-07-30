@@ -23,6 +23,7 @@ router.post('/login/mfa/resend', loginLimiter, AuthController.resendLoginMfa);
 router.get('/internal-departments', AuthController.internalDepartments);
 router.post('/refresh', AuthController.refreshSession);
 router.get('/me', authenticate, AuthController.me);
+router.put('/me', authenticate, AuthController.updateMe);
 router.post('/logout', authenticate, AuthController.logout);
 router.put('/password', authenticate, validate(changePasswordValidator), AuthController.changePassword);
 

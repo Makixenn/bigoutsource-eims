@@ -34,7 +34,7 @@ export const CAPABILITIES = {
   'notifications.hr_action': 'Receive HR action required notifications',
   'notifications.hr_action.accountAssignment': 'Notify on Department/Campaign updates',
   'notifications.hr_action.site': 'Notify on Site updates',
-  'notifications.hr_action.jobTitle': 'Notify on Job Title updates',
+  'notifications.hr_action.jobTitle': 'Notify on Position updates',
   'notifications.hr_action.status': 'Notify on Status updates',
   'notifications.hr_action.employeeStatus': 'Notify on Employment Status updates',
   'notifications.hr_action.dateHired': 'Notify on Date Hired updates',
@@ -42,8 +42,21 @@ export const CAPABILITIES = {
   'notifications.hr_action.phoneNumber': 'Notify on Phone Number updates',
   'notifications.hr_action.address': 'Notify on Address updates',
   'notifications.hr_action.fullName': 'Notify on Name updates',
+  'notifications.hr_action.nickname': 'Notify on Nickname updates',
+  'notifications.hr_action.sex': 'Notify on Sex updates',
+  'notifications.hr_action.civilStatus': 'Notify on Civil Status updates',
+  'notifications.hr_action.sssNo': 'Notify on SSS No updates',
+  'notifications.hr_action.tinNo': 'Notify on TIN No updates',
+  'notifications.hr_action.philhealthNo': 'Notify on PhilHealth No updates',
+  'notifications.hr_action.pagibigNo': 'Notify on Pag-Ibig No updates',
+  'notifications.hr_action.personalEmail': 'Notify on Personal Email updates',
+  'notifications.hr_action.mainContact': 'Notify on Main Contact updates',
+  'notifications.hr_action.emergencyContact': 'Notify on Emergency Contact updates',
+  'notifications.hr_action.emergencyContactNumber': 'Notify on Emergency Contact Number updates',
   'notifications.hr_action.archive': 'Notify on Archive Actions',
+  'notifications.hr_action.daily_birthdays': 'Receive Daily Birthday Alerts',
   'notifications.it_action': 'Receive IT action required notifications',
+  'notifications.it_action.provisioning': 'Notify on IT Provisioning handoffs',
   'notifications.it_action.bigoutsourceEmail': 'Notify on Snappy Email updates',
   'notifications.it_action.rustdeskId': 'Notify on Remote ID updates',
   'notifications.it_action.pcName': 'Notify on PC Name updates',
@@ -53,12 +66,14 @@ export const CAPABILITIES = {
   'notifications.it_action.lmsAccount': 'Notify on LMS Account updates',
   'notifications.it_action.emailPassword': 'Notify on Email Password updates',
   'notifications.it_action.outlookEmail': 'Notify on Outlook Email updates',
-  'notifications.it_action.googleAccount': 'Notify on Google Account updates',
   'notifications.it_action.teamsAccount': 'Notify on Teams Account updates',
   'notifications.it_action.mattermostAccount': 'Notify on Mattermost Account updates',
   'notifications.it_action.deviceType': 'Notify on Device Type updates',
   'notifications.it_action.biosDate': 'Notify on BIOS Date updates',
   'notifications.it_action.archive': 'Notify on Archive Actions',
+  
+  'notifications.system': 'Receive System Alerts',
+  'notifications.system.export_alerts': 'Receive Large Data Export Alerts',
   
   // Global Notifications
   'notifications.employee_deleted': 'Notify on Permanent Deletion',
@@ -85,9 +100,10 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view', 'auditlogs.undo',
     'notifications.hr_action', 'notifications.it_action',
-    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.jobTitle', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.archive',
-    'notifications.it_action.bigoutsourceEmail', 'notifications.it_action.rustdeskId', 'notifications.it_action.pcName', 'notifications.it_action.windowsKey', 'notifications.it_action.esetStatus', 'notifications.it_action.activityWatchStatus', 'notifications.it_action.lmsAccount', 'notifications.it_action.emailPassword', 'notifications.it_action.outlookEmail', 'notifications.it_action.googleAccount', 'notifications.it_action.teamsAccount', 'notifications.it_action.mattermostAccount', 'notifications.it_action.deviceType', 'notifications.it_action.biosDate', 'notifications.it_action.archive',
-    'notifications.employee_deleted'
+    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.jobTitle', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.nickname', 'notifications.hr_action.sex', 'notifications.hr_action.civilStatus', 'notifications.hr_action.sssNo', 'notifications.hr_action.tinNo', 'notifications.hr_action.philhealthNo', 'notifications.hr_action.pagibigNo', 'notifications.hr_action.personalEmail', 'notifications.hr_action.mainContact', 'notifications.hr_action.emergencyContact', 'notifications.hr_action.emergencyContactNumber', 'notifications.hr_action.archive',
+    'notifications.it_action.provisioning', 'notifications.it_action.bigoutsourceEmail', 'notifications.it_action.rustdeskId', 'notifications.it_action.pcName', 'notifications.it_action.windowsKey', 'notifications.it_action.esetStatus', 'notifications.it_action.activityWatchStatus', 'notifications.it_action.lmsAccount', 'notifications.it_action.emailPassword', 'notifications.it_action.outlookEmail', 'notifications.it_action.teamsAccount', 'notifications.it_action.mattermostAccount', 'notifications.it_action.deviceType', 'notifications.it_action.biosDate', 'notifications.it_action.archive',
+    'notifications.employee_deleted',
+    'notifications.system', 'notifications.system.export_alerts'
   ],
   hr_admin: [
     'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.delete', 'employees.unarchive',
@@ -96,7 +112,7 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view',
     'notifications.hr_action',
-    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.jobTitle', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.archive',
+    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.jobTitle', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.nickname', 'notifications.hr_action.sex', 'notifications.hr_action.civilStatus', 'notifications.hr_action.sssNo', 'notifications.hr_action.tinNo', 'notifications.hr_action.philhealthNo', 'notifications.hr_action.pagibigNo', 'notifications.hr_action.personalEmail', 'notifications.hr_action.mainContact', 'notifications.hr_action.emergencyContact', 'notifications.hr_action.emergencyContactNumber', 'notifications.hr_action.archive', 'notifications.hr_action.daily_birthdays',
     'notifications.employee_deleted'
   ],
   it_admin: [
@@ -108,7 +124,7 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view',
     'notifications.it_action',
-    'notifications.it_action.bigoutsourceEmail', 'notifications.it_action.rustdeskId', 'notifications.it_action.pcName', 'notifications.it_action.windowsKey', 'notifications.it_action.esetStatus', 'notifications.it_action.activityWatchStatus', 'notifications.it_action.lmsAccount', 'notifications.it_action.emailPassword', 'notifications.it_action.outlookEmail', 'notifications.it_action.googleAccount', 'notifications.it_action.teamsAccount', 'notifications.it_action.mattermostAccount', 'notifications.it_action.deviceType', 'notifications.it_action.biosDate', 'notifications.it_action.archive',
+    'notifications.it_action.provisioning', 'notifications.it_action.bigoutsourceEmail', 'notifications.it_action.rustdeskId', 'notifications.it_action.pcName', 'notifications.it_action.windowsKey', 'notifications.it_action.esetStatus', 'notifications.it_action.activityWatchStatus', 'notifications.it_action.lmsAccount', 'notifications.it_action.emailPassword', 'notifications.it_action.outlookEmail', 'notifications.it_action.teamsAccount', 'notifications.it_action.mattermostAccount', 'notifications.it_action.deviceType', 'notifications.it_action.biosDate', 'notifications.it_action.archive',
     'notifications.employee_deleted'
   ],
   viewer: [

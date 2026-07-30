@@ -6,7 +6,8 @@ import { EmailService } from '../services/email.service.js';
 
 const EMPLOYEE_ADDED_TYPE = 'employee.added';
 
-function hasCapability(capabilities, capability) {
+function hasCapability(recipient, capability) {
+  const capabilities = Array.isArray(recipient) ? recipient : (recipient?.capabilities || []);
   return Array.isArray(capabilities) && capabilities.includes(capability);
 }
 
@@ -80,7 +81,7 @@ export const NotificationService = {
     // Pre-fetch capabilities for all potential recipients (excluding actor)
     const eligibleRecipients = [];
     for (const recipient of recipients) {
-      if (String(recipient.id) === String(actor.userId)) continue;
+      // if (String(recipient.id) === String(actor.userId)) continue;
       const capabilities = await RoleService.resolveUserCapabilities(recipient);
       eligibleRecipients.push({ ...recipient, capabilities });
     }
@@ -90,10 +91,41 @@ export const NotificationService = {
     const actorRole = roleLabel(actor.userRole);
     const message = `${actorName} added ${employeeLabel} to employee records.`;
 
-    const isHrFieldsMissing = !employee.accountAssignment || !employee.site || !employee.jobTitle || !employee.status || !employee.employeeStatus || !employee.dateHired || !employee.birthdate || !employee.phoneNumber || !employee.address;
-    const isItFieldsMissing = !employee.bigoutsourceEmail || !employee.rustdeskId || !employee.pcName || !employee.windowsLicenseKey || !employee.esetStatus || !employee.activityWatchStatus || !employee.lmsAccount || !employee.emailPassword || !employee.outlookEmail || !employee.googleAccount || !employee.teamsAccount || !employee.mattermostAccount || !employee.deviceType || !employee.biosDate;
-
     const notificationsToCreate = [];
+
+
+    const hrFieldsList = [
+      { label: 'Full Name', checked: !!employee.fullName || (!!employee.firstName && !!employee.lastName), cap: 'notifications.hr_action.fullName' },
+      { label: 'Department / Account Assignment', checked: !!employee.accountAssignment, cap: 'notifications.hr_action.accountAssignment' },
+      { label: 'Site', checked: !!employee.site, cap: 'notifications.hr_action.site' },
+      { label: 'Position', checked: !!employee.jobTitle, cap: 'notifications.hr_action.jobTitle' },
+      { label: 'Status', checked: !!employee.status, cap: 'notifications.hr_action.status' },
+      { label: 'Employee Status', checked: !!employee.employeeStatus, cap: 'notifications.hr_action.employeeStatus' },
+      { label: 'Date Hired', checked: !!employee.dateHired, cap: 'notifications.hr_action.dateHired' },
+      { label: 'Float Date', checked: (employee.status !== 'floating' && employee.status !== 'Floating') || !!employee.floatDate, cap: 'notifications.hr_action.status' },
+      { label: 'Separation Date', checked: (employee.status !== 'inactive' && employee.status !== 'separated' && employee.status !== 'Inactive' && employee.status !== 'Separated') || !!employee.separationDate, cap: 'notifications.hr_action.status' },
+      { label: 'Separation Reason', checked: (employee.status !== 'inactive' && employee.status !== 'separated' && employee.status !== 'Inactive' && employee.status !== 'Separated') || !!employee.separationReason, cap: 'notifications.hr_action.status' },
+      { label: 'SSS No.', checked: !!employee.sssNo, cap: 'notifications.hr_action.sssNo' },
+      { label: 'TIN No.', checked: !!employee.tinNo, cap: 'notifications.hr_action.tinNo' },
+      { label: 'PhilHealth No.', checked: !!employee.philhealthNo, cap: 'notifications.hr_action.philhealthNo' },
+      { label: 'Pag-Ibig No.', checked: !!employee.pagibigNo, cap: 'notifications.hr_action.pagibigNo' }
+    ];
+
+    const itFieldsList = [
+        { label: 'Snappy Email', checked: !!employee.bigoutsourceEmail, cap: 'notifications.it_action.bigoutsourceEmail' },
+        { label: 'Remote ID', checked: !!employee.rustdeskId, cap: 'notifications.it_action.rustdeskId' },
+        { label: 'PC Name', checked: !!employee.pcName, cap: 'notifications.it_action.pcName' },
+        { label: 'Windows License Key', checked: !!employee.windowsLicenseKey, cap: 'notifications.it_action.windowsKey' },
+        { label: 'ESET Status', checked: employee.esetStatus && employee.esetStatus.toLowerCase() === 'active', cap: 'notifications.it_action.esetStatus' },
+        { label: 'ActivityWatch Status', checked: employee.activityWatchStatus && employee.activityWatchStatus.toLowerCase() === 'installed', cap: 'notifications.it_action.activityWatchStatus' },
+        { label: 'LMS Account', checked: !!employee.lmsAccount, cap: 'notifications.it_action.lmsAccount' },
+        { label: 'Email Default Password', checked: !!employee.emailPassword, cap: 'notifications.it_action.emailPassword' },
+        { label: 'Outlook Email', checked: !!employee.outlookEmail, cap: 'notifications.it_action.outlookEmail' },
+        { label: 'Teams Account', checked: !!employee.teamsAccount, cap: 'notifications.it_action.teamsAccount' },
+        { label: 'Mattermost Account', checked: !!employee.mattermostAccount, cap: 'notifications.it_action.mattermostAccount' },
+        { label: 'Device Type', checked: !!employee.deviceType, cap: 'notifications.it_action.deviceType' },
+        { label: 'BIOS Date', checked: !!employee.biosDate, cap: 'notifications.it_action.biosDate' }
+    ];
 
     const baseNotification = {
       type: EMPLOYEE_ADDED_TYPE,
@@ -107,22 +139,13 @@ export const NotificationService = {
       actionUrl: `/employee/${employee.id}`,
     };
 
-    if (isHrFieldsMissing) {
-      const hrFieldsList = [
-        { label: 'Department / Account Assignment', checked: !!employee.accountAssignment },
-        { label: 'Site', checked: !!employee.site },
-        { label: 'Job Title', checked: !!employee.jobTitle },
-        { label: 'Status', checked: !!employee.status },
-        { label: 'Employee Status', checked: !!employee.employeeStatus },
-        { label: 'Date Hired', checked: !!employee.dateHired },
-        { label: 'Birthdate', checked: !!employee.birthdate },
-        { label: 'Phone Number', checked: !!employee.phoneNumber },
-        { label: 'Address', checked: !!employee.address }
-      ];
-      const incompleteHrFields = hrFieldsList.filter(f => !f.checked).map(f => f.label);
+    const isHrFieldsMissing = hrFieldsList.some(f => !f.checked);
+    const isItFieldsMissing = itFieldsList.some(f => !f.checked);
 
-      const hrRecipients = eligibleRecipients.filter(r => hasCapability(r.capabilities, 'notifications.hr_action'));
-      hrRecipients.forEach(r => {
+    const hrRecipients = eligibleRecipients.filter(r => hasCapability(r.capabilities, 'notifications.hr_action'));
+    hrRecipients.forEach(r => {
+      const incompleteHrFields = hrFieldsList.filter(f => !f.checked && hasCapability(r, f.cap)).map(f => f.label);
+      if (incompleteHrFields.length > 0) {
         notificationsToCreate.push({
           ...baseNotification,
           type: 'hr_action',
@@ -131,36 +154,17 @@ export const NotificationService = {
           details: {
             employeeNumber: employee.employeeNumber,
             fullName: employee.fullName,
-            accountAssignment: employee.accountAssignment,
-            site: employee.site,
             missingFields: 'HR',
             incompleteFields: incompleteHrFields
           }
         });
-      });
-    }
+      }
+    });
 
-    if (isItFieldsMissing) {
-      const itFieldsList = [
-        { label: 'Snappy Email', checked: !!employee.bigoutsourceEmail },
-        { label: 'Remote ID', checked: !!employee.rustdeskId },
-        { label: 'PC Name', checked: !!employee.pcName },
-        { label: 'Windows License Key', checked: !!employee.windowsLicenseKey },
-        { label: 'ESET Status', checked: !!employee.esetStatus },
-        { label: 'ActivityWatch Status', checked: !!employee.activityWatchStatus },
-        { label: 'LMS Account', checked: !!employee.lmsAccount },
-        { label: 'Email Default Password', checked: !!employee.emailPassword },
-        { label: 'Outlook Email', checked: !!employee.outlookEmail },
-        { label: 'Google Account', checked: !!employee.googleAccount },
-        { label: 'Teams Account', checked: !!employee.teamsAccount },
-        { label: 'Mattermost Account', checked: !!employee.mattermostAccount },
-        { label: 'Device Type', checked: !!employee.deviceType },
-        { label: 'BIOS Date', checked: !!employee.biosDate }
-      ];
-      const incompleteItFields = itFieldsList.filter(f => !f.checked).map(f => f.label);
-
-      const itRecipients = eligibleRecipients.filter(r => hasCapability(r.capabilities, 'notifications.it_action'));
-      itRecipients.forEach(r => {
+    const itRecipients = eligibleRecipients.filter(r => hasCapability(r.capabilities, 'notifications.it_action'));
+    itRecipients.forEach(r => {
+      const incompleteItFields = itFieldsList.filter(f => !f.checked && hasCapability(r, f.cap)).map(f => f.label);
+      if (incompleteItFields.length > 0) {
         notificationsToCreate.push({
           ...baseNotification,
           type: 'it_action',
@@ -175,8 +179,8 @@ export const NotificationService = {
             incompleteFields: incompleteItFields
           }
         });
-      });
-    }
+      }
+    });
 
     let createdNotifications = [];
     if (notificationsToCreate.length > 0) {
@@ -186,58 +190,35 @@ export const NotificationService = {
     // Send emails
     const emailPromises = [];
     if (isHrFieldsMissing) {
-      const hrFieldsList = [
-        { label: 'Department / Account Assignment', checked: !!employee.accountAssignment },
-        { label: 'Site', checked: !!employee.site },
-        { label: 'Job Title', checked: !!employee.jobTitle },
-        { label: 'Status', checked: !!employee.status },
-        { label: 'Employee Status', checked: !!employee.employeeStatus },
-        { label: 'Date Hired', checked: !!employee.dateHired },
-        { label: 'Birthdate', checked: !!employee.birthdate },
-        { label: 'Phone Number', checked: !!employee.phoneNumber },
-        { label: 'Address', checked: !!employee.address }
-      ];
-
       const hrRecipients = eligibleRecipients.filter(r => hasCapability(r.capabilities, 'notifications.hr_action') && r.email);
       for (const r of hrRecipients) {
+        const recipientIncompleteHr = hrFieldsList.filter(f => !f.checked && hasCapability(r, f.cap));
+        if (recipientIncompleteHr.length === 0) continue;
+
         emailPromises.push(EmailService.sendEmployeeActionEmail(r.email, {
-          actionName: 'HR Fields Incomplete Alert',
+          actionName: 'New Employee Added',
           employeeName: employeeLabel,
           actorName,
-          roleSpecificMessage: 'added a new employee. Please review the HR fields below:',
+          roleSpecificMessage: 'created a new employee profile.',
           actionUrl: `/employee/${employee.id}`,
-          fieldsList: hrFieldsList
+          fieldsList: [{ label: 'Profile Created in Database', checked: true }, ...recipientIncompleteHr.map(f => ({ label: f.label, checked: false }))]
         }));
       }
     }
 
     if (isItFieldsMissing) {
-      const itFieldsList = [
-        { label: 'Snappy Email', checked: !!employee.bigoutsourceEmail },
-        { label: 'Remote ID', checked: !!employee.rustdeskId },
-        { label: 'PC Name', checked: !!employee.pcName },
-        { label: 'Windows License Key', checked: !!employee.windowsLicenseKey },
-        { label: 'ESET Status', checked: !!employee.esetStatus },
-        { label: 'ActivityWatch Status', checked: !!employee.activityWatchStatus },
-        { label: 'LMS Account', checked: !!employee.lmsAccount },
-        { label: 'Email Default Password', checked: !!employee.emailPassword },
-        { label: 'Outlook Email', checked: !!employee.outlookEmail },
-        { label: 'Google Account', checked: !!employee.googleAccount },
-        { label: 'Teams Account', checked: !!employee.teamsAccount },
-        { label: 'Mattermost Account', checked: !!employee.mattermostAccount },
-        { label: 'Device Type', checked: !!employee.deviceType },
-        { label: 'BIOS Date', checked: !!employee.biosDate }
-      ];
-
       const itRecipients = eligibleRecipients.filter(r => hasCapability(r.capabilities, 'notifications.it_action') && r.email);
       for (const r of itRecipients) {
+        const recipientIncompleteIt = itFieldsList.filter(f => !f.checked && hasCapability(r, f.cap));
+        if (recipientIncompleteIt.length === 0) continue;
+
         emailPromises.push(EmailService.sendEmployeeActionEmail(r.email, {
-          actionName: 'IT Fields Incomplete Alert',
+          actionName: 'New Employee Added',
           employeeName: employeeLabel,
           actorName,
-          roleSpecificMessage: 'added a new employee. Please provision the IT assets below:',
+          roleSpecificMessage: 'created a new employee profile.',
           actionUrl: `/employee/${employee.id}`,
-          fieldsList: itFieldsList
+          fieldsList: [{ label: 'Profile Created in Database', checked: true }, ...recipientIncompleteIt.map(f => ({ label: f.label, checked: false }))]
         }));
       }
     }
@@ -401,7 +382,7 @@ export const NotificationService = {
     
     const targetRecipients = [];
     for (const recipient of recipients) {
-      if (String(recipient.id) === String(actor.userId)) continue;
+      // if (String(recipient.id) === String(actor.userId)) continue;
       const capabilities = await RoleService.resolveUserCapabilities(recipient);
       if (hasCapability(capabilities, 'notifications.employee_deleted')) {
         targetRecipients.push(recipient);
@@ -468,7 +449,7 @@ export const NotificationService = {
     
     const eligibleRecipients = [];
     for (const recipient of recipients) {
-      if (String(recipient.id) === String(actor.userId)) continue;
+      // if (String(recipient.id) === String(actor.userId)) continue;
       const capabilities = await RoleService.resolveUserCapabilities(recipient);
       eligibleRecipients.push({ ...recipient, capabilities });
     }
@@ -478,7 +459,7 @@ export const NotificationService = {
     const actorRole = roleLabel(actor.userRole);
 
     const hrFields = ['fullName', 'accountAssignment', 'site', 'jobTitle', 'status', 'employeeStatus', 'dateHired', 'birthdate', 'phone', 'address'];
-    const itFields = ['boEmail', 'rustdeskId', 'pcName', 'windowsKey', 'esetStatus', 'activityWatchStatus', 'lmsAccount', 'emailPassword', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount', 'deviceType', 'biosDate'];
+    const itFields = ['boEmail', 'rustdeskId', 'pcName', 'windowsKey', 'esetStatus', 'activityWatchStatus', 'lmsAccount', 'emailPassword', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount', 'deviceType', 'biosDate', 'isReadyForArchive'];
 
     const hrChanges = changes.filter(c => hrFields.includes(c.field));
     const itChanges = changes.filter(c => itFields.includes(c.field));
@@ -499,14 +480,15 @@ export const NotificationService = {
     const capabilityMap = {
       birthdate: 'birthDate',
       phone: 'phoneNumber',
-      boEmail: 'bigoutsourceEmail'
+      boEmail: 'bigoutsourceEmail',
+      isReadyForArchive: 'archive'
     };
 
     const readableLabels = {
       fullName: 'Employee Name',
       accountAssignment: 'Department / Account Assignment',
       site: 'Site',
-      jobTitle: 'Job Title',
+      jobTitle: 'Position',
       status: 'Status',
       employeeStatus: 'Employment Status',
       dateHired: 'Date Hired',
@@ -526,7 +508,8 @@ export const NotificationService = {
       teamsAccount: 'Teams Account',
       mattermostAccount: 'Mattermost Account',
       deviceType: 'Device Type',
-      biosDate: 'BIOS Date'
+      biosDate: 'BIOS Date',
+      isReadyForArchive: 'Archive Request Status'
     };
     const isUnarchiving = changes.some(c => c.field === 'isArchived' && c.to === 'false');
     const isArchiving = changes.some(c => c.field === 'isArchived' && c.to === 'true');
@@ -620,4 +603,138 @@ export const NotificationService = {
     
     return createdNotifications;
   },
+
+  async notifyITForProvisioning({ employee, actor, note = '', isReminder = false }) {
+    const recipients = await UserProfileModel.findAll({ status: 'active' });
+    
+    const eligibleRecipients = [];
+    for (const recipient of recipients) {
+      const capabilities = await RoleService.resolveUserCapabilities(recipient);
+      if (hasCapability(capabilities, 'notifications.it_action')) {
+        eligibleRecipients.push(recipient);
+      }
+    }
+
+    if (eligibleRecipients.length === 0) return [];
+
+    const employeeLabel = employee.fullName || employee.employeeNumber || employee.id;
+    const actorName = actor.userName || actor.userEmail || 'Someone';
+
+    const actionName = isReminder ? 'IT Provisioning Reminder' : 'IT Provisioning Request';
+    const message = isReminder 
+      ? `${actorName} sent a reminder for IT provisioning for ${employeeLabel}.`
+      : `${actorName} requested IT provisioning for ${employeeLabel}.`;
+    
+    const roleSpecificMessage = isReminder 
+      ? `has sent a reminder for you to complete the IT provisioning for this employee.`
+      : `has requested you to complete the IT provisioning for this employee.`;
+
+    const baseNotification = {
+      type: 'it_action',
+      actorId: actorIdForDatabase(actor),
+      actorName,
+      actorRole: roleLabel(actor.userRole),
+      entityType: 'employees',
+      entityId: employee.id,
+      entityLabel: employeeLabel,
+      actionUrl: `/employee/${employee.id}`,
+      message,
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.fullName,
+        note
+      }
+    };
+
+    const notificationsToCreate = eligibleRecipients.map(r => ({
+      ...baseNotification,
+      recipientId: r.id,
+    }));
+
+    const createdNotifications = await NotificationModel.createMany(notificationsToCreate);
+
+    const emailPromises = [];
+    for (const r of eligibleRecipients) {
+      if (r.email) {
+        emailPromises.push(EmailService.sendEmployeeActionEmail(r.email, {
+          actionName,
+          employeeName: employeeLabel,
+          actorName,
+          roleSpecificMessage,
+          actionUrl: `/employee/${employee.id}`,
+          fieldsList: [],
+          note
+        }));
+      }
+    }
+    
+    if (emailPromises.length > 0) {
+      Promise.allSettled(emailPromises).catch(console.error);
+    }
+
+    return createdNotifications;
+  },
+
+  async notifyHRProvisioningComplete({ employee, actor }) {
+    const recipients = await UserProfileModel.findAll({ status: 'active' });
+    
+    const eligibleRecipients = [];
+    for (const recipient of recipients) {
+      const capabilities = await RoleService.resolveUserCapabilities(recipient);
+      if (hasCapability(capabilities, 'notifications.hr_action')) {
+        eligibleRecipients.push(recipient);
+      }
+    }
+
+    if (eligibleRecipients.length === 0) return [];
+
+    const employeeLabel = employee.fullName || employee.employeeNumber || employee.id;
+    const actorName = actor.userName || actor.userEmail || 'Someone';
+
+    const message = `${actorName} completed IT provisioning for ${employeeLabel}.`;
+    
+    const baseNotification = {
+      type: 'hr_action',
+      actorId: actorIdForDatabase(actor),
+      actorName,
+      actorRole: roleLabel(actor.userRole),
+      entityType: 'employees',
+      entityId: employee.id,
+      entityLabel: employeeLabel,
+      actionUrl: `/employee/${employee.id}`,
+      message,
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.fullName,
+      }
+    };
+
+    const notificationsToCreate = eligibleRecipients.map(r => ({
+      ...baseNotification,
+      recipientId: r.id,
+    }));
+
+    const createdNotifications = await NotificationModel.createMany(notificationsToCreate);
+
+    const emailPromises = [];
+    for (const r of eligibleRecipients) {
+      if (r.email) {
+        emailPromises.push(EmailService.sendEmployeeActionEmail(r.email, {
+          actionName: 'IT Provisioning Completed',
+          employeeName: employeeLabel,
+          actorName,
+          roleSpecificMessage: 'has completed the IT provisioning for this employee.',
+          successBox: `<strong>${actorName}</strong> has completed the IT provisioning for this employee.`,
+          actionUrl: `/employee/${employee.id}`,
+          fieldsList: []
+        }));
+      }
+    }
+    
+    if (emailPromises.length > 0) {
+      Promise.allSettled(emailPromises).catch(console.error);
+    }
+
+    return createdNotifications;
+  }
 };

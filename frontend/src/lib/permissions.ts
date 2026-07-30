@@ -53,7 +53,6 @@ export type Capability =
   | 'notifications.it_action.lmsAccount'
   | 'notifications.it_action.emailPassword'
   | 'notifications.it_action.outlookEmail'
-  | 'notifications.it_action.googleAccount'
   | 'notifications.it_action.teamsAccount'
   | 'notifications.it_action.mattermostAccount'
   | 'notifications.it_action.deviceType'

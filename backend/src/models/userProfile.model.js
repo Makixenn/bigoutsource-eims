@@ -30,6 +30,7 @@ function normalize(row) {
     passwordSetupToken: row.passwordSetupToken || null,
     resetPasswordToken: row.resetPasswordToken || null,
     resetPasswordExpires: row.resetPasswordExpires ? row.resetPasswordExpires.toISOString() : null,
+
     createdAt: row.createdAt ? row.createdAt.toISOString() : '',
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : '',
   };

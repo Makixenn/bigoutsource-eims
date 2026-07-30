@@ -15,9 +15,7 @@ interface AuthContextType {
   register: (input: RegisterInput) => Promise<AppUser>;
   refreshUser: () => Promise<AppUser | null>;
   logout: () => Promise<void>;
-  isAdmin: boolean;
-  isIT: boolean;
-  isHR: boolean;
+
   can: (capability: Capability) => boolean;
 }
 
@@ -43,6 +41,7 @@ function toAppUser(apiUser: any): AppUser {
     capabilities: Array.isArray(apiUser.capabilities) ? apiUser.capabilities : [],
     capabilityOverrides: Array.isArray(apiUser.capabilityOverrides) ? apiUser.capabilityOverrides : null,
     mfaEnabled: apiUser.mfaEnabled || false,
+
   };
 }
 
@@ -227,9 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     register,
     refreshUser,
     logout,
-    isAdmin: user?.role === 'super_admin' || user?.role === 'admin',
-    isIT: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'it_admin',
-    isHR: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'hr_admin',
+
     can: (capability: Capability) => userCan(user, capability),
   }), [user, loading, refreshUser]);
 

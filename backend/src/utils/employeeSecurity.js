@@ -25,9 +25,10 @@ const HR_WRITE_FIELDS = [
   'nickname', 'sex', 'civilStatus', 'civil_status', 'sssNo', 'sss_no',
   'tinNo', 'tin_no', 'philhealthNo', 'philhealth_no', 'pagibigNo', 'pagibig_no',
   'personalEmail', 'personal_email', 'mainContact', 'main_contact',
-  'emergencyContact', 'emergency_contact', 'emergencyContactNumber', 'emergency_contact_number'
+  'emergencyContact', 'emergency_contact', 'emergencyContactNumber', 'emergency_contact_number',
+  'provisioningStatus'
 ];
-const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount'];
+const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount', 'provisioningStatus'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];
 const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive'];
 
@@ -71,7 +72,7 @@ export function filterEmployeeWritePayload(data, user, isCreate = false) {
     }
     if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
-    if (caps.includes('employees.delete') || caps.includes('employees.unarchive') || caps.includes('employees.archive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.delete') || caps.includes('employees.unarchive') || caps.includes('employees.archive') || caps.includes('notifications.hr_action.archive') || caps.includes('notifications.it_action.archive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
   }
 
   const filtered = {};

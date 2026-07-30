@@ -409,6 +409,27 @@ export const AuthService = {
     return publicUser(user);
   },
 
+  async updateMe(user, data) {
+    const allowedFields = [];
+    const updateData = {};
+    for (const key of allowedFields) {
+      if (data[key] !== undefined) {
+        updateData[key] = data[key];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return publicUser(user);
+    }
+
+    const updatedProfile = await prisma.userProfile.update({
+      where: { id: user.id },
+      data: updateData,
+    });
+
+    return publicUser(updatedProfile);
+  },
+
   async refreshSession({ refreshToken }) {
     if (!refreshToken) throw new AppError('Refresh token required', 400);
 

@@ -57,6 +57,7 @@ import {
 } from "@/src/features/employees/components/DirectoryUI";
 import { useRealtimeSubscription } from "@/src/hooks/useRealtimeSubscription";
 import { queryClient } from "@/src/providers/QueryProvider";
+import Confetti from "react-confetti";
 
 type SiteOption = {
   id: string;
@@ -121,7 +122,6 @@ type AddEmployeeForm = {
   outlookEmail: string;
   mattermostAccount: string;
   teamsAccount: string;
-  googleAccount: string;
 };
 
 type FormErrors = Partial<Record<keyof AddEmployeeForm, string>>;
@@ -165,7 +165,6 @@ type DirectoryFieldKey =
   | "outlookEmail"
   | "mattermostAccount"
   | "teamsAccount"
-  | "googleAccount"
   | "pcName"
   | "deviceType"
   | "biosDate"
@@ -225,8 +224,7 @@ const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
   lmsAccount: 1.2,
   outlookEmail: 1.5,
   mattermostAccount: 1.2,
-  teamsAccount: 1.2,
-  googleAccount: 1.5,
+  teamsAccount: 1.5,
   pcName: 1.2,
   deviceType: 1.0,
   biosDate: 1.0,
@@ -242,79 +240,39 @@ function calculateIncompleteData(employee: EmployeeRecord) {
   let hrMissing = 0;
   let itMissing = 0;
 
-  if (!employee.employeeId && !employee.employeeNumber) {
-    criticalCount++;
-    hrMissing++;
-  }
-  if (!employee.accountAssignment) {
-    criticalCount++;
-    hrMissing++;
-  }
-  if (!employee.siteId && !employee.site) {
-    criticalCount++;
-    hrMissing++;
-  }
-  if (!employee.fullName) {
-    criticalCount++;
-    hrMissing++;
-  }
+  // Work / HR Fields (Excluding Personal Details)
+  if (!employee.employeeId && !employee.employeeNumber) { criticalCount++; hrMissing++; }
+  if (!employee.accountAssignment) { criticalCount++; hrMissing++; }
+  if (!employee.siteId && !employee.site) { criticalCount++; hrMissing++; }
+  if (!employee.fullName) { criticalCount++; hrMissing++; }
+  if (!employee.position && !employee.jobTitle) { mildCount++; hrMissing++; }
+  if (!employee.dateHired) { mildCount++; hrMissing++; }
+  if (!employee.employeeStatus) { mildCount++; hrMissing++; }
+  if (!employee.status) { mildCount++; hrMissing++; }
+  if ((employee.status === 'floating' || employee.status?.toLowerCase() === 'floating') && !employee.floatDate) { mildCount++; hrMissing++; }
+  if ((employee.status === 'inactive' || employee.status === 'separated' || employee.status?.toLowerCase() === 'inactive' || employee.status?.toLowerCase() === 'separated') && !employee.separationDate) { mildCount++; hrMissing++; }
+  if ((employee.status === 'inactive' || employee.status === 'separated' || employee.status?.toLowerCase() === 'inactive' || employee.status?.toLowerCase() === 'separated') && !employee.separationReason) { mildCount++; hrMissing++; }
 
-  if (!employee.phone) {
-    mildCount++;
-    hrMissing++;
-  }
-  if (!employee.address) {
-    mildCount++;
-    hrMissing++;
-  }
-  if (!employee.position) {
-    mildCount++;
-    hrMissing++;
-  }
-  if (!employee.birthdate) {
-    mildCount++;
-    hrMissing++;
-  }
-  if (!employee.dateHired) {
-    mildCount++;
-    hrMissing++;
-  }
-  if (!employee.pcName) {
-    mildCount++;
-    itMissing++;
-  }
-  if (!employee.biosDate) {
-    mildCount++;
-    itMissing++;
-  }
-  if (!employee.rustdeskId && !employee.rustDeskId) {
-    mildCount++;
-    itMissing++;
-  }
-  if (!employee.windowsKey) {
-    mildCount++;
-    itMissing++;
-  }
-  if (!employee.boEmail) {
-    mildCount++;
-    itMissing++;
-  }
-  if (!employee.emailPassword) {
-    mildCount++;
-    itMissing++;
-  }
-  if (!employee.lmsAccount) {
-    mildCount++;
-    itMissing++;
-  }
-  if (employee.activityWatchStatus !== "Installed") {
-    mildCount++;
-    itMissing++;
-  }
-  if (employee.esetStatus !== "Active") {
-    mildCount++;
-    itMissing++;
-  }
+  // Government IDs
+  if (!employee.sssNo) { mildCount++; hrMissing++; }
+  if (!employee.tinNo) { mildCount++; hrMissing++; }
+  if (!employee.philhealthNo) { mildCount++; hrMissing++; }
+  if (!employee.pagibigNo) { mildCount++; hrMissing++; }
+
+  // IT Fields
+  if (!employee.pcName) { mildCount++; itMissing++; }
+  if (!employee.biosDate) { mildCount++; itMissing++; }
+  if (!employee.rustdeskId && !employee.rustDeskId) { mildCount++; itMissing++; }
+  if (!employee.windowsKey && !employee.windowsLicenseKey) { mildCount++; itMissing++; }
+  if (!employee.boEmail && !employee.bigoutsourceEmail) { mildCount++; itMissing++; }
+  if (!employee.emailPassword) { mildCount++; itMissing++; }
+  if (!employee.lmsAccount) { mildCount++; itMissing++; }
+  if (!employee.activityWatchStatus || employee.activityWatchStatus.toLowerCase() !== "installed") { mildCount++; itMissing++; }
+  if (!employee.esetStatus || employee.esetStatus.toLowerCase() !== "active") { mildCount++; itMissing++; }
+  if (!employee.outlookEmail) { mildCount++; itMissing++; }
+  if (!employee.teamsAccount) { mildCount++; itMissing++; }
+  if (!employee.mattermostAccount) { mildCount++; itMissing++; }
+  if (!employee.deviceType) { mildCount++; itMissing++; }
 
   const total = criticalCount + mildCount;
   if (total === 0) return null;
@@ -660,13 +618,6 @@ const directoryFields: Array<DirectoryFieldDef> = [
     requireIT: true,
     render: (emp) => emp.teamsAccount || "-",
   },
-  {
-    key: "googleAccount",
-    label: "Google Account",
-    category: "ACCOUNTS",
-    requireIT: true,
-    render: (emp) => emp.googleAccount || "-",
-  },
 
   // DEVICE & SECURITY
   {
@@ -769,7 +720,6 @@ const initialForm: AddEmployeeForm = {
   outlookEmail: "",
   mattermostAccount: "",
   teamsAccount: "",
-  googleAccount: "",
 };
 
 const wizardSteps = [
@@ -864,7 +814,6 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     outlookEmail: emp.outlookEmail || emp.outlook_email || "",
     mattermostAccount: emp.mattermostAccount || emp.mattermost_account || "",
     teamsAccount: emp.teamsAccount || emp.teams_account || "",
-    googleAccount: emp.googleAccount || emp.google_account || "",
     updatedAt: emp.updatedAt || "",
     updatedBy: emp.updatedBy || "",
     isArchived: emp.isArchived ?? emp.is_archived ?? false,
@@ -1681,7 +1630,6 @@ export default function Directory() {
       "Windows Key",
       "BIOS Date",
       "Outlook Email",
-      "Google Account",
       "Teams Account",
       "Mattermost Account",
     ];
@@ -2102,7 +2050,6 @@ export default function Directory() {
         outlookEmail: form.outlookEmail.trim() || undefined,
         mattermostAccount: form.mattermostAccount.trim() || undefined,
         teamsAccount: form.teamsAccount.trim() || undefined,
-        googleAccount: form.googleAccount.trim() || undefined,
         nickname: form.nickname.trim() || undefined,
         sex: form.sex || undefined,
         civilStatus: form.civilStatus || undefined,
@@ -2139,7 +2086,7 @@ export default function Directory() {
       setIsSuccessModalOpen(true);
       setTimeout(() => {
         setIsSuccessModalOpen(false);
-      }, 4000);
+      }, 5000);
       setIsAccountDropdownOpen(false);
       setForm(initialForm);
       setActiveStep(0);
@@ -3243,15 +3190,7 @@ export default function Directory() {
                                     placeholder="e.g. user@outlook.com"
                                   />
                                 </Field>
-                                <Field label="Google Account (if applicable)">
-                                  <Input
-                                    value={form.googleAccount}
-                                    onChange={(v) =>
-                                      updateForm("googleAccount", v)
-                                    }
-                                    placeholder="e.g. user@gmail.com"
-                                  />
-                                </Field>
+
                                 <Field label="Teams Account (if applicable)">
                                   <Input
                                     value={form.teamsAccount}
@@ -3347,15 +3286,7 @@ export default function Directory() {
                                     placeholder="e.g. user@outlook.com"
                                   />
                                 </Field>
-                                <Field label="Google Account (if applicable)">
-                                  <Input
-                                    value={form.googleAccount}
-                                    onChange={(v) =>
-                                      updateForm("googleAccount", v)
-                                    }
-                                    placeholder="e.g. user@gmail.com"
-                                  />
-                                </Field>
+
                                 <Field label="Teams Account (if applicable)">
                                   <Input
                                     value={form.teamsAccount}
@@ -4032,14 +3963,7 @@ export default function Directory() {
                                   }
                                 />
                               </Field>
-                              <Field label="Google Account">
-                                <Input
-                                  value={form.googleAccount}
-                                  onChange={(v) =>
-                                    updateForm("googleAccount", v)
-                                  }
-                                />
-                              </Field>
+
                               <Field label="Teams Account">
                                 <Input
                                   value={form.teamsAccount}
@@ -4266,12 +4190,27 @@ export default function Directory() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
+            onClick={() => setIsSuccessModalOpen(false)}
           >
+            <Confetti
+              width={window.innerWidth}
+              height={window.innerHeight}
+              recycle={false}
+              numberOfPieces={400}
+              gravity={0.15}
+            />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.6, y: 40 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 25,
+                mass: 1.2
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl relative z-10"
             >
               <div className="p-8 flex flex-col items-center text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
@@ -4281,7 +4220,7 @@ export default function Directory() {
                   Employee Added
                 </h2>
                 <p className="mt-3 text-sm font-medium text-[#4B5563]">
-                  I have sent a Notification for HR and IT through the system and Email.
+                  The employee profile has been successfully created and saved to the database.
                 </p>
               </div>
             </motion.div>

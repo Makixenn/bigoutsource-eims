@@ -109,7 +109,6 @@ function NotificationBell() {
   const [activeEmployeeNotificationIds, setActiveEmployeeNotificationIds] = useState<Set<string>>(new Set());
 
   const canManageUsers = can('users.manage');
-  const canReceiveEmployeeAddedNotifications = can('notifications.hr_action') || can('notifications.it_action');
 
   const pendingUsers = useMemo(
     () => users.filter((account) => account.status === 'pending'),
@@ -130,7 +129,7 @@ function NotificationBell() {
 
   const unreadCount =
     (canManageUsers && notifyRegistrationAttempts ? unreadPendingUsers.length : 0) +
-    (canReceiveEmployeeAddedNotifications ? unreadEmployeeNotifications.length : 0);
+    unreadEmployeeNotifications.length;
 
   const openNotifications = () => {
     setIsOpen(true);
@@ -233,17 +232,13 @@ function NotificationBell() {
   }, [canManageUsers]);
 
   useEffect(() => {
-    if (!canManageUsers && !canReceiveEmployeeAddedNotifications) return;
-    
     if (canManageUsers) {
       setUsers(fetchedUsers);
     }
-    if (canReceiveEmployeeAddedNotifications) {
-      setEmployeeNotifications(fetchedNotifications);
-    }
+    setEmployeeNotifications(fetchedNotifications);
   }, [
     fetchedUsers, fetchedNotifications,
-    canManageUsers, canReceiveEmployeeAddedNotifications
+    canManageUsers
   ]);
 
   return (
