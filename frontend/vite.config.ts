@@ -2,6 +2,10 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import dns from 'dns';
+
+// Fix Node 17+ DNS resolution timeouts in Docker by forcing IPv4
+dns.setDefaultResultOrder('ipv4first');
 
 export default defineConfig(() => {
   return {

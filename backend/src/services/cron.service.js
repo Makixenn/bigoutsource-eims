@@ -34,7 +34,7 @@ export const CronService = {
     });
   },
 
-  async checkEvaluations() {
+  async checkEvaluations(options = { todayOnly: false }) {
     // 1. Fetch active, unarchived employees who might have evaluations
     const employees = await prisma.employee.findMany({
       where: {
@@ -44,23 +44,32 @@ export const CronService = {
     });
 
     const now = normalizeDate(new Date());
+    const employeeIds = employees.map(e => e.id);
+
+    // Fetch existing 'eval_due' notifications for all these employees to prevent duplicates
+    const allExistingNotifications = await prisma.notification.findMany({
+      where: {
+        entityId: { in: employeeIds },
+        type: 'eval_due'
+      }
+    });
+
+    const notificationsByEmployee = {};
+    for (const notif of allExistingNotifications) {
+      if (!notificationsByEmployee[notif.entityId]) notificationsByEmployee[notif.entityId] = [];
+      notificationsByEmployee[notif.entityId].push(notif);
+    }
 
     for (const employee of employees) {
       const milestones = [
-        { label: '1st Month', field: 'eval_first_month' },
-        { label: '3rd Month', field: 'eval_third_month' },
-        { label: '5th Month', field: 'eval_fifth_month' },
-        { label: '6th Month', field: 'eval_sixth_month' },
-        { label: 'Anniversary', field: 'eval_anniversary' },
+        { label: '1st Month', field: 'evalFirstMonth' },
+        { label: '3rd Month', field: 'evalThirdMonth' },
+        { label: '5th Month', field: 'evalFifthMonth' },
+        { label: '6th Month', field: 'evalSixthMonth' },
+        { label: 'Anniversary', field: 'evalAnniversary' },
       ];
 
-      // Fetch existing 'eval_due' notifications for this employee to prevent duplicates
-      const existingNotifications = await prisma.notification.findMany({
-        where: {
-          entityId: employee.id,
-          type: 'eval_due'
-        }
-      });
+      const existingNotifications = notificationsByEmployee[employee.id] || [];
 
       for (const milestone of milestones) {
         const dateStr = employee[milestone.field];
@@ -75,7 +84,7 @@ export const CronService = {
 
         let timing = null;
         // Upcoming check (between 1 and 8 days before)
-        if (daysUntil > 0 && daysUntil <= 8) {
+        if (!options.todayOnly && daysUntil > 0 && daysUntil <= 8) {
           timing = 'upcoming';
         } 
         // Due today check (exactly 0 days)
