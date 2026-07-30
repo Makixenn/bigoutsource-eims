@@ -19,6 +19,7 @@ import {
   Building2,
   AlertTriangle,
   CalendarDays,
+  Info,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -32,6 +33,7 @@ type ImportRow = {
   importBatchId: string;
   sourceRow: number;
   normalizedData: Record<string, any>;
+  existingData?: Record<string, any>;
   issues: Array<{ code: string; message: string; severity?: 'warning' | 'info' }>;
   status: 'ready' | 'issue' | 'imported' | 'skipped';
   duplicateKey?: string;
@@ -101,19 +103,43 @@ const importReviewCache: {
 const fieldLabels: Array<[string, string]> = [
   ['employeeNumber', 'ID'],
   ['fullName', 'Name'],
+  ['nickname', 'Nickname'],
   ['accountAssignment', 'Department/Campaign.'],
+  ['position', 'Position'],
+  ['status', 'Status'],
+  ['dateHired', 'Date Hired'],
+  ['siteName', 'Site'],
   ['phone', 'Phone'],
   ['address', 'Address'],
-  ['boEmail', 'Email'],
+  ['sex', 'Sex'],
+  ['civilStatus', 'Civil Status'],
+  ['boEmail', 'BO Email'],
+  ['personalEmail', 'Personal Email'],
   ['emailPassword', 'Email Password'],
   ['lmsAccount', 'LMS Account'],
-  ['status', 'Status'],
-  ['siteName', 'Site'],
+  ['mattermostAccount', 'Mattermost'],
   ['pcName', 'PC Name'],
   ['rustdeskId', 'Remote ID'],
   ['esetStatus', 'ESET'],
+  ['biosDate', 'BIOS Date'],
   ['activityWatchStatus', 'Activity Watch'],
-  ['dateHired', 'Date Hired'],
+  ['windowsKey', 'Windows Key'],
+  ['sssNo', 'SSS No'],
+  ['tinNo', 'TIN No'],
+  ['philhealthNo', 'PhilHealth No'],
+  ['pagibigNo', 'Pag-IBIG No'],
+  ['bdoAccountNo', 'BDO Account'],
+  ['emergencyContactName', 'Emergency Contact Name'],
+  ['emergencyContactNo', 'Emergency Contact No'],
+  ['idIssuance', 'ID Issuance'],
+  ['hoodieIssuance', 'Hoodie Issuance'],
+  ['hmoEnrollment', 'HMO Enrollment'],
+  ['hmoMemberCode', 'HMO Code'],
+  ['eval1stMonth', '1st Month Eval'],
+  ['eval3rdMonth', '3rd Month Eval'],
+  ['eval5thMonth', '5th Month Eval'],
+  ['eval6thMonth', '6th Month Eval'],
+  ['evalAnniversary', 'Anniversary Eval'],
   ['is_archived', 'Archived'],
 ];
 
@@ -126,7 +152,24 @@ function completenessForData(data: Record<string, any> = {}) {
 }
 
 function completeness(row: ImportRow) {
-  return completenessForData(row.normalizedData);
+  const mergedData = row.existingData ? { ...row.existingData, ...row.normalizedData } : row.normalizedData;
+  return completenessForData(mergedData);
+}
+
+function updatedFieldsText(row: ImportRow) {
+  if (!row.existingData) return '';
+  const changes: string[] = [];
+  for (const [key, label] of fieldLabels) {
+    const existingVal = row.existingData[key];
+    const incomingVal = row.normalizedData[key];
+    const isEmpty = existingVal === null || existingVal === undefined || existingVal === '';
+    
+    if (incomingVal && isEmpty) {
+      changes.push(`${label}: (empty) -> ${incomingVal}`);
+    }
+  }
+  if (changes.length === 0) return 'No new fields will be added.';
+  return changes.join('\n');
 }
 
 function blockingIssues(row: ImportRow) {
@@ -598,10 +641,10 @@ export default function EmployeeImportReview() {
 
         <>
           {isLoading ? (
-            <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm w-full">
+            <div className="overflow-visible rounded-2xl border border-[#E5E7EB] bg-white shadow-sm w-full">
               <table className="w-full min-w-[920px] text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                <thead className="bg-[#F9FAFB] [&_th:first-child]:rounded-tl-2xl [&_th:last-child]:rounded-tr-2xl">
+                  <tr className="border-b border-[#E5E7EB]">
                     <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
                     <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
                     <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Employee</th>
@@ -609,7 +652,7 @@ export default function EmployeeImportReview() {
                     <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
                   </tr>
                 </thead>
-                <tbody className="">
+                <tbody className="[&_tr:last-child_td:first-child]:rounded-bl-2xl [&_tr:last-child_td:last-child]:rounded-br-2xl">
                   {[...Array(5)].map((_, i) => (
                     <tr key={i} className="animate-pulse border-b border-[#F3F4F6] last:border-0">
                       <td className="px-4 py-3"><div className="h-5 w-16 bg-gray-200 rounded-lg"></div></td>
@@ -651,7 +694,7 @@ export default function EmployeeImportReview() {
               )}
     
               {activeView === 'issues' && (
-                <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
+                <div className="overflow-visible rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
                   {visibleIssueRows.length ? (
                     <IssueTable
                       rows={visibleIssueRows}
@@ -670,7 +713,7 @@ export default function EmployeeImportReview() {
               )}
     
               {activeView === 'ready' && (
-                <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
+                <div className="overflow-visible rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
                   {readyRows.length ? (
                     <IssueTable
                       rows={readyRows}
@@ -777,7 +820,7 @@ function BulkDeleteButton({ children, disabled, onClick }: { children: ReactNode
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:border-[#E5E7EB] disabled:text-[#D1D5DB]"
+      className="mr-auto inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:border-[#E5E7EB] disabled:text-[#D1D5DB]"
     >
       <Trash2 className="h-4 w-4" />
       {children}
@@ -1121,66 +1164,82 @@ function IssueTable({
   onDelete: (row: ImportRow) => void;
 }) {
   return (
-    <table className="w-full min-w-[900px] text-left">
-      <thead className="bg-[#F9FAFB]">
-        <tr>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">ID</th>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Name</th>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Email</th>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">{ready ? 'Completeness' : 'Issue'}</th>
-          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
-        </tr>
-      </thead>
-      <tbody className="">
-        {rows.map((row) => (
-          <tr key={row.id} className="border-b border-[#F3F4F6] last:border-0">
-            <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.sourceRow}</td>
-            <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.employeeNumber || '-'}</td>
-            <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.fullName || '-'}</td>
-            <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.boEmail || '-'}</td>
-            <td className="px-4 py-3 text-sm font-bold text-[#111827]">
-              {row.normalizedData.status || '-'}{row.normalizedData.is_archived ? ' / archived' : ''}
-            </td>
-            <td className="px-4 py-3 text-sm font-bold text-[#4B5563]">
-              <div className="flex flex-col items-start gap-1.5">
-                <div className="flex items-center gap-2">
-                  <span>{ready ? `${completeness(row)}/${fieldLabels.length}` : issueText(row)}</span>
-                  {ready && rowInfos(row).length > 0 && (
-                    <span className="rounded-lg bg-blue-50 px-2 py-1 text-[0.625rem] font-black uppercase tracking-widest text-blue-700 border border-blue-200">
-                      MERGE
-                    </span>
-                  )}
-                </div>
-                {rowWarnings(row).length > 0 && <WarningChip text={warningText(row)} />}
-                {rowInfos(row).length > 0 && !ready && <WarningChip text={infoText(row)} />}
-              </div>
-            </td>
-            <td className="px-4 py-3 text-right">
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => onEdit(row)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-xs font-black text-[#4B5563] transition-all hover:text-[#111827]"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(row)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-600 transition-all hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </button>
-              </div>
-            </td>
+    <div className="overflow-visible">
+      <table className="w-full min-w-[900px] text-left">
+        <thead className="bg-[#F9FAFB] [&_th:first-child]:rounded-tl-2xl [&_th:last-child]:rounded-tr-2xl">
+          <tr>
+            <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
+            <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">ID</th>
+            <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Name</th>
+            <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Email</th>
+            <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
+            <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">{ready ? 'Completeness' : 'Issue'}</th>
+            <th className="px-4 py-3 text-right text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="[&_tr:last-child_td:first-child]:rounded-bl-2xl [&_tr:last-child_td:last-child]:rounded-br-2xl">
+          {rows.map((row) => (
+            <tr key={row.id} className="border-b border-[#F3F4F6] last:border-0">
+              <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.sourceRow}</td>
+              <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.employeeNumber || '-'}</td>
+              <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.fullName || '-'}</td>
+              <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.boEmail || '-'}</td>
+              <td className="px-4 py-3 text-sm font-bold text-[#111827]">
+                {row.normalizedData.status || '-'}{row.normalizedData.is_archived ? ' / archived' : ''}
+              </td>
+              <td className="px-4 py-3 text-sm font-bold text-[#4B5563]">
+                <div className="flex flex-col items-start gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span>{ready ? `${completeness(row)}/${fieldLabels.length}` : issueText(row)}</span>
+                    {ready && rowInfos(row).some(i => i.code === 'existing_id') && (
+                      <div className="group relative inline-flex">
+                        <span className="cursor-help rounded-md bg-gray-100 px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-widest text-gray-500 transition-colors hover:bg-gray-200">
+                          Updates Existing
+                        </span>
+                        <div className="absolute right-full top-1/2 z-[100] mr-2 flex w-max max-w-[280px] -translate-y-1/2 items-center pointer-events-none opacity-0 translate-x-1 scale-95 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100">
+                          <div className="rounded-lg bg-[#111827] px-3 py-2 text-left text-[0.625rem] font-medium leading-relaxed text-white shadow-xl whitespace-pre-wrap">
+                            <p className="mb-1 font-bold text-gray-300">Incoming Updates:</p>
+                            {updatedFieldsText(row)}
+                          </div>
+                          <div className="h-0 w-0 border-y-4 border-l-4 border-y-transparent border-l-[#111827]" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {ready && (
+                    <div className="mt-0.5 h-1 w-full max-w-[60px] overflow-visible rounded-full bg-gray-100">
+                      <div className={cn("h-full rounded-full transition-all duration-500", completeness(row) === fieldLabels.length ? "bg-green-500" : "bg-amber-400")} style={{ width: `${(completeness(row) / fieldLabels.length) * 100}%` }} />
+                    </div>
+                  )}
+                  {rowWarnings(row).length > 0 && <WarningChip text={warningText(row)} />}
+                  {rowInfos(row).length > 0 && !ready && <WarningChip text={infoText(row)} />}
+                </div>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(row)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-xs font-black text-[#4B5563] transition-all hover:text-[#111827]"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(row)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-600 transition-all hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -1811,13 +1870,23 @@ function SelectDropdown({
 }
 
 function WarningChip({ text }: { text: string }) {
+  const isInfo = text.includes('fields');
   return (
     <span
       title={text}
-      className="inline-flex max-w-full items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-amber-700"
+      className={cn(
+        "group relative inline-flex max-w-full items-center gap-1 rounded-lg px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide",
+        isInfo ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+      )}
     >
-      <AlertTriangle className="h-3 w-3 shrink-0" />
-      <span className="truncate">Possible duplicate</span>
+      {isInfo ? <Info className="h-3 w-3 shrink-0" /> : <AlertTriangle className="h-3 w-3 shrink-0" />}
+      <span className="truncate">{isInfo ? 'Incomplete Fields' : 'Warning'}</span>
+      <div className="absolute right-full top-1/2 z-[100] mr-2 flex w-max max-w-[250px] -translate-y-1/2 items-center pointer-events-none opacity-0 translate-x-1 scale-95 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100">
+        <div className="rounded-lg bg-[#111827] px-3 py-2 text-left text-[0.625rem] font-medium leading-relaxed text-white shadow-xl whitespace-pre-wrap">
+          {text}
+        </div>
+        <div className="h-0 w-0 border-y-4 border-l-4 border-y-transparent border-l-[#111827]" />
+      </div>
     </span>
   );
 }
