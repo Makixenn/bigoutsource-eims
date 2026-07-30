@@ -157,6 +157,15 @@ function normalizeRow(row) {
     floatDate: normalizeDate(value(row, 'Float Date')),
     separationDate: normalizeDate(value(row, 'Separation Date')),
     separationReason: value(row, 'Separation Reason'),
+    idIssuance: value(row, 'ID Issuance'),
+    hoodieIssuance: value(row, 'Hoodie Issuance'),
+    hmoEnrollment: normalizeDate(value(row, 'HMO Enrollment')),
+    hmoMemberCode: value(row, 'HMO Member Code'),
+    evalFirstMonth: normalizeDate(value(row, '1st Month Eval', '1st Month')),
+    evalThirdMonth: normalizeDate(value(row, '3rd Month Eval', '3rd Month')),
+    evalFifthMonth: normalizeDate(value(row, '5th Month Eval', '5th Month')),
+    evalSixthMonth: normalizeDate(value(row, '6th Month Eval', '6th Month')),
+    evalAnniversary: normalizeDate(value(row, 'Anniversary Eval', 'Anniversary', 'Anniv')),
     is_archived: finalIsArchived,
   };
 }
@@ -222,21 +231,27 @@ function validateRecord(
     issues.push({ code: 'existing_id', message: `Matches existing employee (${record.employeeNumber}). Blank fields will be filled.`, severity: 'info' });
   }
 
-  // Name duplicates are warnings, not blockers — two real people can share a name.
-  const nameKey = normalizeName(record.fullName);
-  if (nameKey && duplicateNames.has(nameKey)) {
-    issues.push({
-      code: 'duplicate_name',
-      message: `Possible duplicate: name "${record.fullName}" appears more than once in this import`,
-      severity: 'warning',
-    });
-  }
-  if (nameKey && existingNames.has(nameKey)) {
-    issues.push({
-      code: 'existing_name',
-      message: `Possible duplicate: "${record.fullName}" already exists in Employee Records`,
-      severity: 'warning',
-    });
+  // Name duplicates are blockers - two real people shouldn't share a name without manual review.
+  // However, if we already confirmed this is an intended UPDATE (existing_id), skip name checks.
+  const isExistingId = record.employeeNumber && existingIds.has(record.employeeNumber);
+  if (!isExistingId) {
+    const nameKey = normalizeName(record.fullName);
+    if (nameKey && duplicateNames.has(nameKey)) {
+      issues.push({
+        code: 'duplicate_name',
+        message: `Possible duplicate: name "${record.fullName}" appears more than once in this import`,
+        severity: 'error',
+      });
+      // For in-file duplicate names, we still need to assign a duplicateKey so they group together.
+      // However, duplicateKey assignment happens outside this validateRecord function.
+    }
+    if (nameKey && existingNames.has(nameKey)) {
+      issues.push({
+        code: 'existing_name',
+        message: `Possible duplicate: "${record.fullName}" already exists in Employee Records`,
+        severity: 'error',
+      });
+    }
   }
 
   if (record.biosDate) {
@@ -410,7 +425,8 @@ export const EmployeeImportService = {
         normalizedData: row.normalizedData,
         issues,
         status: statusFromIssues(issues),
-        duplicateKey: duplicateKeys.has(row.normalizedData.employeeNumber) ? row.normalizedData.employeeNumber : null,
+        duplicateKey: duplicateKeys.has(row.normalizedData.employeeNumber) ? row.normalizedData.employeeNumber : 
+                      (duplicateNames.has(normalizeName(row.normalizedData.fullName)) || existingNames.has(normalizeName(row.normalizedData.fullName))) ? normalizeName(row.normalizedData.fullName) : null,
         createdBy: user?.id,
       };
     });
@@ -430,6 +446,22 @@ export const EmployeeImportService = {
 
   async list(filters = {}) {
     const rows = await EmployeeImportModel.findAll(filters);
+    
+    // Dynamically inject existing data for "UPDATES EXISTING" rows
+    const updateRows = rows.filter(r => r.issues && r.issues.some(i => i.code === 'existing_id'));
+    if (updateRows.length > 0) {
+      const idsToFetch = updateRows.map(r => r.normalizedData?.employeeNumber).filter(Boolean);
+      if (idsToFetch.length > 0) {
+        const existingEmployees = await EmployeeModel.findByIdsOrNames(idsToFetch, []);
+        const employeeMap = new Map(existingEmployees.map(e => [e.employeeNumber, e]));
+        for (const row of rows) {
+          if (row.normalizedData?.employeeNumber && employeeMap.has(row.normalizedData.employeeNumber)) {
+            row.existingData = employeeMap.get(row.normalizedData.employeeNumber);
+          }
+        }
+      }
+    }
+
     return { rows, summary: summarize(rows) };
   },
 
