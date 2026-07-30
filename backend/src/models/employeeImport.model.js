@@ -44,8 +44,9 @@ export const EmployeeImportModel = {
       data: payloads,
     });
     
-    // We cannot easily map returned since createMany does not return records.
-    return [];
+    // We cannot easily map returned since createMany does not return records,
+    // but we can return the payloads we just constructed!
+    return payloads.map(normalize);
   },
 
   async findAll(filters = {}) {
@@ -106,16 +107,25 @@ export const EmployeeImportModel = {
     const uniqueIds = [...new Set(ids.filter(Boolean))];
     if (!uniqueIds.length) return [];
 
+    const rows = await prisma.employeeImportStaging.findMany({
+      where: { id: { in: uniqueIds } },
+    });
+
     await prisma.employeeImportStaging.deleteMany({
       where: { id: { in: uniqueIds } },
     });
-    return [];
+    return rows.map(normalize);
   },
 
   async remove(id) {
+    const row = await prisma.employeeImportStaging.findUnique({
+      where: { id },
+    });
+    if (!row) return null;
+
     await prisma.employeeImportStaging.delete({
       where: { id },
     });
-    return [];
+    return normalize(row);
   },
 };
