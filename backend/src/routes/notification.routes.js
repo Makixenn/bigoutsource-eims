@@ -4,6 +4,7 @@ import { NotificationController } from '../controllers/notification.controller.j
 const router = Router();
 
 router.get('/', NotificationController.list);
+router.post('/trigger-cron', NotificationController.triggerCron);
 router.post('/read-all', NotificationController.markAllRead);
 router.delete('/', NotificationController.clearAll);
 router.delete('/:id', NotificationController.clearSingle);

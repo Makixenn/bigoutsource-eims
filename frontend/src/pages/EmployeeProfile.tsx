@@ -220,7 +220,6 @@ const editableFields: Array<keyof EmployeeForm> = [
   'floatDate',
   'outlookEmail',
   'mattermostAccount',
-  'teamsAccount'
   'teamsAccount',
   'googleAccount',
   'evalFirstMonth',
@@ -555,9 +554,9 @@ export default function EmployeeProfile() {
   const [archiveSeparationReasonOther, setArchiveSeparationReasonOther] = useState<string>('');
   const [archiveSeparationDate, setArchiveSeparationDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [archiveStep, setArchiveStep] = useState<1 | 2>(1);
-  const [hrCheckboxes, setHrCheckboxes] = useState({ jobTitle: false, accountAssignment: false, site: false });
+  const [hrCheckboxes, setHrCheckboxes] = useState({ position: false, accountAssignment: false, site: false });
   const [itCheckboxes, setItCheckboxes] = useState<Record<string, boolean>>({});
-  const [unarchiveJobTitle, setUnarchiveJobTitle] = useState('');
+  const [unarchivePosition, setUnarchivePosition] = useState('');
   const [unarchiveAccountAssignment, setUnarchiveAccountAssignment] = useState('');
   const [unarchiveSiteId, setUnarchiveSiteId] = useState('');
   const [unarchiveEmployeeStatus, setUnarchiveEmployeeStatus] = useState('');
@@ -592,7 +591,6 @@ export default function EmployeeProfile() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'personal' | 'employment' | 'accounts' | 'audit'>('personal');
   const [isNotifyingIT, setIsNotifyingIT] = useState(false);
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [activeTab, setActiveTab] = useState<'personal' | 'employment' | 'accounts' | 'audit' | 'notifications'>('personal');
@@ -675,7 +673,7 @@ export default function EmployeeProfile() {
     if (!employee.siteId && !employee.site) criticalCount++;
     if (!employee.firstName) criticalCount++;
     if (!employee.lastName) criticalCount++;
-    if (!employee.position && !employee.jobTitle) mildCount++;
+    if (!employee.position) mildCount++;
     if (!employee.dateHired) mildCount++;
     if (!employee.employeeStatus) mildCount++;
     if (!employee.status) mildCount++;
@@ -916,24 +914,7 @@ export default function EmployeeProfile() {
     setFormErrors({});
   };
 
-  const renderEditButton = (canEditSection: boolean) => {
-    if (!canEditSection) return undefined;
-    return (
-      <button
-        type="button"
-        onClick={isEditing ? cancelEditing : startEditing}
-        className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm",
-          isEditing
-            ? "bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200"
-            : "bg-white text-[#111827] border border-[#E5E7EB] hover:bg-[#F9FAFB] hover:border-[#D1D5DB]"
-        )}
-      >
-        {isEditing ? <X className="w-3.5 h-3.5" /> : <Edit className="w-3.5 h-3.5" />}
-        {isEditing ? "Exit Edit Mode" : "Edit Details"}
-      </button>
-    );
-  };
+
 
   const saveProfile = async (event?: FormEvent) => {
     if (event) event.preventDefault();
@@ -1026,7 +1007,7 @@ export default function EmployeeProfile() {
         teamsAccount: form.teamsAccount.trim(),
         mattermostAccount: form.mattermostAccount.trim(),
         provisioningStatus: form.provisioningStatus,
-        muteNotification: form.muteNotification
+        muteNotification: form.muteNotification,
         evalFirstMonth: form.evalFirstMonth,
         evalThirdMonth: form.evalThirdMonth,
         evalFifthMonth: form.evalFifthMonth,
@@ -1069,7 +1050,7 @@ export default function EmployeeProfile() {
         }
       } else {
         if (archiveStep === 2) {
-          if (!hrCheckboxes.jobTitle || !hrCheckboxes.accountAssignment || !hrCheckboxes.site) {
+          if (!hrCheckboxes.position || !hrCheckboxes.accountAssignment || !hrCheckboxes.site) {
             toast.error("all fields must be cleared");
             return;
           }
@@ -1111,7 +1092,8 @@ export default function EmployeeProfile() {
             separation_reason: separationReason,
             separation_date: sepDate,
             floatDate: flDate,
-            jobTitle: '',
+
+            position: '',
             accountAssignment: '',
             siteId: null,
             siteName: '',
@@ -1129,7 +1111,8 @@ export default function EmployeeProfile() {
           separation_reason: null,
           separation_date: null,
           floatDate: null,
-          jobTitle: unarchiveJobTitle.trim(),
+
+          position: unarchivePosition.trim(),
           accountAssignment: unarchiveAccountAssignment.trim(),
           siteId: unarchiveSiteId,
           siteName: sites.find(s => s.id === unarchiveSiteId)?.name || '',
@@ -1151,9 +1134,9 @@ export default function EmployeeProfile() {
       setShowArchiveModal(false);
       setArchiveIntent(null);
       setArchiveStep(1);
-      setHrCheckboxes({ jobTitle: false, accountAssignment: false, site: false });
+      setHrCheckboxes({ position: false, accountAssignment: false, site: false });
       setItCheckboxes({});
-      setUnarchiveJobTitle('');
+      setUnarchivePosition('');
       setUnarchiveAccountAssignment('');
       setUnarchiveSiteId('');
     } catch (error: any) {
@@ -1414,7 +1397,6 @@ export default function EmployeeProfile() {
                         </div>
                       </motion.div>
                     ) : canUseEmployeeActions ? (
-                    {isEditing ? null : canUseEmployeeActions ? (
                       <motion.div
                         key="view-actions"
                         initial={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
@@ -1518,7 +1500,7 @@ export default function EmployeeProfile() {
                                 
                                 if (employee.isArchived) {
                                   setArchiveStep(1);
-                                  setUnarchiveJobTitle(employee.position || '');
+                                  setUnarchivePosition(employee.position || '');
                                   setUnarchiveAccountAssignment(employee.accountAssignment || '');
                                   setUnarchiveSiteId(employee.siteId || '');
                                   setUnarchiveEmployeeStatus(employee.employeeStatus || 'Regular');
@@ -1678,10 +1660,10 @@ export default function EmployeeProfile() {
 
               {/* Action Button in the Red Box (Top Right of Navigation Bar) */}
               <div className="flex items-center gap-2 ml-auto pr-2">
-                {activeTab === 'personal' && renderEditButton(canEditHR)}
-                {activeTab === 'employment' && renderEditButton(canEditHR)}
-                {activeTab === 'accounts' && renderEditButton(canEditIT || canEditSecrets)}
-                {activeTab === 'notifications' && renderEditButton(can('employees.evaluations.manage'))}
+                {activeTab === 'personal' && null}
+                {activeTab === 'employment' && null}
+                {activeTab === 'accounts' && null}
+                {activeTab === 'notifications' && null}
               </div>
             </div>
 
@@ -2276,61 +2258,6 @@ export default function EmployeeProfile() {
                 </AnimatePresence>
             </div>
             {/* Floating Sticky Save Bar (when editing and dirty) */}
-            <AnimatePresence>
-              {isEditing && hasChanges && (
-                <motion.div
-                  initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#111827] text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-6 max-w-lg w-[90%] justify-between backdrop-blur-xl bg-opacity-95"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-amber-400">Unsaved Changes</p>
-                      <p className="text-[11px] text-gray-300 font-medium">You have edited records in this profile</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer group hidden sm:flex">
-                      <div className="relative flex items-center justify-center w-4 h-4 rounded border border-white/30 bg-white/5 group-hover:border-white/50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={!!form.muteNotification}
-                          onChange={(e) => setForm(f => ({ ...f, muteNotification: e.target.checked }))}
-                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                        />
-                        {form.muteNotification && <CheckCircle2 className="w-3 h-3 text-white" />}
-                      </div>
-                      <span className="text-xs font-bold text-gray-300 group-hover:text-white transition-colors select-none">
-                        Mute Notifications
-                      </span>
-                    </label>
-
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={cancelEditing}
-                        disabled={isSaving}
-                        className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-50"
-                      >
-                        Discard
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSaving || !hasChanges}
-                        className="flex items-center gap-1.5 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-xs font-black transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
-                      >
-                        {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                        <span>Save Changes</span>
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
             {/* Removed sticky save bar per user request */}
           </motion.form>
         )}
@@ -2398,8 +2325,8 @@ export default function EmployeeProfile() {
                         <label className="block text-xs font-bold text-[#4B5563] uppercase tracking-wider mb-2">Job Title</label>
                         <input
                           type="text"
-                          value={unarchiveJobTitle}
-                          onChange={(e) => setUnarchiveJobTitle(e.target.value)}
+                          value={unarchivePosition}
+                          onChange={(e) => setUnarchivePosition(e.target.value)}
                           placeholder="e.g. Customer Service Rep"
                           className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-[#8B5CF6] transition-all"
                         />
@@ -2525,7 +2452,7 @@ export default function EmployeeProfile() {
                       ) : (
                         <>
                           <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.jobTitle} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, jobTitle: e.target.checked }))} />
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.position} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, position: e.target.checked }))} />
                             <span className="text-sm font-bold text-gray-700">Job Title</span>
                           </label>
                           <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
@@ -2572,7 +2499,7 @@ export default function EmployeeProfile() {
                     onClick={toggleArchiveEmployee}
                     disabled={
                       isArchiving ||
-                      (archiveIntent === 'unarchive' && (!unarchiveJobTitle.trim() || !unarchiveAccountAssignment.trim() || !unarchiveSiteId))
+                      (archiveIntent === 'unarchive' && (!unarchivePosition.trim() || !unarchiveAccountAssignment.trim() || !unarchiveSiteId))
                     }
                     className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
                         ? 'bg-green-600 hover:bg-green-700'

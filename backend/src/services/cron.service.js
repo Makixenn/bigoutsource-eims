@@ -73,22 +73,30 @@ export const CronService = {
 
         const daysUntil = diffInDays(evalDate, now);
 
-        // Target: 1 week and a day before (8 days)
-        // We trigger if it's exactly 8 days away, or if it was missed (between 0 and 8 days)
-        if (daysUntil <= 8 && daysUntil >= 0) {
-          
-          // Check if we already notified them for this specific milestone
+        let timing = null;
+        // Upcoming check (between 1 and 8 days before)
+        if (daysUntil > 0 && daysUntil <= 8) {
+          timing = 'upcoming';
+        } 
+        // Due today check (exactly 0 days)
+        else if (daysUntil === 0) {
+          timing = 'due_today';
+        }
+
+        if (timing) {
+          // Check if we already notified them for this specific milestone and timing
           const alreadyNotified = existingNotifications.some(n => {
             const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
-            return parsed?.milestone === milestone.label;
+            return parsed?.milestone === milestone.label && parsed?.timing === timing;
           });
 
           if (!alreadyNotified) {
-            console.log(`Triggering notification for ${employee.name || employee.id} - ${milestone.label} (Due: ${dateStr})`);
+            console.log(`Triggering notification for ${employee.name || employee.id} - ${milestone.label} (${timing}, Due: ${dateStr})`);
             await NotificationService.notifyEvaluationDue({
               employee,
               milestone: milestone.label,
-              dateStr
+              dateStr,
+              timing
             });
           }
         }

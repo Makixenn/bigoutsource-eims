@@ -104,7 +104,7 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (data?.outlookEmail !== undefined) payload.outlook_email = stringOrEmpty(data.outlookEmail);
   if (data?.teamsAccount !== undefined) payload.teams_account = stringOrEmpty(data.teamsAccount);
   if (data?.mattermostAccount !== undefined) payload.mattermost_account = stringOrEmpty(data.mattermostAccount);
-  if (data?.jobTitle !== undefined) payload.position = stringOrEmpty(data.jobTitle);
+
   if (data?.position !== undefined) payload.position = stringOrEmpty(data.position);
   if (data?.nickname !== undefined) payload.nickname = stringOrEmpty(data.nickname);
   if (data?.sex !== undefined) payload.sex = stringOrEmpty(data.sex);
@@ -182,7 +182,7 @@ function normalize(row) {
     outlookEmail: row.outlookEmail || row.outlook_email || '',
     teamsAccount: row.teamsAccount || row.teams_account || '',
     mattermostAccount: row.mattermostAccount || row.mattermost_account || '',
-    jobTitle: row.position || '',
+
     birthdate: row.birthdate || '',
     floatDate: row.floatDate || row.float_date || '',
     position: row.position || '',
@@ -306,7 +306,7 @@ export const EmployeeModel = {
       outlookEmail: payload.outlook_email,
       teamsAccount: payload.teams_account,
       mattermostAccount: payload.mattermost_account,
-      jobTitle: payload.job_title,
+
       birthdate: payload.birthdate,
       floatDate: payload.float_date,
       position: payload.position,
@@ -372,7 +372,7 @@ export const EmployeeModel = {
         outlookEmail: payload.outlook_email,
         teamsAccount: payload.teams_account,
         mattermostAccount: payload.mattermost_account,
-        jobTitle: payload.job_title,
+
         birthdate: payload.birthdate,
         floatDate: payload.float_date,
         position: payload.position,
@@ -446,7 +446,7 @@ export const EmployeeModel = {
       outlookEmail: payload.outlook_email,
       teamsAccount: payload.teams_account,
       mattermostAccount: payload.mattermost_account,
-      jobTitle: payload.job_title,
+
       birthdate: payload.birthdate,
       floatDate: payload.float_date,
       position: payload.position,

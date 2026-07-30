@@ -288,7 +288,7 @@ function calculateIncompleteData(employee: EmployeeRecord) {
   if (!employee.accountAssignment) { criticalCount++; hrMissing++; }
   if (!employee.siteId && !employee.site) { criticalCount++; hrMissing++; }
   if (!employee.fullName) { criticalCount++; hrMissing++; }
-  if (!employee.position && !employee.jobTitle) { mildCount++; hrMissing++; }
+  if (!employee.position) { mildCount++; hrMissing++; }
   if (!employee.dateHired) { mildCount++; hrMissing++; }
   if (!employee.employeeStatus) { mildCount++; hrMissing++; }
   if (!employee.status) { mildCount++; hrMissing++; }

@@ -34,7 +34,7 @@ export type Capability =
   | 'notifications.hr_action'
   | 'notifications.hr_action.accountAssignment'
   | 'notifications.hr_action.site'
-  | 'notifications.hr_action.jobTitle'
+  | 'notifications.hr_action.position'
   | 'notifications.hr_action.status'
   | 'notifications.hr_action.employeeStatus'
   | 'notifications.hr_action.dateHired'
