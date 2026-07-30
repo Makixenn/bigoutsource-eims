@@ -109,7 +109,6 @@ function NotificationBell() {
   const [activeEmployeeNotificationIds, setActiveEmployeeNotificationIds] = useState<Set<string>>(new Set());
 
   const canManageUsers = can('users.manage');
-  const canReceiveEmployeeAddedNotifications = can('notifications.hr_action') || can('notifications.it_action');
 
   const pendingUsers = useMemo(
     () => users.filter((account) => account.status === 'pending'),
@@ -130,7 +129,7 @@ function NotificationBell() {
 
   const unreadCount =
     (canManageUsers && notifyRegistrationAttempts ? unreadPendingUsers.length : 0) +
-    (canReceiveEmployeeAddedNotifications ? unreadEmployeeNotifications.length : 0);
+    unreadEmployeeNotifications.length;
 
   const openNotifications = () => {
     setIsOpen(true);
@@ -233,17 +232,13 @@ function NotificationBell() {
   }, [canManageUsers]);
 
   useEffect(() => {
-    if (!canManageUsers && !canReceiveEmployeeAddedNotifications) return;
-    
     if (canManageUsers) {
       setUsers(fetchedUsers);
     }
-    if (canReceiveEmployeeAddedNotifications) {
-      setEmployeeNotifications(fetchedNotifications);
-    }
+    setEmployeeNotifications(fetchedNotifications);
   }, [
     fetchedUsers, fetchedNotifications,
-    canManageUsers, canReceiveEmployeeAddedNotifications
+    canManageUsers
   ]);
 
   return (
@@ -347,7 +342,7 @@ function NotificationBell() {
                               ? 'bg-green-100 text-green-600 border-green-200'
                               : 'bg-red-100 text-red-600 border-red-200'
                           }`}>
-                            {notification.details.archiveStatus === 'complete' ? 'ARCHIVED COMPLETE' : 'HR Archived'}
+                            {notification.details.archiveStatus === 'complete' ? 'EMPLOYEE ARCHIVE COMPLETED ALERT' : 'EMPLOYEE ARCHIVE REQUEST ALERT'}
                           </span>
                         </div>
                       ) : notification.details?.missingFields ? (
@@ -357,7 +352,13 @@ function NotificationBell() {
                               ? 'bg-green-100 text-green-600 border-green-200'
                               : 'bg-red-100 text-red-600 border-red-200'
                           }`}>
-                            {notification.details.missingFields} FIELDS {notification.details.isComplete ? 'COMPLETE' : 'INCOMPLETE'}
+                            {notification.details.missingFields} FIELDS {notification.details.isComplete ? 'COMPLETE ALERT' : 'INCOMPLETE ALERT'}
+                          </span>
+                        </div>
+                      ) : notification.details?.updatedFields ? (
+                        <div className="absolute right-12 top-4">
+                          <span className="rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase tracking-wider border shadow-sm bg-blue-100 text-blue-600 border-blue-200">
+                            {notification.type === 'hr_action' ? 'HR FIELDS UPDATE ALERT' : 'IT FIELDS UPDATE ALERT'}
                           </span>
                         </div>
                       ) : null}
@@ -396,11 +397,18 @@ function NotificationBell() {
                           {timestamp && (
                             <p className="mt-1 text-[0.6875rem] font-bold" style={{ color: 'var(--color-text-muted)' }}>{timestamp}</p>
                           )}
-                          <p className="mt-2 text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>
-                            {notification.message ? notification.message : (
-                              <>Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.</>
+                          <div className="mt-2 text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>
+                            {notification.message ? <p>{notification.message}</p> : (
+                              <p>Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.</p>
                             )}
-                          </p>
+                            {notification.details?.updatedFields && (
+                              <ul className="mt-1.5 list-disc pl-4 text-[0.6875rem] font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                                {notification.details.updatedFields.map((field: string, idx: number) => (
+                                  <li key={idx} className="mb-0.5">{field}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                           {notification.actionUrl && (
                             <Link
                               to={notification.actionUrl}
@@ -440,7 +448,7 @@ function NotificationBell() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>Account request pending</p>
+                            <p className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>Pending Account Registration Alert</p>
                             {activeNotificationIds.has(String(account.uid)) && (
                               <span className="rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
                                 New

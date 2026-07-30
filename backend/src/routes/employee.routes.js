@@ -8,6 +8,7 @@ import { uploadAvatar } from '../utils/upload.js';
 const router = Router();
 
 router.get('/', requirePermission('employees.view'), EmployeeController.list);
+router.get('/export', requirePermission('employees.view'), EmployeeController.exportData);
 router.get('/summary', requirePermission('employees.view'), EmployeeController.summary);
 router.get('/:id', requirePermission('employees.view'), EmployeeController.get);
 router.post('/', requirePermission('employees.create'), validate(createEmployeeValidator), EmployeeController.create);
@@ -25,6 +26,18 @@ router.post(
   requireAnyPermission(['employees.edit', 'employees.it.edit', 'employees.secrets.edit']),
   uploadAvatar.single('avatar'),
   EmployeeController.uploadAvatar
+);
+
+router.post(
+  '/:id/remind-it',
+  requirePermission('employees.edit'),
+  EmployeeController.remindIT
+);
+
+router.post(
+  '/:id/notify-it',
+  requirePermission('employees.edit'),
+  EmployeeController.notifyIT
 );
 
 export default router;

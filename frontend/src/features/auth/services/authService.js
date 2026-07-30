@@ -65,6 +65,13 @@ export const authService = {
     return apiRequest('/auth/me');
   },
 
+  updateMe(data) {
+    return apiRequest('/auth/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   async logout() {
     try {
       await apiRequest('/auth/logout', { method: 'POST' });

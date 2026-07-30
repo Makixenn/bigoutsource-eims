@@ -73,6 +73,93 @@ export const EmailService = {
     }
   },
 
+  async sendEmployeeActionEmail(toEmail, { actionName, employeeName, actorName, roleSpecificMessage, actionUrl, fieldsList, auditLogId, note, successBox, themeColor = '#1f6fa0' }) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const linkUrl = actionUrl.startsWith('http') ? actionUrl : `${frontendUrl}${actionUrl}`;
+    
+    let fieldsHtml = '';
+    if (fieldsList && fieldsList.length > 0) {
+      fieldsHtml = `
+        <div style="margin: 20px 0; padding: 15px; background-color: #F3F4F6; border-radius: 8px;">
+          <h3 style="margin-top: 0; color: #374151; font-size: 14px;">Action Items / Changes:</h3>
+          <ul style="list-style-type: none; padding-left: 0; margin-bottom: 0;">
+            ${fieldsList.map(field => `
+              <li style="margin-bottom: 8px; color: #111827; font-size: 14px;">
+                <span style="display: inline-block; width: 24px; text-align: center; margin-right: 4px;">
+                  ${field.checked ? '✅' : '❌'}
+                </span>
+                ${field.label}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    let noteHtml = '';
+    if (note) {
+      noteHtml = `
+        <div style="margin: 20px 0; padding: 16px; background-color: #fef3c7; border-left: 6px solid #f59e0b; border-radius: 4px;">
+          <p style="margin: 0; color: #92400e; font-size: 15px;">
+            <strong>Note from HR:</strong> ${note}
+          </p>
+        </div>
+      `;
+    }
+
+    let successBoxHtml = '';
+    if (successBox) {
+      successBoxHtml = `
+        <div style="margin: 20px 0; padding: 16px; background-color: #dcfce7; border-left: 6px solid #16a34a; border-radius: 4px;">
+          <p style="margin: 0; color: #166534; font-size: 15px;">
+            ${successBox}
+          </p>
+        </div>
+      `;
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from: process.env.SMTP_USER ? `"BigOutsource EIMS" <${process.env.SMTP_USER}>` : '"BigOutsource EIMS" <no-reply@bigoutsource.com>',
+        to: toEmail,
+        subject: `[EIMS] ${actionName}: ${employeeName}`,
+        text: `${actorName} ${roleSpecificMessage}\n\nEmployee: ${employeeName}\n\nReview the record here: ${linkUrl}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #111827;">
+            <h2 style="color: ${themeColor};">${actionName}</h2>
+            ${successBox ? successBoxHtml : `<p><strong>${actorName}</strong> ${roleSpecificMessage}</p>`}
+            
+            ${noteHtml}
+            
+            <p><strong>Employee:</strong> ${employeeName}</p>
+            
+            ${fieldsHtml}
+            
+            <div style="margin: 25px 0;">
+              <a href="${linkUrl}" style="background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-right: 10px;">
+                View Employee Record
+              </a>
+              ${auditLogId ? `
+              <a href="${frontendUrl}/logs?undo=${auditLogId}" style="background-color: #ef4444; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Undo this action
+              </a>
+              ` : ''}
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #6B7280;">This is an automated notification from the BigOutsource Employee Information Management System.</p>
+          </div>
+        `,
+      });
+      console.log(`Employee action email sent to ${toEmail}: ${info.messageId}`);
+      return info;
+    } catch (error) {
+      console.error('Failed to send employee action email:', error);
+      // We do not throw an error here to prevent blocking the main flow.
+      return null;
+    }
+  },
+
   async sendPasswordResetEmail(toEmail, token) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
@@ -102,6 +189,28 @@ export const EmailService = {
     } catch (error) {
       console.error('Failed to send password reset email:', error);
       throw new Error('Failed to send password reset email');
+    }
+  },
+
+  async sendRawEmail(toEmail, subject, htmlBody) {
+    try {
+      const info = await transporter.sendMail({
+        from: process.env.SMTP_USER ? `"BigOutsource EIMS" <${process.env.SMTP_USER}>` : '"BigOutsource EIMS" <no-reply@bigoutsource.com>',
+        to: toEmail,
+        subject: subject,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #111827;">
+            ${htmlBody}
+            <hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #6B7280;">This is an automated notification from the BigOutsource Employee Information Management System.</p>
+          </div>
+        `,
+      });
+      console.log(`Raw email sent to ${toEmail}: ${info.messageId}`);
+      return info;
+    } catch (error) {
+      console.error('Failed to send raw email:', error);
+      return null;
     }
   }
 };

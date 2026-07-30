@@ -70,6 +70,14 @@ export const AuthController = {
     }
   },
 
+  async updateMe(req, res, next) {
+    try {
+      return success(res, await AuthService.updateMe(req.user, req.body), 'Profile updated');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async refreshSession(req, res, next) {
     try {
       const data = await AuthService.refreshSession(req.body);

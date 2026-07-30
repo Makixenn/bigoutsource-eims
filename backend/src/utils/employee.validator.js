@@ -27,7 +27,6 @@ export const createEmployeeValidator = {
   outlookEmail: { required: false, type: 'string' },
   mattermostAccount: { required: false, type: 'string' },
   teamsAccount: { required: false, type: 'string' },
-  googleAccount: { required: false, type: 'string' },
 };
 
 export const updateEmployeeValidator = {
@@ -60,5 +59,4 @@ export const updateEmployeeValidator = {
   outlookEmail: { required: false, type: 'string' },
   mattermostAccount: { required: false, type: 'string' },
   teamsAccount: { required: false, type: 'string' },
-  googleAccount: { required: false, type: 'string' },
 };

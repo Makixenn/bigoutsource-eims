@@ -55,12 +55,12 @@ export default function FAQ() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const visibleCategories = useMemo(() => {
-    return CATEGORIES.filter(c => c.id !== 'users' || user?.role === 'super_admin');
+    return CATEGORIES.filter(c => c.id !== 'users' || hasCapability('users.manage'));
   }, [user?.role]);
 
   const filteredFAQs = useMemo(() => {
     if (activeCategory === 'all') {
-      return FAQ_DATA.filter(faq => faq.categoryId !== 'users' || user?.role === 'super_admin');
+      return FAQ_DATA.filter(faq => faq.categoryId !== 'users' || hasCapability('users.manage'));
     }
     return FAQ_DATA.filter(faq => faq.categoryId === activeCategory);
   }, [activeCategory, user?.role]);

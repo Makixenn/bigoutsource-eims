@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { AlertCircle, History, Loader2, Search, ChevronRight, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Undo2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -157,8 +157,10 @@ export default function AuditLogs() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const recordsPerPage = 5;
   const todayDate = useMemo(() => getTodayDateInputValue(), []);
+  const undoId = searchParams.get('undo');
 
   useRealtimeSubscription({
     table: 'audit_logs',
@@ -205,6 +207,22 @@ export default function AuditLogs() {
       isMounted = false;
     };
   }, [refreshTrigger]);
+
+  useEffect(() => {
+    if (undoId && logs.length > 0) {
+      const logToUndo = logs.find(log => log.id === undoId);
+      if (logToUndo) {
+        setUndoTargetLog(logToUndo);
+        // Remove the query param so it doesn't trigger again on refresh
+        searchParams.delete('undo');
+        setSearchParams(searchParams);
+      } else {
+        toast.error('Audit log not found. It may be too old or already undone.');
+        searchParams.delete('undo');
+        setSearchParams(searchParams);
+      }
+    }
+  }, [undoId, logs, searchParams, setSearchParams]);
 
   const handleUndo = (log: any) => {
     if (!log.action.endsWith('.update')) {

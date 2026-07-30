@@ -24,6 +24,55 @@ const ONBOARDING_SUB_CAPS = [
   'employees.create.it_fields',
 ];
 
+const NOTIF_SUB_CAPS = [
+  // Personal Details
+  'notifications.hr_action.fullName',
+  'notifications.hr_action.nickname',
+  'notifications.hr_action.sex',
+  'notifications.hr_action.birthDate',
+  'notifications.hr_action.civilStatus',
+  'notifications.hr_action.sssNo',
+  'notifications.hr_action.tinNo',
+  'notifications.hr_action.philhealthNo',
+  'notifications.hr_action.pagibigNo',
+  'notifications.hr_action.personalEmail',
+  'notifications.hr_action.phoneNumber',
+  'notifications.hr_action.address',
+  'notifications.hr_action.mainContact',
+  'notifications.hr_action.emergencyContact',
+  'notifications.hr_action.emergencyContactNumber',
+  
+  // Employment & HR
+  'notifications.hr_action.accountAssignment',
+  'notifications.hr_action.site',
+  'notifications.hr_action.jobTitle',
+  'notifications.hr_action.status',
+  'notifications.hr_action.employeeStatus',
+  'notifications.hr_action.dateHired',
+  'notifications.hr_action.archive',
+  'notifications.hr_action.daily_birthdays',
+
+  // Accounts & IT Security
+  'notifications.it_action.provisioning',
+  'notifications.it_action.bigoutsourceEmail',
+  'notifications.it_action.rustdeskId',
+  'notifications.it_action.pcName',
+  'notifications.it_action.windowsKey',
+  'notifications.it_action.esetStatus',
+  'notifications.it_action.activityWatchStatus',
+  'notifications.it_action.lmsAccount',
+  'notifications.it_action.emailPassword',
+  'notifications.it_action.outlookEmail',
+  'notifications.it_action.teamsAccount',
+  'notifications.it_action.mattermostAccount',
+  'notifications.it_action.deviceType',
+  'notifications.it_action.biosDate',
+  'notifications.it_action.archive',
+
+  // System
+  'notifications.system.export_alerts',
+];
+
 type SegControlState = 'hidden' | 'optional' | 'required';
 
 function SegmentedControl({
@@ -108,7 +157,7 @@ export function CapabilityChecklist({
   const grouped = useMemo(() => {
     const byDomain = new Map<string, CapabilityItem[]>();
     for (const item of catalog) {
-      if (ONBOARDING_SUB_CAPS.includes(item.key)) continue; // skip rendering them as normal checkboxes
+      if (ONBOARDING_SUB_CAPS.includes(item.key) || NOTIF_SUB_CAPS.includes(item.key)) continue; // skip rendering them as normal checkboxes
       const domain = domainOf(item.key);
       if (!byDomain.has(domain)) byDomain.set(domain, []);
       byDomain.get(domain)!.push(item);
@@ -185,6 +234,86 @@ export function CapabilityChecklist({
     );
   };
 
+  const renderNotifSubCaps = (parentKey: string) => {
+    const subCaps = catalog.filter(c => NOTIF_SUB_CAPS.includes(c.key) && c.key.startsWith(parentKey + '.'));
+    if (subCaps.length === 0) return null;
+    
+    // Group sub-capabilities by category
+    const categories: Record<string, CapabilityItem[]> = {};
+    
+    if (parentKey === 'notifications.hr_action') {
+      categories['Personal Details'] = subCaps.filter(c => 
+        ['fullName', 'nickname', 'sex', 'birthDate', 'civilStatus', 'sssNo', 'tinNo', 'philhealthNo', 'pagibigNo', 'personalEmail', 'phoneNumber', 'address', 'mainContact', 'emergencyContact', 'emergencyContactNumber']
+        .some(field => c.key.endsWith(`.${field}`))
+      );
+      categories['Employment & HR'] = subCaps.filter(c => 
+        ['accountAssignment', 'site', 'jobTitle', 'status', 'employeeStatus', 'dateHired', 'archive']
+        .some(field => c.key.endsWith(`.${field}`))
+      );
+    } else if (parentKey === 'notifications.it_action') {
+      categories['Accounts & IT Security'] = subCaps.filter(c => c.key !== 'notifications.it_action.provisioning');
+      categories['IT Workflows'] = subCaps.filter(c => c.key === 'notifications.it_action.provisioning');
+    } else if (parentKey === 'notifications.system') {
+      categories['System Alerts'] = subCaps.filter(c => c.key === 'notifications.system.export_alerts');
+    }
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        className="overflow-hidden"
+      >
+        <div className="mt-4 ml-10 space-y-6 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB] p-4 shadow-inner">
+          {Object.entries(categories).map(([catName, items]) => {
+            if (items.length === 0) return null;
+            return (
+              <div key={catName}>
+                <h5 className="mb-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
+                  {catName}
+                </h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {items.map(sub => {
+                    const checked = selected.includes(sub.key);
+                    return (
+                      <label
+                        key={sub.key}
+                        className={cn(
+                          'flex items-center gap-3 rounded-xl border p-3 transition-colors',
+                          readOnly ? 'cursor-not-allowed opacity-70 border-[#E5E7EB]' : 'cursor-pointer hover:border-[#D1D5DB] hover:bg-white',
+                          checked ? 'border-[#111827] bg-white shadow-sm' : 'border-[#E5E7EB] bg-[#F9FAFB]'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-colors',
+                            checked ? 'border-[#111827] bg-[#111827]' : 'border-[#D1D5DB] bg-white'
+                          )}
+                        >
+                          {checked && <Check className="h-3 w-3 text-white" />}
+                        </span>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={checked}
+                          disabled={readOnly}
+                          onChange={() => onToggle(sub.key)}
+                        />
+                        <span className={cn('text-xs font-bold', checked ? 'text-[#111827]' : 'text-[#4B5563]')}>
+                          {sub.label.split('on ')[1] || sub.label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       {grouped.map((group) => (
@@ -219,7 +348,23 @@ export function CapabilityChecklist({
                       className="sr-only"
                       checked={checked}
                       disabled={readOnly}
-                      onChange={() => onToggle(item.key)}
+                      onChange={() => {
+                        onToggle(item.key);
+                        
+                        // Auto-toggle sub-capabilities for notifications
+                        if (item.key === 'notifications.hr_action' || item.key === 'notifications.it_action' || item.key === 'notifications.system') {
+                          const subCaps = catalog.filter(c => NOTIF_SUB_CAPS.includes(c.key) && c.key.startsWith(item.key + '.'));
+                          subCaps.forEach(sub => {
+                            if (!checked && !selected.includes(sub.key)) {
+                              // Turning ON: select all children
+                              onToggle(sub.key);
+                            } else if (checked && selected.includes(sub.key)) {
+                              // Turning OFF: unselect all children
+                              onToggle(sub.key);
+                            }
+                          });
+                        }
+                      }}
                     />
                     <div className="flex flex-col">
                       <span className={cn('text-sm font-black', checked ? 'text-[#111827]' : 'text-[#4B5563]')}>
@@ -235,6 +380,7 @@ export function CapabilityChecklist({
 
                   <AnimatePresence>
                     {isEmployeeCreate && checked && renderProgressiveDisclosure()}
+                    {(item.key === 'notifications.hr_action' || item.key === 'notifications.it_action' || item.key === 'notifications.system') && checked && renderNotifSubCaps(item.key)}
                   </AnimatePresence>
                 </div>
               );

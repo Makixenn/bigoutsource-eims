@@ -6,7 +6,7 @@ import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
 import { filterEmployeeWritePayload } from '../utils/employeeSecurity.js';
-
+import { EmailService } from './email.service.js';
 const sourceSheet = 'IT Master Tracker';
 const mappedFields = [
   'employeeNumber',
@@ -39,7 +39,6 @@ const mappedFields = [
   'emergencyContact',
   'emergencyContactNumber',
   'outlookEmail',
-  'googleAccount',
   'teamsAccount',
   'mattermostAccount',
   'birthdate',
@@ -124,7 +123,7 @@ function normalizeRow(row) {
   return {
     employeeNumber: value(row, 'Employee ID', 'ID'),
     fullName: value(row, 'Full Name', 'Name', 'fullName'),
-    accountAssignment: value(row, 'Department/Campaign', 'DEPARTMENT/CAMPAIGN.', 'Department/Campaign.', 'Account'),
+    accountAssignment: value(row, 'Department/Campaign', 'DEPARTMENT/CAMPAIGN', 'Department/Campaign', 'Account'),
     phone: value(row, 'Phone', 'Phone Number'),
     address: value(row, 'Address'),
     boEmail: value(row, 'BO Email', 'Bigoutsource Email'),
@@ -151,7 +150,6 @@ function normalizeRow(row) {
     emergencyContact: value(row, 'Emergency Contact Name', 'Emergency Contact'),
     emergencyContactNumber: value(row, 'Emergency Contact Number', 'Emergency Number'),
     outlookEmail: value(row, 'Outlook Email'),
-    googleAccount: value(row, 'Google Account'),
     teamsAccount: value(row, 'Teams Account'),
     mattermostAccount: value(row, 'Mattermost Account'),
     birthdate: normalizeDate(value(row, 'Birthdate')),
@@ -300,7 +298,6 @@ function coerceEditableData(data = {}) {
     emergencyContact: String(data.emergencyContact || '').trim(),
     emergencyContactNumber: String(data.emergencyContactNumber || '').trim(),
     outlookEmail: String(data.outlookEmail || '').trim(),
-    googleAccount: String(data.googleAccount || '').trim(),
     teamsAccount: String(data.teamsAccount || '').trim(),
     mattermostAccount: String(data.mattermostAccount || '').trim(),
     birthdate: normalizeDate(data.birthdate),
@@ -807,6 +804,20 @@ export const EmployeeImportService = {
       details: results,
       ipAddress: meta.ipAddress,
     });
+
+    if (user?.email) {
+      const emailHtml = `
+        <h3>Bulk Import Completed</h3>
+        <p>Your recent employee bulk import has finished processing.</p>
+        <ul>
+          <li><strong>Successfully imported:</strong> ${results.imported}</li>
+          <li><strong>Failed to import:</strong> ${results.failed}</li>
+          <li><strong>New departments created:</strong> ${results.departmentsCreated}</li>
+        </ul>
+        <p>You can check the audit logs for more details.</p>
+      `;
+      await EmailService.sendRawEmail(user.email, 'Employee Bulk Import Completed', emailHtml).catch(console.error);
+    }
 
     return results;
   },

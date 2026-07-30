@@ -89,7 +89,8 @@ export function sanitizeCapabilities(input) {
         set.add(cap);
         continue;
       }
-      throw new AppError(`Unknown capability "${cap}"`, 400);
+      // If it's an unknown or deprecated capability, silently strip it out
+      continue;
     }
     set.add(cap);
   }
@@ -128,7 +129,6 @@ export const RoleService = {
 
   /** Effective capabilities for an account: per-account override if set, else the role's. */
   async resolveUserCapabilities(profile) {
-    if (profile?.role === 'super_admin') return [...ALL_CAPABILITIES];
     if (profile) {
       const overrides = profile.capabilityOverrides;
       if (Array.isArray(overrides)) {

@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { AuthService } from './services/auth.service.js';
 import { CronService } from './services/cron.service.js';
 import { initRealtime } from './realtime/socketServer.js';
+import { initScheduler } from './utils/scheduler.js';
 
 let server;
 let realtime;
@@ -13,6 +14,7 @@ try {
     console.log(`API listening on port ${env.port}`);
   });
   realtime = initRealtime(server);
+  initScheduler();
   CronService.start();
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {

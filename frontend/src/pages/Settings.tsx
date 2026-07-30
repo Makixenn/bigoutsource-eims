@@ -188,6 +188,7 @@ export default function Settings() {
 
 
 
+
   return (
     <PageLayout title="System Settings">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -205,12 +206,7 @@ export default function Settings() {
           ) : (
             <motion.aside key="content-settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="w-full">
               <div className="flex flex-col gap-3">
-                {isSuperAdmin && (
-                  <>
-                    <TabButton active={activeTab === 'profile'} icon={Building2} label="Profile" onClick={() => setActiveTab('profile')} />
-                    <TabButton active={activeTab === 'notifications'} icon={Bell} label="Notification" onClick={() => setActiveTab('notifications')} />
-                  </>
-                )}
+
                 <TabButton active={activeTab === 'password'} icon={Lock} label="Password" onClick={() => setActiveTab('password')} />
                 <div
                   className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5"
@@ -245,6 +241,7 @@ export default function Settings() {
                   </span>
                   <TextSizeSelector value={textSize} onChange={setTextSize} />
                 </div>
+
               </div>
             </motion.aside>
           )}
@@ -253,72 +250,7 @@ export default function Settings() {
         <AnimatePresence>
           {!isLoading && activeTab ? (
             <SettingsModal onClose={closeSettingsModal}>
-            {isSuperAdmin && activeTab === 'profile' && (
-              <section>
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="rounded-xl bg-[#F3F4F6] p-3 text-[#111827]">
-                    <Building2 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-[#111827]">Profile Information</h2>
-                    <p className="text-sm font-medium text-[#6B7280]">This name appears wherever the system identifies your company.</p>
-                  </div>
-                </div>
 
-                <label className="mb-2 block text-xs font-black uppercase tracking-wider text-[#374151]">Company Name</label>
-                <input
-                  value={companyName}
-                  onChange={(event) => setCompanyName(event.target.value)}
-                  className="w-full max-w-xl rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-sm font-bold text-[#111827] outline-none focus:ring-2 focus:ring-[#111827]"
-                  placeholder="BigOutsource"
-                />
-
-                <SaveButton onClick={saveProfileAndNotifications} isSaving={isSaving} />
-              </section>
-            )}
-
-            {isSuperAdmin && activeTab === 'notifications' && (
-              <section>
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="rounded-xl bg-[#F3F4F6] p-3 text-[#111827]">
-                    <Bell className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-[#111827]">Notifications</h2>
-                    <p className="text-sm font-medium text-[#6B7280]">Control the alerts shown to the Super Admin.</p>
-                  </div>
-                </div>
-
-                <div className="grid gap-4">
-                  <ToggleRow
-                    label="Registration attempts"
-                    detail="Notify the Super Admin when someone submits an account request."
-                    checked={notifyRegistrationAttempts}
-                    onChange={setNotifyRegistrationAttempts}
-                  />
-                  <ToggleRow
-                    label="System alerts"
-                    detail="Show account and system status alerts in this settings area."
-                    checked={notifySystemAlerts}
-                    onChange={setNotifySystemAlerts}
-                  />
-                </div>
-
-                {notifySystemAlerts && (
-                  <div className="mt-6 grid gap-3 md:grid-cols-2">
-                    {systemAlerts.map((alert) => (
-                      <div key={alert.title} className="rounded-xl border border-[#E5E7EB] p-4">
-                        <span className={`mb-3 inline-flex rounded-lg px-2 py-1 text-[0.625rem] font-black uppercase ${alert.tone}`}>Alert</span>
-                        <h3 className="text-sm font-black text-[#111827]">{alert.title}</h3>
-                        <p className="mt-1 text-xs font-bold text-[#6B7280]">{alert.detail}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <SaveButton onClick={saveProfileAndNotifications} isSaving={isSaving} />
-              </section>
-            )}
 
             {activeTab === 'password' && (
               <section>

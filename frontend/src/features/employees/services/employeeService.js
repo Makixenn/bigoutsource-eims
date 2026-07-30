@@ -12,4 +12,6 @@ export const employeeService = {
     formData.append('avatar', file);
     return apiRequest(`/employees/${id}/avatar`, { method: 'POST', body: formData });
   },
+  remindIT: (id, note = '') => apiRequest(`/employees/${id}/remind-it`, { method: 'POST', body: JSON.stringify({ note }) }),
+  notifyIT: (id, note = '') => apiRequest(`/employees/${id}/notify-it`, { method: 'POST', body: JSON.stringify({ note }) }),
 };
