@@ -31,6 +31,7 @@ const HR_WRITE_FIELDS = [
 const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount', 'provisioningStatus'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];
 const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive'];
+const EVALUATIONS_WRITE_FIELDS = ['idIssuance', 'hoodieIssuance', 'hmoEnrollment', 'hmoMemberCode', 'evalFirstMonth', 'evalThirdMonth', 'evalFifthMonth', 'evalSixthMonth', 'evalAnniversary'];
 
 function blankFields(target, fields) {
   for (const field of fields) {
@@ -66,6 +67,7 @@ export function filterEmployeeWritePayload(data, user, isCreate = false) {
     HR_WRITE_FIELDS.forEach((field) => allowed.add(field));
     IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.evaluations.manage')) EVALUATIONS_WRITE_FIELDS.forEach((field) => allowed.add(field));
   } else {
     if (caps.includes('employees.edit')) {
       HR_WRITE_FIELDS.forEach((field) => allowed.add(field));
@@ -73,6 +75,8 @@ export function filterEmployeeWritePayload(data, user, isCreate = false) {
     if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.delete') || caps.includes('employees.unarchive') || caps.includes('employees.archive') || caps.includes('notifications.hr_action.archive') || caps.includes('notifications.it_action.archive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.evaluations.manage')) EVALUATIONS_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.delete') || caps.includes('employees.unarchive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
   }
 
   const filtered = {};

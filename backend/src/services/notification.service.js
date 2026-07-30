@@ -44,6 +44,9 @@ export const NotificationService = {
       if (notification.type === EMPLOYEE_ADDED_TYPE) {
         return hasCapability(user.capabilities, 'notifications.hr_action') || hasCapability(user.capabilities, 'notifications.it_action');
       }
+      if (notification.type === 'eval_due') {
+        return hasCapability(user.capabilities, 'employees.evaluations.manage');
+      }
       return true;
     });
   },
@@ -317,6 +320,7 @@ export const NotificationService = {
   },
 
   async notifyEmployeeUnarchived({ employee, actor }) {
+  async notifyEvaluationDue({ employee, milestone, dateStr }) {
     const recipients = await UserProfileModel.findAll({ status: 'active' });
     
     const eligibleRecipients = [];
@@ -611,6 +615,7 @@ export const NotificationService = {
     for (const recipient of recipients) {
       const capabilities = await RoleService.resolveUserCapabilities(recipient);
       if (hasCapability(capabilities, 'notifications.it_action')) {
+      if (hasCapability(capabilities, 'employees.evaluations.manage')) {
         eligibleRecipients.push(recipient);
       }
     }
@@ -634,6 +639,15 @@ export const NotificationService = {
       actorId: actorIdForDatabase(actor),
       actorName,
       actorRole: roleLabel(actor.userRole),
+    const employeeLabel = employee.name || employee.employeeNumber || employee.id;
+    const message = `Evaluation (${milestone}) for ${employeeLabel} is due on ${dateStr}.`;
+
+    const baseNotification = {
+      type: 'eval_due',
+      actorId: null,
+      actorName: 'System',
+      actorRole: 'System',
+      message,
       entityType: 'employees',
       entityId: employee.id,
       entityLabel: employeeLabel,
@@ -737,4 +751,14 @@ export const NotificationService = {
 
     return createdNotifications;
   }
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.name,
+        milestone,
+        dueDate: dateStr
+      }
+    }));
+
+    return NotificationModel.createMany(notificationsToCreate);
+  },
 };

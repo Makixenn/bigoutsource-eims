@@ -61,7 +61,8 @@ export type Capability =
   | 'notifications.employee_deleted'
   | 'users.manage'
   | 'roles.manage'
-  | 'settings.manage';
+  | 'settings.manage'
+  | 'employees.evaluations.manage';
 
 export function userCan(user: AppUser | null | undefined, capability: Capability): boolean {
   return Boolean(user?.capabilities?.includes(capability));

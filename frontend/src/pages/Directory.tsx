@@ -59,6 +59,49 @@ import { useRealtimeSubscription } from "@/src/hooks/useRealtimeSubscription";
 import { queryClient } from "@/src/providers/QueryProvider";
 import Confetti from "react-confetti";
 
+function CategoryAccordion({
+  category,
+  children,
+}: {
+  category: string;
+  children: ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <div className="group border border-[#E5E7EB] rounded-2xl bg-white overflow-hidden shadow-sm">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#4B5563] bg-[#F9FAFB] cursor-pointer hover:bg-gray-100 transition-colors select-none focus:outline-none focus:bg-gray-100"
+      >
+        {category}
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 text-[#9CA3AF] transition-transform",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="p-2 space-y-1 bg-white">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 type SiteOption = {
   id: string;
   name: string;
@@ -2149,54 +2192,44 @@ export default function Directory() {
               if (categoryFields.length === 0) return null;
 
               return (
-                <details
-                  key={category}
-                  open
-                  className="group border border-[#E5E7EB] rounded-2xl bg-white overflow-hidden shadow-sm"
-                >
-                  <summary className="flex items-center justify-between px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#4B5563] bg-[#F9FAFB] cursor-pointer hover:bg-gray-100 transition-colors select-none">
-                    {category}
-                    <ChevronDown className="w-3.5 h-3.5 text-[#9CA3AF] transition-transform group-open:rotate-180" />
-                  </summary>
-                  <div className="p-2 space-y-1 bg-white">
-                    {categoryFields.map((field) => {
-                      const checked = isFieldVisible(field.key);
-                      const required = isRequiredField(field.key);
-                      const disabled =
-                        required || (!checked && !canSelectMoreFields);
+                <CategoryAccordion key={category} category={category}>
+                  {categoryFields.map((field) => {
+                    const checked = isFieldVisible(field.key);
+                    const required = isRequiredField(field.key);
+                    const disabled =
+                      required || (!checked && !canSelectMoreFields);
 
-                      return (
-                        <label
-                          key={field.key}
-                          className={cn(
-                            "flex items-start gap-2 rounded-xl px-3 py-1.5 text-xs font-bold text-[#374151] transition-all",
-                            checked
-                              ? "bg-[#F9FAFB] border border-[#E5E7EB]"
-                              : "bg-white border border-transparent",
-                            disabled && !required
-                              ? "cursor-not-allowed opacity-50"
-                              : "cursor-pointer hover:border-[#D1D5DB] dark:border-[#3A4257]",
-                            required && "cursor-not-allowed",
-                          )}
+                    return (
+                      <label
+                        key={field.key}
+                        className={cn(
+                          "flex items-start gap-2 rounded-xl px-3 py-1.5 text-xs font-bold text-[#374151] transition-all",
+                          checked
+                            ? "bg-[#F9FAFB] border border-[#E5E7EB]"
+                            : "bg-white border border-transparent",
+                          disabled && !required
+                            ? "cursor-not-allowed opacity-50"
+                            : "cursor-pointer hover:border-[#D1D5DB] dark:border-[#3A4257]",
+                          required && "cursor-not-allowed",
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() => toggleField(field.key)}
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
+                        />
+                        <span
+                          className="leading-snug flex-1 whitespace-nowrap"
+                          title={field.label}
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            disabled={disabled}
-                            onChange={() => toggleField(field.key)}
-                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#D1D5DB] dark:border-[#3A4257] accent-[#111827]"
-                          />
-                          <span
-                            className="leading-snug flex-1 whitespace-nowrap"
-                            title={field.label}
-                          >
-                            {field.label}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </details>
+                          {field.label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </CategoryAccordion>
               );
             })}
           </div>

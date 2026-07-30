@@ -131,6 +131,15 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (data?.provisioningStatus !== undefined) {
     payload.provisioning_status = stringOrEmpty(data.provisioningStatus);
   }
+  if (data?.idIssuance !== undefined) payload.id_issuance = stringOrEmpty(data.idIssuance);
+  if (data?.hoodieIssuance !== undefined) payload.hoodie_issuance = stringOrEmpty(data.hoodieIssuance);
+  if (data?.hmoEnrollment !== undefined) payload.hmo_enrollment = stringOrEmpty(data.hmoEnrollment);
+  if (data?.hmoMemberCode !== undefined) payload.hmo_member_code = stringOrEmpty(data.hmoMemberCode);
+  if (data?.evalFirstMonth !== undefined) payload.eval_first_month = stringOrEmpty(data.evalFirstMonth);
+  if (data?.evalThirdMonth !== undefined) payload.eval_third_month = stringOrEmpty(data.evalThirdMonth);
+  if (data?.evalFifthMonth !== undefined) payload.eval_fifth_month = stringOrEmpty(data.evalFifthMonth);
+  if (data?.evalSixthMonth !== undefined) payload.eval_sixth_month = stringOrEmpty(data.evalSixthMonth);
+  if (data?.evalAnniversary !== undefined) payload.eval_anniversary = stringOrEmpty(data.evalAnniversary);
   return payload;
 }
 
@@ -191,6 +200,15 @@ function normalize(row) {
     isArchived: row.isArchived ?? row.is_archived ?? false,
     isReadyForArchive: row.isReadyForArchive ?? row.is_ready_for_archive ?? false,
     provisioningStatus: row.provisioningStatus || row.provisioning_status || 'pending_hr',
+    idIssuance: row.idIssuance || row.id_issuance || '',
+    hoodieIssuance: row.hoodieIssuance || row.hoodie_issuance || '',
+    hmoEnrollment: row.hmoEnrollment || row.hmo_enrollment || '',
+    hmoMemberCode: row.hmoMemberCode || row.hmo_member_code || '',
+    evalFirstMonth: row.evalFirstMonth || row.eval_first_month || '',
+    evalThirdMonth: row.evalThirdMonth || row.eval_third_month || '',
+    evalFifthMonth: row.evalFifthMonth || row.eval_fifth_month || '',
+    evalSixthMonth: row.evalSixthMonth || row.eval_sixth_month || '',
+    evalAnniversary: row.evalAnniversary || row.eval_anniversary || '',
     avatarUrl: row.avatarUrl || row.avatar_url || null,
     createdAt: row.createdAt || row.created_at || '',
     updatedAt: row.updatedAt || row.updated_at || '',
@@ -306,6 +324,15 @@ export const EmployeeModel = {
       isArchived: payload.is_archived,
       isReadyForArchive: payload.is_ready_for_archive,
       provisioningStatus: payload.provisioning_status,
+      idIssuance: payload.id_issuance,
+      hoodieIssuance: payload.hoodie_issuance,
+      hmoEnrollment: payload.hmo_enrollment,
+      hmoMemberCode: payload.hmo_member_code,
+      evalFirstMonth: payload.eval_first_month,
+      evalThirdMonth: payload.eval_third_month,
+      evalFifthMonth: payload.eval_fifth_month,
+      evalSixthMonth: payload.eval_sixth_month,
+      evalAnniversary: payload.eval_anniversary,
       avatarUrl: payload.avatar_url,
     };
     
@@ -365,6 +392,15 @@ export const EmployeeModel = {
         isArchived: payload.is_archived,
         isReadyForArchive: payload.is_ready_for_archive,
         provisioningStatus: payload.provisioning_status,
+        idIssuance: payload.id_issuance,
+        hoodieIssuance: payload.hoodie_issuance,
+        hmoEnrollment: payload.hmo_enrollment,
+        hmoMemberCode: payload.hmo_member_code,
+        evalFirstMonth: payload.eval_first_month,
+        evalThirdMonth: payload.eval_third_month,
+        evalFifthMonth: payload.eval_fifth_month,
+        evalSixthMonth: payload.eval_sixth_month,
+        evalAnniversary: payload.eval_anniversary,
         avatarUrl: payload.avatar_url,
       };
       Object.keys(createData).forEach(key => createData[key] === undefined ? delete createData[key] : {});
@@ -428,6 +464,15 @@ export const EmployeeModel = {
       isArchived: payload.is_archived,
       isReadyForArchive: payload.is_ready_for_archive,
       provisioningStatus: payload.provisioning_status,
+      idIssuance: payload.id_issuance,
+      hoodieIssuance: payload.hoodie_issuance,
+      hmoEnrollment: payload.hmo_enrollment,
+      hmoMemberCode: payload.hmo_member_code,
+      evalFirstMonth: payload.eval_first_month,
+      evalThirdMonth: payload.eval_third_month,
+      evalFifthMonth: payload.eval_fifth_month,
+      evalSixthMonth: payload.eval_sixth_month,
+      evalAnniversary: payload.eval_anniversary,
       avatarUrl: payload.avatar_url,
     };
     Object.keys(updateData).forEach(key => updateData[key] === undefined ? delete updateData[key] : {});

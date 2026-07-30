@@ -32,7 +32,7 @@ type ImportRow = {
   importBatchId: string;
   sourceRow: number;
   normalizedData: Record<string, any>;
-  issues: Array<{ code: string; message: string; severity?: 'warning' }>;
+  issues: Array<{ code: string; message: string; severity?: 'warning' | 'info' }>;
   status: 'ready' | 'issue' | 'imported' | 'skipped';
   duplicateKey?: string;
 };
@@ -209,17 +209,29 @@ export default function EmployeeImportReview() {
   async function loadRows() {
     if (!importReviewCache.hasLoaded) setIsLoading(true);
     try {
-      const targetBatchId = batchId || focusedBatchId;
+      let targetBatchId = batchId || focusedBatchId;
       let result = await employeeImportService.list(targetBatchId ? { importBatchId: targetBatchId } : { status: 'pending' });
 
-      if (!targetBatchId) {
-        const issueRows = Array.isArray(result.rows) ? result.rows : [];
-        const issueBatchId = issueRows[0]?.importBatchId;
+      const hasActionableRows = Array.isArray(result.rows) && result.rows.some(
+        (row) => row.status === 'ready' || row.status === 'issue'
+      );
 
-        if (issueBatchId) {
-          result = await employeeImportService.list({ importBatchId: issueBatchId });
-          importReviewCache.focusedBatchId = issueBatchId;
-          setFocusedBatchId(issueBatchId);
+      // If the cached batch has no actionable rows left, auto-advance to the next pending batch
+      if (targetBatchId && !batchId && !hasActionableRows) {
+        targetBatchId = '';
+        importReviewCache.focusedBatchId = '';
+        setFocusedBatchId('');
+        result = await employeeImportService.list({ status: 'pending' });
+      }
+
+      if (!targetBatchId) {
+        const pendingRows = Array.isArray(result.rows) ? result.rows : [];
+        const nextBatchId = pendingRows[0]?.importBatchId;
+
+        if (nextBatchId) {
+          result = await employeeImportService.list({ importBatchId: nextBatchId });
+          importReviewCache.focusedBatchId = nextBatchId;
+          setFocusedBatchId(nextBatchId);
         }
       }
 

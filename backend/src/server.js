@@ -1,6 +1,7 @@
 import app from './app.js';
 import { env } from './config/env.js';
 import { AuthService } from './services/auth.service.js';
+import { CronService } from './services/cron.service.js';
 import { initRealtime } from './realtime/socketServer.js';
 import { initScheduler } from './utils/scheduler.js';
 
@@ -14,6 +15,7 @@ try {
   });
   realtime = initRealtime(server);
   initScheduler();
+  CronService.start();
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       console.error(`Port ${env.port} is already in use. Set PORT to another value or stop the process using that port.`);
