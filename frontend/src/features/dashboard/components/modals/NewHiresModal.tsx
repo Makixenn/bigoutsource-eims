@@ -91,7 +91,7 @@ export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalPr
       filteredHires.map(e => {
         const isFuture = new Date(e.dateHired || e.date_hired) > new Date();
         const statusText = isFuture ? 'Joining Soon' : 'Joined';
-        return `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || e.jobTitle || ''}","${formatTime(e.dateHired || e.date_hired)}","${statusText}"`;
+        return `"${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || ''}","${formatTime(e.dateHired || e.date_hired)}","${statusText}"`;
       }).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -194,7 +194,7 @@ export function NewHiresModal({ isOpen, onClose, allEmployees }: NewHiresModalPr
                   <tr key={emp.id} className="hover:bg-[#F9FAFB]">
                     <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
                     <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
-                    <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || emp.jobTitle || '-'}</td>
+                    <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || '-'}</td>
                     <td className="px-6 py-3 text-sm text-[#4B5563]">{formatTime(emp.dateHired || emp.date_hired)}</td>
                     <td className="px-6 py-3">
                       {isFuture ? (

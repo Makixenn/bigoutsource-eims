@@ -278,7 +278,7 @@ export const EmployeeService = {
     const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
 
-    const isHrFieldsMissing = !employee.fullName || !employee.accountAssignment || !employee.site || !employee.jobTitle || !employee.status || !employee.employeeStatus || !employee.dateHired || 
+    const isHrFieldsMissing = !employee.fullName || !employee.accountAssignment || !employee.site || !employee.position || !employee.status || !employee.employeeStatus || !employee.dateHired || 
       (employee.status === 'floating' && !employee.floatDate) || 
       ((employee.status === 'inactive' || employee.status === 'separated') && !employee.separationDate) || 
       ((employee.status === 'inactive' || employee.status === 'separated') && !employee.separationReason) || 

@@ -1534,7 +1534,7 @@ function EditRowModal({
                   placeholder="Select department/campaign"
                 />
                 <Field label="Job Title">
-                  <Input value={form.jobTitle || ''} onChange={(val) => onChange('jobTitle', val)} placeholder="e.g. CSR" />
+                  <Input value={form.position || ''} onChange={(val) => onChange('position', val)} placeholder="e.g. CSR" />
                 </Field>
                 <Field label="Bigoutsource Email" required>
                   <Input value={form.boEmail || ''} onChange={(val) => onChange('boEmail', val)} placeholder="e.g. john@bigoutsource.com" />

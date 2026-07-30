@@ -86,7 +86,7 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Employee ID,Name,Department,Position,Status\n" +
       filteredEmployees.map(e => {
-        return `"${e.employeeNumber || ''}","${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || e.jobTitle || ''}","${e.status || ''}"`;
+        return `"${e.employeeNumber || ''}","${e.fullName || ''}","${e.accountAssignment || e.account || ''}","${e.position || ''}","${e.status || ''}"`;
       }).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -216,7 +216,7 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.employeeNumber || '-'}</td>
                   <td className="px-6 py-3 text-sm font-bold text-[#111827]">{emp.fullName}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.accountAssignment || emp.account || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || emp.jobTitle || '-'}</td>
+                  <td className="px-6 py-3 text-sm text-[#4B5563]">{emp.position || '-'}</td>
                   <td className="px-6 py-3">
                     <span className={`px-2 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider ${emp.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                       {emp.status}

@@ -33,6 +33,7 @@ services:
       - backend
     environment:
       - NODE_ENV=development
+      - API_TARGET=http://backend:5001
 
   db:
     image: postgres:15-alpine

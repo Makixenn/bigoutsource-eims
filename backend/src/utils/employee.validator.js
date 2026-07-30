@@ -21,7 +21,7 @@ export const createEmployeeValidator = {
   rustDeskId: { required: false, type: 'string' },
   esetStatus: { required: false, type: 'string', enum: ['active', 'inactive'] },
   activityWatchStatus: { required: false, type: 'string', enum: ['installed', 'missing'] },
-  jobTitle: { required: false, type: 'string' },
+
   birthdate: { required: false, type: 'string' },
   floatDate: { required: false, type: 'string' },
   outlookEmail: { required: false, type: 'string' },
@@ -53,7 +53,7 @@ export const updateEmployeeValidator = {
   rustDeskId: { required: false, type: 'string' },
   esetStatus: { required: false, type: 'string', enum: ['active', 'inactive'] },
   activityWatchStatus: { required: false, type: 'string', enum: ['installed', 'missing'] },
-  jobTitle: { required: false, type: 'string' },
+
   birthdate: { required: false, type: 'string' },
   floatDate: { required: false, type: 'string' },
   outlookEmail: { required: false, type: 'string' },

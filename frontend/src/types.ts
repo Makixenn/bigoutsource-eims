@@ -1,5 +1,5 @@
 export type UserRole = 'super_admin' | 'admin' | 'hr_admin' | 'it_admin' | 'viewer';
-type EmployeeStatus = 'active' | 'inactive';
+type EmployeeStatus = 'active' | 'inactive' | 'floating' | 'separated';
 
 export interface Employee {
   id: string;
@@ -12,6 +12,7 @@ export interface Employee {
   employeeStatus?: 'Regular' | 'Probationary' | 'Fix-Term' | string;
   accountAssignment: string;
   boEmail: string;
+  bigoutsourceEmail?: string;
   lmsAccount: string;
   // IT Data
   isArchived: boolean;
@@ -23,6 +24,7 @@ export interface Employee {
   dateHired: string;
   biosDate: string;
   windowsKey: string;
+  windowsLicenseKey?: string;
   rustDeskId: string;
   esetStatus: 'Active' | 'Inactive';
   activityWatchStatus: 'Installed' | 'Missing';

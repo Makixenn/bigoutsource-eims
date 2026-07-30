@@ -51,19 +51,19 @@ const FAQ_DATA = [
 
 export default function FAQ() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const visibleCategories = useMemo(() => {
-    return CATEGORIES.filter(c => c.id !== 'users' || hasCapability('users.manage'));
-  }, [user?.role]);
+    return CATEGORIES.filter(c => c.id !== 'users' || can('users.manage' as any));
+  }, [user?.role, can]);
 
   const filteredFAQs = useMemo(() => {
     if (activeCategory === 'all') {
-      return FAQ_DATA.filter(faq => faq.categoryId !== 'users' || hasCapability('users.manage'));
+      return FAQ_DATA.filter(faq => faq.categoryId !== 'users' || can('users.manage' as any));
     }
     return FAQ_DATA.filter(faq => faq.categoryId === activeCategory);
-  }, [activeCategory, user?.role]);
+  }, [activeCategory, user?.role, can]);
 
   const activeCategoryLabel = visibleCategories.find(c => c.id === activeCategory)?.label || 'All Industries Combined';
 

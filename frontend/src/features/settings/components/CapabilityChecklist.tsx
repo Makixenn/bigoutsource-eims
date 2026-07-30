@@ -45,12 +45,13 @@ const NOTIF_SUB_CAPS = [
   // Employment & HR
   'notifications.hr_action.accountAssignment',
   'notifications.hr_action.site',
-  'notifications.hr_action.jobTitle',
+  'notifications.hr_action.position',
   'notifications.hr_action.status',
   'notifications.hr_action.employeeStatus',
   'notifications.hr_action.dateHired',
   'notifications.hr_action.archive',
   'notifications.hr_action.daily_birthdays',
+  'notifications.hr_action.evaluations',
 
   // Accounts & IT Security
   'notifications.it_action.provisioning',
@@ -247,7 +248,7 @@ export function CapabilityChecklist({
         .some(field => c.key.endsWith(`.${field}`))
       );
       categories['Employment & HR'] = subCaps.filter(c => 
-        ['accountAssignment', 'site', 'jobTitle', 'status', 'employeeStatus', 'dateHired', 'archive']
+        ['accountAssignment', 'site', 'position', 'status', 'employeeStatus', 'dateHired', 'archive', 'evaluations']
         .some(field => c.key.endsWith(`.${field}`))
       );
     } else if (parentKey === 'notifications.it_action') {
@@ -300,7 +301,7 @@ export function CapabilityChecklist({
                           onChange={() => onToggle(sub.key)}
                         />
                         <span className={cn('text-xs font-bold', checked ? 'text-[#111827]' : 'text-[#4B5563]')}>
-                          {sub.label.split('on ')[1] || sub.label}
+                          {sub.label.replace(/^Notify on /, '')}
                         </span>
                       </label>
                     );

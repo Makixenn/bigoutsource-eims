@@ -101,7 +101,7 @@ export const NotificationService = {
       { label: 'Full Name', checked: !!employee.fullName || (!!employee.firstName && !!employee.lastName), cap: 'notifications.hr_action.fullName' },
       { label: 'Department / Account Assignment', checked: !!employee.accountAssignment, cap: 'notifications.hr_action.accountAssignment' },
       { label: 'Site', checked: !!employee.site, cap: 'notifications.hr_action.site' },
-      { label: 'Position', checked: !!employee.jobTitle, cap: 'notifications.hr_action.jobTitle' },
+      { label: 'Position', checked: !!employee.position, cap: 'notifications.hr_action.position' },
       { label: 'Status', checked: !!employee.status, cap: 'notifications.hr_action.status' },
       { label: 'Employee Status', checked: !!employee.employeeStatus, cap: 'notifications.hr_action.employeeStatus' },
       { label: 'Date Hired', checked: !!employee.dateHired, cap: 'notifications.hr_action.dateHired' },
@@ -320,7 +320,6 @@ export const NotificationService = {
   },
 
   async notifyEmployeeUnarchived({ employee, actor }) {
-  async notifyEvaluationDue({ employee, milestone, dateStr }) {
     const recipients = await UserProfileModel.findAll({ status: 'active' });
     
     const eligibleRecipients = [];
@@ -462,7 +461,7 @@ export const NotificationService = {
     const actorName = actor.userName || actor.userEmail || 'Someone';
     const actorRole = roleLabel(actor.userRole);
 
-    const hrFields = ['fullName', 'accountAssignment', 'site', 'jobTitle', 'status', 'employeeStatus', 'dateHired', 'birthdate', 'phone', 'address'];
+    const hrFields = ['fullName', 'accountAssignment', 'site', 'position', 'status', 'employeeStatus', 'dateHired', 'birthdate', 'phone', 'address'];
     const itFields = ['boEmail', 'rustdeskId', 'pcName', 'windowsKey', 'esetStatus', 'activityWatchStatus', 'lmsAccount', 'emailPassword', 'outlookEmail', 'googleAccount', 'teamsAccount', 'mattermostAccount', 'deviceType', 'biosDate', 'isReadyForArchive'];
 
     const hrChanges = changes.filter(c => hrFields.includes(c.field));
@@ -492,7 +491,7 @@ export const NotificationService = {
       fullName: 'Employee Name',
       accountAssignment: 'Department / Account Assignment',
       site: 'Site',
-      jobTitle: 'Position',
+      position: 'Position',
       status: 'Status',
       employeeStatus: 'Employment Status',
       dateHired: 'Date Hired',
@@ -615,7 +614,6 @@ export const NotificationService = {
     for (const recipient of recipients) {
       const capabilities = await RoleService.resolveUserCapabilities(recipient);
       if (hasCapability(capabilities, 'notifications.it_action')) {
-      if (hasCapability(capabilities, 'employees.evaluations.manage')) {
         eligibleRecipients.push(recipient);
       }
     }
@@ -639,15 +637,6 @@ export const NotificationService = {
       actorId: actorIdForDatabase(actor),
       actorName,
       actorRole: roleLabel(actor.userRole),
-    const employeeLabel = employee.name || employee.employeeNumber || employee.id;
-    const message = `Evaluation (${milestone}) for ${employeeLabel} is due on ${dateStr}.`;
-
-    const baseNotification = {
-      type: 'eval_due',
-      actorId: null,
-      actorName: 'System',
-      actorRole: 'System',
-      message,
       entityType: 'employees',
       entityId: employee.id,
       entityLabel: employeeLabel,
@@ -678,6 +667,71 @@ export const NotificationService = {
           actionUrl: `/employee/${employee.id}`,
           fieldsList: [],
           note
+        }));
+      }
+    }
+    
+    if (emailPromises.length > 0) {
+      Promise.allSettled(emailPromises).catch(console.error);
+    }
+
+    return createdNotifications;
+  },
+
+  async notifyEvaluationDue({ employee, milestone, dateStr, timing }) {
+    const recipients = await UserProfileModel.findAll({ status: 'active' });
+    
+    const eligibleRecipients = [];
+    for (const recipient of recipients) {
+      const capabilities = await RoleService.resolveUserCapabilities(recipient);
+      if (hasCapability(capabilities, 'notifications.hr_action.evaluations')) {
+        eligibleRecipients.push(recipient);
+      }
+    }
+
+    if (eligibleRecipients.length === 0) return [];
+
+    const employeeLabel = employee.name || employee.employeeNumber || employee.id;
+    
+    const message = timing === 'due_today' 
+      ? `Evaluation (${milestone}) for ${employeeLabel} is due TODAY (${dateStr}).`
+      : `Evaluation (${milestone}) for ${employeeLabel} is coming up on ${dateStr}.`;
+
+    const baseNotification = {
+      type: 'eval_due',
+      actorId: null,
+      actorName: 'System',
+      actorRole: 'System',
+      message,
+      entityType: 'employees',
+      entityId: employee.id,
+      entityLabel: employeeLabel,
+      actionUrl: `/employee/${employee.id}`,
+      details: {
+        employeeNumber: employee.employeeNumber,
+        fullName: employee.fullName || employee.name,
+        milestone,
+        timing
+      }
+    };
+
+    const notificationsToCreate = eligibleRecipients.map(r => ({
+      ...baseNotification,
+      recipientId: r.id,
+    }));
+
+    const createdNotifications = await NotificationModel.createMany(notificationsToCreate);
+
+    const emailPromises = [];
+    for (const r of eligibleRecipients) {
+      if (r.email) {
+        emailPromises.push(EmailService.sendEmployeeActionEmail(r.email, {
+          actionName: 'Evaluation Due',
+          employeeName: employeeLabel,
+          actorName: 'System',
+          roleSpecificMessage: `A milestone evaluation (${milestone}) is due on ${dateStr}.`,
+          actionUrl: `/employee/${employee.id}`,
+          fieldsList: []
         }));
       }
     }
@@ -751,14 +805,4 @@ export const NotificationService = {
 
     return createdNotifications;
   }
-      details: {
-        employeeNumber: employee.employeeNumber,
-        fullName: employee.name,
-        milestone,
-        dueDate: dateStr
-      }
-    }));
-
-    return NotificationModel.createMany(notificationsToCreate);
-  },
 };
