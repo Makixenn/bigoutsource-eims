@@ -1044,14 +1044,14 @@ export default function EmployeeProfile() {
 
     if (archiveIntent === 'archive') {
       if (!employee.isReadyForArchive) {
-        if (activeITAccountKeys.some(acc => !itCheckboxes[acc.key])) {
-          toast.error("all fields must be cleared");
+        if (activeITAccountKeys.length > 0 && !activeITAccountKeys.some(acc => itCheckboxes[acc.key])) {
+          toast.error("Please check at least one box before proceeding");
           return;
         }
       } else {
         if (archiveStep === 2) {
-          if (!hrCheckboxes.position || !hrCheckboxes.accountAssignment || !hrCheckboxes.site) {
-            toast.error("all fields must be cleared");
+          if (!hrCheckboxes.position && !hrCheckboxes.accountAssignment && !hrCheckboxes.site) {
+            toast.error("Please check at least one box before proceeding");
             return;
           }
         }
@@ -1093,10 +1093,10 @@ export default function EmployeeProfile() {
             separation_date: sepDate,
             floatDate: flDate,
 
-            position: '',
-            accountAssignment: '',
-            siteId: null,
-            siteName: '',
+            position: hrCheckboxes.position ? '' : employee.position,
+            accountAssignment: hrCheckboxes.accountAssignment ? '' : employee.accountAssignment,
+            siteId: hrCheckboxes.site ? null : employee.siteId,
+            siteName: hrCheckboxes.site ? '' : employee.site,
             is_archived: true,
             is_ready_for_archive: false,
           };
@@ -1497,6 +1497,8 @@ export default function EmployeeProfile() {
                               type="button"
                               onClick={() => {
                                 setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
+                                setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+                                setItCheckboxes({});
                                 
                                 if (employee.isArchived) {
                                   setArchiveStep(1);
@@ -2477,6 +2479,8 @@ export default function EmployeeProfile() {
                     setShowArchiveModal(false);
                     setArchiveIntent(null);
                     setArchiveStep(1);
+                    setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+                    setItCheckboxes({});
                   }}
                   disabled={isArchiving}
                   className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827]"
@@ -2487,37 +2491,61 @@ export default function EmployeeProfile() {
                 {archiveIntent === 'archive' && archiveStep === 1 && employee.isReadyForArchive ? (
                   <button
                     type="button"
-                    onClick={() => setArchiveStep(2)}
+                    onClick={() => {
+                      setArchiveStep(2);
+                      setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+                      setItCheckboxes({});
+                    }}
                     disabled={isArchiving || (!archiveSeparationReason.trim() || !archiveSeparationDate)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Proceed <ChevronRight className="w-4 h-4" />
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={toggleArchiveEmployee}
-                    disabled={
-                      isArchiving ||
-                      (archiveIntent === 'unarchive' && (!unarchivePosition.trim() || !unarchiveAccountAssignment.trim() || !unarchiveSiteId))
-                    }
-                    className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
-                        ? 'bg-green-600 hover:bg-green-700'
-                        : !employee.isReadyForArchive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-red-600 hover:bg-red-700'
-                      }`}
-                  >
-                    {isArchiving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : archiveIntent === 'unarchive' ? (
-                      <RotateCcw className="w-4 h-4" />
-                    ) : (
-                      <Archive className="w-4 h-4" />
-                    )}
+                  (() => {
+                    const isAnyHrChecked = Boolean(hrCheckboxes.position || hrCheckboxes.accountAssignment || hrCheckboxes.site);
+                    const isAnyItChecked = activeITAccountKeys.length > 0 
+                      ? activeITAccountKeys.some(acc => itCheckboxes[acc.key])
+                      : isAnyHrChecked;
 
-                    {archiveIntent === 'unarchive'
-                      ? 'Confirm Unarchive'
-                      : !employee.isReadyForArchive ? 'Deactivate & Send Archive Request' : 'Finalize & Archive Employee'}
-                  </button>
+                    const isBtnDisabled = isArchiving || (
+                      archiveIntent === 'unarchive'
+                        ? (!unarchivePosition.trim() || !unarchiveAccountAssignment.trim() || !unarchiveSiteId)
+                        : archiveIntent === 'archive'
+                        ? (!employee.isReadyForArchive ? !isAnyItChecked : !isAnyHrChecked)
+                        : false
+                    );
+
+                    return (
+                      <button
+                        type="button"
+                        onClick={toggleArchiveEmployee}
+                        disabled={isBtnDisabled}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all",
+                          isBtnDisabled
+                            ? "!bg-gray-300 !text-gray-500 !border-gray-300 cursor-not-allowed opacity-60 shadow-none hover:!bg-gray-300 hover:!text-gray-500"
+                            : archiveIntent === 'unarchive'
+                            ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20"
+                            : !employee.isReadyForArchive
+                            ? "bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20"
+                            : "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20"
+                        )}
+                      >
+                        {isArchiving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : archiveIntent === 'unarchive' ? (
+                          <RotateCcw className="w-4 h-4" />
+                        ) : (
+                          <Archive className="w-4 h-4" />
+                        )}
+
+                        {archiveIntent === 'unarchive'
+                          ? 'Confirm Unarchive'
+                          : !employee.isReadyForArchive ? 'Deactivate & Send Archive Request' : 'Finalize & Archive Employee'}
+                      </button>
+                    );
+                  })()
                 )}
               </div>
             </motion.div>
