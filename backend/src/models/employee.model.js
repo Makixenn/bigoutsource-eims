@@ -98,6 +98,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (valueFrom(data, 'windowsKey', 'windowsLicenseKey') !== undefined) {
     payload.windows_license_key = stringOrEmpty(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
   }
+  if (data?.diskEncryptionKey !== undefined) {
+    payload.disk_encryption_key = stringOrEmpty(data.diskEncryptionKey);
+  }
   if (data?.deviceType !== undefined) {
     payload.device_type = stringOrEmpty(data.deviceType);
   }
@@ -199,6 +202,7 @@ function normalize(row) {
     macAddresses: row.macAddresses || row.mac_addresses || [],
     windowsKey: row.windowsLicenseKey || row.windows_license_key || '',
     windowsLicenseKey: row.windowsLicenseKey || row.windows_license_key || '',
+    diskEncryptionKey: row.diskEncryptionKey || row.disk_encryption_key || '',
     deviceType: row.deviceType || row.device_type || 'Windows',
     rustdeskId: row.rustdeskId || row.rustdesk_id || '',
     rustDeskId: row.rustdeskId || row.rustdesk_id || '',
@@ -329,6 +333,7 @@ export const EmployeeModel = {
       macAddresses: payload.mac_addresses,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
+      diskEncryptionKey: payload.disk_encryption_key,
       deviceType: payload.device_type,
       outlookEmail: payload.outlook_email,
       teamsAccount: payload.teams_account,
@@ -416,6 +421,7 @@ export const EmployeeModel = {
         emergencyContact: payload.emergency_contact,
         emergencyContactNumber: payload.emergency_contact_number,
         windowsLicenseKey: payload.windows_license_key,
+        diskEncryptionKey: payload.disk_encryption_key,
         deviceType: payload.device_type,
         isArchived: payload.is_archived,
         isReadyForArchive: payload.is_ready_for_archive,
@@ -471,6 +477,7 @@ export const EmployeeModel = {
       macAddresses: payload.mac_addresses,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
+      diskEncryptionKey: payload.disk_encryption_key,
       deviceType: payload.device_type,
       outlookEmail: payload.outlook_email,
       teamsAccount: payload.teams_account,
