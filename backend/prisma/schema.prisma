@@ -58,6 +58,7 @@ model Employee {
   dateHired         String   @default("") @map("date_hired")
   separationDate    String   @default("") @map("separation_date")
   separationReason  String   @default("") @map("separation_reason")
+  macAddresses      Json     @default("[]") @map("mac_addresses")
   isArchived        Boolean  @default(false) @map("is_archived")
   nickname          String   @default("")
   position          String   @default("")

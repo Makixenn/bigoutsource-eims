@@ -109,6 +109,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (data?.nickname !== undefined) payload.nickname = stringOrEmpty(data.nickname);
   if (data?.sex !== undefined) payload.sex = stringOrEmpty(data.sex);
   if (data?.civilStatus !== undefined) payload.civil_status = stringOrEmpty(data.civilStatus);
+  if (valueFrom(data, 'macAddresses', 'mac_addresses') !== undefined) {
+    payload.mac_addresses = valueFrom(data, 'macAddresses', 'mac_addresses');
+  }
   if (valueFrom(data, 'sssNo', 'sss_no') !== undefined) payload.sss_no = stringOrEmpty(valueFrom(data, 'sssNo', 'sss_no'));
   if (valueFrom(data, 'tinNo', 'tin_no') !== undefined) payload.tin_no = stringOrEmpty(valueFrom(data, 'tinNo', 'tin_no'));
   if (valueFrom(data, 'philhealthNo', 'philhealth_no') !== undefined) payload.philhealth_no = stringOrEmpty(valueFrom(data, 'philhealthNo', 'philhealth_no'));
@@ -193,6 +196,7 @@ function normalize(row) {
     dateHired: row.dateHired || row.date_hired || '',
     separationDate: row.separationDate || row.separation_date || '',
     separationReason: row.separationReason || row.separation_reason || '',
+    macAddresses: row.macAddresses || row.mac_addresses || [],
     windowsKey: row.windowsLicenseKey || row.windows_license_key || '',
     windowsLicenseKey: row.windowsLicenseKey || row.windows_license_key || '',
     deviceType: row.deviceType || row.device_type || 'Windows',
@@ -322,6 +326,7 @@ export const EmployeeModel = {
       dateHired: payload.date_hired,
       separationDate: payload.separation_date,
       separationReason: payload.separation_reason,
+      macAddresses: payload.mac_addresses,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       deviceType: payload.device_type,
@@ -390,6 +395,7 @@ export const EmployeeModel = {
         dateHired: payload.date_hired,
         separationDate: payload.separation_date,
         separationReason: payload.separation_reason,
+        macAddresses: payload.mac_addresses,
         activitywatch: payload.activitywatch,
         outlookEmail: payload.outlook_email,
         teamsAccount: payload.teams_account,
@@ -462,6 +468,7 @@ export const EmployeeModel = {
       dateHired: payload.date_hired,
       separationDate: payload.separation_date,
       separationReason: payload.separation_reason,
+      macAddresses: payload.mac_addresses,
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       deviceType: payload.device_type,

@@ -14,8 +14,14 @@ export function validate(schema) {
 
       if (value === undefined || value === null || value === '') continue;
 
-      if (rules.type && typeof value !== rules.type) {
-        errors.push(`${field} must be a ${rules.type}`);
+      if (rules.type) {
+        if (rules.type === 'array') {
+          if (!Array.isArray(value)) {
+            errors.push(`${field} must be an array`);
+          }
+        } else if (typeof value !== rules.type) {
+          errors.push(`${field} must be a ${rules.type}`);
+        }
       }
 
       if (rules.min && String(value).length < rules.min) {

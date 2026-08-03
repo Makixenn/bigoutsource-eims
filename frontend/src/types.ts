@@ -58,6 +58,13 @@ export interface Employee {
   evalFifthMonth?: string;
   evalSixthMonth?: string;
   evalAnniversary?: string;
+
+  macAddresses?: {
+    mac: string;
+    type: string;
+    os: string;
+    specs: string;
+  }[];
 }
 
 export interface AppUser {
