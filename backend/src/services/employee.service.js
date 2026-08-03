@@ -69,6 +69,7 @@ const trackedFields = [
   'evalFifthMonth',
   'evalSixthMonth',
   'evalAnniversary',
+  'macAddresses',
 ];
 
 function localEmailIdentifier(email = '') {
@@ -178,6 +179,7 @@ async function withGeneratedIdentity(data, existing = null) {
 function comparable(value) {
   if (value === undefined || value === null) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 }
 

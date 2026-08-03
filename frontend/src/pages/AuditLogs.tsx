@@ -73,6 +73,18 @@ function formatValue(value: any) {
   }
   
   const strValue = String(value);
+  
+  try {
+    const parsed = JSON.parse(strValue);
+    if (Array.isArray(parsed)) {
+      if (parsed.length === 0) return 'None';
+      if (parsed[0]?.mac) {
+        return parsed.map((m: any) => `${m.mac} (${m.type})`).join(', ');
+      }
+      return JSON.stringify(parsed);
+    }
+  } catch (e) {}
+
   const lowerValue = strValue.toLowerCase();
   if (['missing', 'installed', 'active', 'inactive'].includes(lowerValue)) {
     return strValue.charAt(0).toUpperCase() + strValue.slice(1);

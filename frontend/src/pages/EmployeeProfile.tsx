@@ -32,6 +32,9 @@ import {
   X,
   Undo2,
   Trash2,
+  Wifi,
+  Smartphone,
+  Plus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -113,6 +116,7 @@ type EmployeeForm = {
   evalFifthMonth?: string;
   evalSixthMonth?: string;
   evalAnniversary?: string;
+  macAddresses: { mac: string; type: string; os: string; specs: string }[];
   idIssuance?: string;
   hoodieIssuance?: string;
   hmoEnrollment?: string;
@@ -174,6 +178,7 @@ const emptyEmployee: EmployeeForm = {
   evalFifthMonth: '',
   evalSixthMonth: '',
   evalAnniversary: '',
+  macAddresses: [],
   idIssuance: '',
   hoodieIssuance: '',
   hmoEnrollment: '',
@@ -440,6 +445,18 @@ function formatValue(value: any) {
   if (typeof value === 'object') return JSON.stringify(value);
   
   const strValue = String(value);
+  
+  try {
+    const parsed = JSON.parse(strValue);
+    if (Array.isArray(parsed)) {
+      if (parsed.length === 0) return 'None';
+      if (parsed[0]?.mac) {
+        return parsed.map((m: any) => `${m.mac} (${m.type})`).join(', ');
+      }
+      return JSON.stringify(parsed);
+    }
+  } catch (e) {}
+
   const lowerValue = strValue.toLowerCase();
   
   if (lowerValue === 'true') return 'Yes';
@@ -584,6 +601,8 @@ function normalizeEmployee(emp: any): EmployeeForm {
     evalFifthMonth: computedEval.evalFifthMonth || emp?.evalFifthMonth || emp?.eval_fifth_month || '',
     evalSixthMonth: computedEval.evalSixthMonth || emp?.evalSixthMonth || emp?.eval_sixth_month || '',
     evalAnniversary: computedEval.evalAnniversary || emp?.evalAnniversary || emp?.eval_anniversary || '',
+    macAddresses: Array.isArray(emp?.macAddresses) ? emp.macAddresses : (emp?.mac_addresses ? (Array.isArray(emp.mac_addresses) ? emp.mac_addresses : []) : []),
+
   };
 }
 
@@ -680,6 +699,11 @@ export default function EmployeeProfile() {
   const canEditHR = can('employees.edit');
   const canEditIT = can('employees.it.edit');
   const canEditSecrets = can('employees.secrets.edit');
+  
+  const isInternalAccount = useMemo(() => {
+    return accounts.find(a => a.name === employee.accountAssignment)?.accountType === 'internal';
+  }, [accounts, employee.accountAssignment]);
+
   const reqITFields = useMemo(() => ['admin', 'it'].includes(user?.role?.toLowerCase() || ''), [user]);
   const isSuperAdmin = ['super admin', 'superadmin', 'super_admin'].includes(user?.role?.toLowerCase() || '');
   const canArchivePermission = can('employees.delete');
@@ -711,6 +735,7 @@ export default function EmployeeProfile() {
     if (isActive(employee.windowsKey)) keys.push({key: 'windowsKey', label: 'Windows Key'});
     if (isActive(employee.rustdeskId)) keys.push({key: 'rustdeskId', label: 'Remote ID'});
     if (isActive(employee.pcName)) keys.push({key: 'pcName', label: 'PC Name'});
+    if (employee.macAddresses && employee.macAddresses.length > 0) keys.push({key: 'macAddresses', label: 'MAC Addresses'});
     return keys;
   }, [employee]);
   const canManageEmployee = canEditHR || canEditIT || canEditSecrets;
@@ -764,7 +789,9 @@ export default function EmployeeProfile() {
   }, [employee]);
 
   const hasChanges = useMemo(
-    () => editableFields.some((field) => String(form[field] || '') !== String(employee[field] || '')),
+    () => 
+      editableFields.some((field) => String(form[field] || '') !== String(employee[field] || '')) ||
+      JSON.stringify(form.macAddresses) !== JSON.stringify(employee.macAddresses),
     [form, employee]
   );
 
@@ -1004,6 +1031,11 @@ export default function EmployeeProfile() {
       return;
     }
 
+    if (form.macAddresses && form.macAddresses.some(m => !m.mac.trim())) {
+      toast.error('MAC Address field cannot be empty. Please remove the network device if not needed.');
+      return;
+    }
+
     const selectedSite = sites.find((site) => site.id === form.siteId);
     const fullName = formatEmployeeName(form.firstName, form.middleName, form.lastName, form.suffix);
     setIsSaving(true);
@@ -1033,6 +1065,7 @@ export default function EmployeeProfile() {
         rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
         activityWatchStatus: form.activityWatchStatus,
+        macAddresses: form.macAddresses,
         dateHired: form.dateHired,
         separationDate: form.separationDate,
         separationReason: form.separationReason,
@@ -1059,7 +1092,8 @@ export default function EmployeeProfile() {
         evalThirdMonth: form.evalThirdMonth,
         evalFifthMonth: form.evalFifthMonth,
         evalSixthMonth: form.evalSixthMonth,
-        evalAnniversary: form.evalAnniversary
+        evalAnniversary: form.evalAnniversary,
+        macAddresses: form.macAddresses
       });
 
       const normalized = normalizeEmployee(updated);
@@ -1125,6 +1159,7 @@ export default function EmployeeProfile() {
           if (itCheckboxes.mattermostAccount) updateData.mattermostAccount = '';
           if (itCheckboxes.windowsKey) updateData.windowsKey = '';
           if (itCheckboxes.rustdeskId) updateData.rustdeskId = '';
+          if (itCheckboxes.macAddresses) updateData.macAddresses = [];
           
         } else {
           // HR is finalizing the archive
@@ -1803,47 +1838,6 @@ export default function EmployeeProfile() {
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                       className="space-y-8"
                     >
-                      {/* ROW 1: EMPLOYEE INFORMATION (65%) & HMO INFORMATION (35%) */}
-                      <div className="flex flex-col lg:flex-row gap-8 items-stretch">
-                        <div className="w-full lg:w-[65%] flex flex-col">
-                          <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                              <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
-                                {editingHR ? <Input value={form.position} onChange={(v) => updateForm('position', v)} placeholder="e.g. Customer Service Rep" /> : employee.position || <span className="text-red-500 font-black">Not Assigned</span>}
-                              </ProfileField>
-                              
-                              <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
-                                {editingHR ? (
-                                  <div className="relative">
-                                    <Input
-                                      value={form.accountAssignment}
-                                      onChange={(v) => {
-                                        updateForm('accountAssignment', v);
-                                        setIsAccountDropdownOpen(true);
-                                      }}
-                                      onFocus={() => setIsAccountDropdownOpen(true)}
-                                      onBlur={() => setTimeout(() => setIsAccountDropdownOpen(false), 200)}
-                                      placeholder="Type or select DEPARTMENT/CAMPAIGN."
-                                    />
-                                    {isAccountDropdownOpen && accounts.length > 0 && (
-                                      <div className="absolute z-50 w-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                        {accounts
-                                          .filter(acc => acc.name.toLowerCase().includes((form.accountAssignment || '').toLowerCase()))
-                                          .map((acc) => (
-                                            <button
-                                              key={acc.id}
-                                              type="button"
-                                              className="w-full px-4 py-2 text-left text-xs font-bold text-[#374151] hover:bg-[#F3F4F6]"
-                                              onClick={() => {
-                                                updateForm('accountAssignment', acc.name);
-                                                setIsAccountDropdownOpen(false);
-                                              }}
-                                            >
-                                              {acc.name}
-                                            </button>
-                                          ))}
-                                      </div>
-                                    )}
                                   </div>
                                 ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
                               </ProfileField>
@@ -2149,6 +2143,119 @@ export default function EmployeeProfile() {
                             </div>
                           </ProfileSection>
                         </div>
+                      </ProfileSection>
+
+                      {isInternalAccount && (
+                        <ProfileSection icon={Wifi} title="Network Devices (MAC Addresses)" iconColorClass="text-blue-600 bg-blue-50">
+                          <div className="space-y-4">
+                            {editingIT ? (
+                              <div className="border border-[#E5E7EB] rounded-xl overflow-hidden bg-white">
+                                {form.macAddresses.map((device, index) => (
+                                  <div key={index} className="flex flex-col gap-3 p-4 border-b border-[#E5E7EB] relative">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newDevices = [...form.macAddresses];
+                                        newDevices.splice(index, 1);
+                                        updateForm('macAddresses', newDevices);
+                                      }}
+                                      className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Remove Device"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-10">
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-black tracking-widest text-[#9CA3AF] uppercase">MAC Address</label>
+                                        <Input value={device.mac} onChange={(v) => {
+                                          const newDevices = [...form.macAddresses];
+                                          const cleaned = v.replace(/[^a-fA-F0-9]/g, '').toUpperCase();
+                                          const match = cleaned.match(/.{1,2}/g);
+                                          newDevices[index] = { ...newDevices[index], mac: match ? match.join(':').substring(0, 17) : '' };
+                                          updateForm('macAddresses', newDevices);
+                                        }} placeholder="00:1A:2B:3C:4D:5E" />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-black tracking-widest text-[#9CA3AF] uppercase">Device Type</label>
+                                        <Select value={device.type} onChange={(v) => {
+                                          const newDevices = [...form.macAddresses];
+                                          newDevices[index] = { ...newDevices[index], type: v };
+                                          updateForm('macAddresses', newDevices);
+                                        }}>
+                                          <option value="Laptop">Laptop</option>
+                                          <option value="Desktop">Desktop</option>
+                                          <option value="Phone">Phone</option>
+                                          <option value="Tablet">Tablet</option>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-black tracking-widest text-[#9CA3AF] uppercase">OS</label>
+                                        <Select value={device.os} onChange={(v) => {
+                                          const newDevices = [...form.macAddresses];
+                                          newDevices[index] = { ...newDevices[index], os: v };
+                                          updateForm('macAddresses', newDevices);
+                                        }}>
+                                          <option value="Windows">Windows</option>
+                                          <option value="macOS">macOS</option>
+                                          <option value="Linux">Linux</option>
+                                          <option value="iOS">iOS</option>
+                                          <option value="Android">Android</option>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-black tracking-widest text-[#9CA3AF] uppercase">Specifications</label>
+                                        <Input value={device.specs} onChange={(v) => {
+                                          const newDevices = [...form.macAddresses];
+                                          newDevices[index] = { ...newDevices[index], specs: v };
+                                          updateForm('macAddresses', newDevices);
+                                        }} placeholder="e.g. Dell XPS 15" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="p-4 bg-gray-50 border-t border-[#E5E7EB]">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateForm('macAddresses', [...form.macAddresses, { mac: '', type: 'Laptop', os: 'Windows', specs: '' }]);
+                                    }}
+                                    className="w-full py-2.5 px-4 bg-white border border-[#D1D5DB] hover:bg-gray-50 text-[#374151] text-sm font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    Add Network Device
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {!employee.macAddresses || employee.macAddresses.length === 0 ? (
+                                  <div className="col-span-full py-6 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                    <Wifi className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                                    <p className="text-sm font-medium">No network devices tracked.</p>
+                                  </div>
+                                ) : (
+                                  employee.macAddresses.map((device, index) => (
+                                    <div key={index} className="flex items-center gap-4 p-4 border border-[#E5E7EB] rounded-xl bg-white shadow-sm hover:border-[#D1D5DB] transition-all">
+                                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                        {device.type === 'Phone' || device.type === 'Tablet' ? (
+                                          <Smartphone className="w-5 h-5 text-blue-600" />
+                                        ) : (
+                                          <Laptop className="w-5 h-5 text-blue-600" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-mono text-sm font-bold text-gray-900 truncate">{device.mac}</p>
+                                        <p className="text-xs font-medium text-gray-500 truncate">{device.specs || `${device.os} ${device.type}`}</p>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </ProfileSection>
+                      )}
                       </div>
 
                       <div className="h-[150px] shrink-0 w-full" />

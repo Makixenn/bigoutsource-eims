@@ -11,7 +11,7 @@ import { userCapabilities } from '../config/capabilities.js';
 
 // Read-shape keys (as produced by the model's normalize()).
 const SECRET_READ_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];
-const IT_READ_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'eset', 'activityWatchStatus', 'activitywatch'];
+const IT_READ_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'eset', 'activityWatchStatus', 'activitywatch', 'macAddresses'];
 
 // Write-shape keys (as accepted from the client) grouped by tier.
 const HR_WRITE_FIELDS = [
@@ -28,7 +28,7 @@ const HR_WRITE_FIELDS = [
   'emergencyContact', 'emergency_contact', 'emergencyContactNumber', 'emergency_contact_number',
   'provisioningStatus'
 ];
-const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount', 'provisioningStatus'];
+const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount', 'provisioningStatus', 'macAddresses'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];
 const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive'];
 const EVALUATIONS_WRITE_FIELDS = ['idIssuance', 'hoodieIssuance', 'hmoEnrollment', 'hmoMemberCode', 'evalFirstMonth', 'evalThirdMonth', 'evalFifthMonth', 'evalSixthMonth', 'evalAnniversary'];
