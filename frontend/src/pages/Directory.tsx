@@ -25,6 +25,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import ExcelJS from "exceljs";
+import Confetti from 'react-confetti';
 import { PageLayout } from "@/src/components/layout/PageLayout";
 import { Pagination } from "@/src/components/Pagination";
 import { ResizableHeader } from "@/src/components/ResizableHeader";
