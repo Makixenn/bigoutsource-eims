@@ -1334,7 +1334,7 @@ export default function EmployeeProfile() {
                   <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter relative group overflow-hidden">
                     {employee.avatarUrl ? (
                       <img 
-                        src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} 
+                        src={employee.avatarUrl.startsWith('http') ? employee.avatarUrl : `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} 
                         alt={employee.fullName} 
                         className="w-full h-full object-cover" 
                         style={{ objectFit: 'cover' }}
