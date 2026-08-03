@@ -56,9 +56,18 @@ export const CronService = {
 
     const notificationsByEmployee = {};
     for (const notif of allExistingNotifications) {
-      if (!notificationsByEmployee[notif.entityId]) notificationsByEmployee[notif.entityId] = [];
-      notificationsByEmployee[notif.entityId].push(notif);
+      // For batched UI notifications, entityId might be null or 'batched_evals'
+      // But we still need to track which employees were notified today.
+      // We will store individual tracking records in details to know which employees were included in a batched notification.
+      // Or we can query existing notifications by type = 'eval_due' and see if they were already notified.
+      // Actually, if we use batched notifications, the entityId of the notification itself might be a generic string,
+      // and the details would contain the array of employee IDs.
+      // Let's change the tracking slightly: if there is ANY 'eval_due_batched' notification today, maybe we don't send again?
+      // Wait, if it runs daily, we can just check if we already sent the daily batched notification!
+      // But what if it runs twice? If we have a 'eval_due_batched' created today, we can just skip entirely.
     }
+
+    const evaluationsToNotify = [];
 
     for (const employee of employees) {
       const milestones = [
@@ -83,8 +92,8 @@ export const CronService = {
         const daysUntil = diffInDays(evalDate, now);
 
         let timing = null;
-        // Upcoming check (between 1 and 8 days before)
-        if (!options.todayOnly && daysUntil > 0 && daysUntil <= 8) {
+        // Upcoming check (strictly 8 or 3 days before)
+        if (!options.todayOnly && (daysUntil === 8 || daysUntil === 3)) {
           timing = 'upcoming';
         } 
         // Due today check (exactly 0 days)
@@ -93,25 +102,38 @@ export const CronService = {
         }
 
         if (timing) {
-          // Check if we already notified them for this specific milestone and timing
-          const alreadyNotified = existingNotifications.some(n => {
-            const parsed = typeof n.details === 'string' ? JSON.parse(n.details) : n.details;
-            return parsed?.milestone === milestone.label && parsed?.timing === timing;
+          // In the new batched approach, we will just accumulate them.
+          // To prevent duplicates if the cron runs twice, we check if ANY batched notification was sent today.
+          evaluationsToNotify.push({
+            employee,
+            milestone: milestone.label,
+            dateStr,
+            timing,
+            daysUntil
           });
-
-          if (!alreadyNotified) {
-            console.log(`Triggering notification for ${employee.name || employee.id} - ${milestone.label} (${timing}, Due: ${dateStr})`);
-            await NotificationService.notifyEvaluationDue({
-              employee,
-              milestone: milestone.label,
-              dateStr,
-              timing
-            });
-          }
         }
       }
     }
     
+    if (evaluationsToNotify.length > 0) {
+      // Check if a batched notification was already sent today
+      const alreadyBatched = await prisma.notification.findFirst({
+        where: {
+          type: 'eval_due_batched',
+          createdAt: {
+            gte: now
+          }
+        }
+      });
+
+      if (!alreadyBatched) {
+        console.log(`Triggering batched notification for ${evaluationsToNotify.length} evaluations.`);
+        await NotificationService.notifyBatchedEvaluationsDue(evaluationsToNotify);
+      } else {
+        console.log(`Batched evaluation notifications were already sent today.`);
+      }
+    }
+
     console.log('Daily evaluation date checks completed.');
   }
 };

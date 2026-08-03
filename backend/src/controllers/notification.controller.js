@@ -5,7 +5,7 @@ import { success } from '../utils/apiResponse.js';
 export const NotificationController = {
   async triggerCron(req, res, next) {
     try {
-      await CronService.checkEvaluations({ todayOnly: true });
+      await CronService.checkEvaluations({ todayOnly: false });
       return success(res, { success: true }, 'Triggered evaluation checks');
     } catch (error) {
       return next(error);

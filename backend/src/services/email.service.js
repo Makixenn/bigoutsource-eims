@@ -160,6 +160,108 @@ export const EmailService = {
     }
   },
 
+  async sendBatchedEvaluationsEmail(toEmail, evaluations) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const linkUrl = `${frontendUrl}/evaluations`;
+    
+    // Sort evaluations by timing, then date
+    const sortedEvals = [...evaluations].sort((a, b) => {
+      if (a.timing !== b.timing) {
+        return a.timing === 'due_today' ? -1 : 1;
+      }
+      return new Date(a.dateStr).getTime() - new Date(b.dateStr).getTime();
+    });
+
+    const rowsHtml = sortedEvals.map((e, index) => {
+      const isDueToday = e.timing === 'due_today';
+      const rowStyle = index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f9fafb;';
+      
+      let badgeStyle = '';
+      let badgeText = '';
+      
+      if (isDueToday) {
+        badgeStyle = 'background-color: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;';
+        badgeText = 'DUE TODAY';
+      } else if (e.daysUntil === 3) {
+        badgeStyle = 'background-color: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;';
+        badgeText = 'UPCOMING (3 Days)';
+      } else {
+        badgeStyle = 'background-color: #dbeafe; color: #1e3a8a; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;';
+        badgeText = 'UPCOMING (8 Days)';
+      }
+        
+      return `
+        <tr style="${rowStyle}">
+          <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #111827; font-size: 14px; font-weight: 500;">
+            ${e.employee.name || e.employee.fullName || 'Unknown'}
+          </td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+            ${e.employee.id ? (e.employee.id.length === 36 && e.employee.id.includes('-') ? '<span style="color: #b45309; background-color: #fffbeb; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #fde68a;">Pending HR</span>' : e.employee.id) : 'N/A'}
+          </td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #111827; font-size: 14px;">
+            ${e.milestone}
+          </td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #111827; font-size: 14px;">
+            ${e.dateStr}
+          </td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+            <span style="${badgeStyle}">${badgeText}</span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const tableHtml = `
+      <div style="overflow-x: auto; margin: 20px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: Arial, sans-serif;">
+          <thead>
+            <tr style="background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+              <th style="padding: 12px 16px; color: #374151; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Employee</th>
+              <th style="padding: 12px 16px; color: #374151; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Employee ID</th>
+              <th style="padding: 12px 16px; color: #374151; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Milestone</th>
+              <th style="padding: 12px 16px; color: #374151; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Evaluation Date</th>
+              <th style="padding: 12px 16px; color: #374151; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    try {
+      const info = await transporter.sendMail({
+        from: process.env.SMTP_USER ? `"BigOutsource EIMS" <${process.env.SMTP_USER}>` : '"BigOutsource EIMS" <no-reply@bigoutsource.com>',
+        to: toEmail,
+        subject: `[EIMS] Daily Evaluation Checks: ${evaluations.length} Due/Upcoming`,
+        text: `There are ${evaluations.length} evaluations due or coming up soon.\n\nPlease review them in the system: ${linkUrl}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #111827; max-width: 800px; margin: 0 auto;">
+            <h2 style="color: #1f6fa0;">Daily Evaluation Checks</h2>
+            <p style="font-size: 15px; color: #4b5563;">Here is the compiled list of all employee evaluations that are due today or coming up soon.</p>
+            
+            ${tableHtml}
+            
+            <div style="margin: 30px 0;">
+              <a href="${linkUrl}" style="background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Open Evaluations Dashboard
+              </a>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #6B7280;">This is an automated batch notification from the BigOutsource Employee Information Management System.</p>
+          </div>
+        `,
+      });
+      console.log(`Batched evaluation email sent to ${toEmail}: ${info.messageId}`);
+      return info;
+    } catch (error) {
+      console.error('Failed to send batched evaluation email:', error);
+      return null;
+    }
+  },
+
   async sendPasswordResetEmail(toEmail, token) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;

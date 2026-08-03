@@ -62,7 +62,8 @@ export type Capability =
   | 'users.manage'
   | 'roles.manage'
   | 'settings.manage'
-  | 'employees.evaluations.manage';
+  | 'employees.evaluations.manage'
+  | 'employees.evaluations.view';
 
 export function userCan(user: AppUser | null | undefined, capability: Capability): boolean {
   return Boolean(user?.capabilities?.includes(capability));

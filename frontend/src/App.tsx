@@ -20,6 +20,7 @@ import { FloatingFAQButton } from './components/FloatingFAQButton';
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Directory = React.lazy(() => import('./pages/Directory'));
 const EmployeeProfile = React.lazy(() => import('./pages/EmployeeProfile'));
+const Evaluations = React.lazy(() => import('./pages/Evaluations'));
 const Departments = React.lazy(() => import('./pages/Departments'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Login = React.lazy(() => import('./pages/Login'));
@@ -58,6 +59,7 @@ export default function App() {
               <Route element={<ProtectedRoute capability="employees.view" />}>
                 <Route path="/directory" element={<Suspense fallback={<PageSpinner />}><Directory /></Suspense>} />
                 <Route path="/employee/:id" element={<Suspense fallback={<PageSpinner />}><EmployeeProfile /></Suspense>} />
+                <Route path="/evaluations" element={<Suspense fallback={<PageSpinner />}><Evaluations /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute capability="departments.view" />}>
                 <Route path="/departments" element={<Suspense fallback={<PageSpinner />}><Departments /></Suspense>} />

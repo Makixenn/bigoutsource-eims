@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { connectTableSocket } from '../services/realtimeService';
 
 // Types mock to prevent TS errors
@@ -19,6 +19,12 @@ export function useRealtimeSubscription({
   onChange,
   enabled = true
 }: RealtimeConfig) {
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -26,7 +32,9 @@ export function useRealtimeSubscription({
       onTableChange: (data: any) => {
         if (data.table === table) {
           if (event === '*' || data.action === event || data.event === event) {
-            onChange(data);
+            if (onChangeRef.current) {
+              onChangeRef.current(data);
+            }
           }
         }
       }
@@ -35,5 +43,5 @@ export function useRealtimeSubscription({
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [table, schema, event, onChange, enabled]);
+  }, [table, schema, event, enabled]);
 }
