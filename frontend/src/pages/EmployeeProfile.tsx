@@ -471,9 +471,63 @@ function actorLabel(log: any) {
   return log.userName || 'System';
 }
 
+function computeEvalDates(firstMonthDate?: string) {
+  if (!firstMonthDate) {
+    return {
+      evalThirdMonth: '',
+      evalFifthMonth: '',
+      evalSixthMonth: '',
+      evalAnniversary: '',
+    };
+  }
+  const parts = firstMonthDate.split('T')[0].split('-');
+  if (parts.length !== 3) {
+    return {
+      evalThirdMonth: '',
+      evalFifthMonth: '',
+      evalSixthMonth: '',
+      evalAnniversary: '',
+    };
+  }
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return {
+      evalThirdMonth: '',
+      evalFifthMonth: '',
+      evalSixthMonth: '',
+      evalAnniversary: '',
+    };
+  }
+  const addMonths = (m: number) => {
+    const d = new Date(Date.UTC(year, month - 1 + m, day));
+    return d.toISOString().split('T')[0];
+  };
+
+  return {
+    evalThirdMonth: addMonths(2),
+    evalFifthMonth: addMonths(4),
+    evalSixthMonth: addMonths(5),
+    evalAnniversary: addMonths(11),
+  };
+}
+
+function formatDateDisplay(dateStr?: string) {
+  if (!dateStr) return '-';
+  const cleanStr = String(dateStr).split('T')[0];
+  const parts = cleanStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return dateStr;
+  return `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
+}
+
 function normalizeEmployee(emp: any): EmployeeForm {
   const fullName = emp?.fullName || '';
   const nameParts = parseEmployeeName(fullName);
+  const evalFirstMonth = emp?.evalFirstMonth || emp?.eval_first_month || '';
+  const computedEval = computeEvalDates(evalFirstMonth);
 
   return {
     employeeNumber: emp?.employeeNumber || emp?.employeeId || '',
@@ -525,11 +579,11 @@ function normalizeEmployee(emp: any): EmployeeForm {
     provisioningStatus: emp?.provisioningStatus || 'pending_hr',
     muteNotification: false,
     googleAccount: emp?.googleAccount || '',
-    evalFirstMonth: emp?.evalFirstMonth || emp?.eval_first_month || '',
-    evalThirdMonth: emp?.evalThirdMonth || emp?.eval_third_month || '',
-    evalFifthMonth: emp?.evalFifthMonth || emp?.eval_fifth_month || '',
-    evalSixthMonth: emp?.evalSixthMonth || emp?.eval_sixth_month || '',
-    evalAnniversary: emp?.evalAnniversary || emp?.eval_anniversary || '',
+    evalFirstMonth,
+    evalThirdMonth: computedEval.evalThirdMonth || emp?.evalThirdMonth || emp?.eval_third_month || '',
+    evalFifthMonth: computedEval.evalFifthMonth || emp?.evalFifthMonth || emp?.eval_fifth_month || '',
+    evalSixthMonth: computedEval.evalSixthMonth || emp?.evalSixthMonth || emp?.eval_sixth_month || '',
+    evalAnniversary: computedEval.evalAnniversary || emp?.evalAnniversary || emp?.eval_anniversary || '',
   };
 }
 
@@ -857,19 +911,12 @@ export default function EmployeeProfile() {
         }
       }
 
-      if (field === 'evalFirstMonth' && value) {
-        const firstDate = new Date(value);
-        if (!isNaN(firstDate.getTime())) {
-          const addMonths = (date: Date, months: number) => {
-            const d = new Date(date);
-            d.setMonth(d.getMonth() + months);
-            return d.toISOString().split('T')[0];
-          };
-          nextForm.evalThirdMonth = addMonths(firstDate, 2);
-          nextForm.evalFifthMonth = addMonths(firstDate, 4);
-          nextForm.evalSixthMonth = addMonths(firstDate, 5);
-          nextForm.evalAnniversary = addMonths(firstDate, 11);
-        }
+      if (field === 'evalFirstMonth') {
+        const computed = computeEvalDates(value);
+        nextForm.evalThirdMonth = computed.evalThirdMonth;
+        nextForm.evalFifthMonth = computed.evalFifthMonth;
+        nextForm.evalSixthMonth = computed.evalSixthMonth;
+        nextForm.evalAnniversary = computed.evalAnniversary;
       }
 
       return nextForm;
@@ -2107,19 +2154,47 @@ export default function EmployeeProfile() {
                       <ProfileSection icon={Calendar} title="Evaluation Dates" iconColorClass="text-orange-600 bg-orange-50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                           <ProfileField label="1st Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? <Input type="date" value={form.evalFirstMonth || ''} onChange={(v) => updateForm('evalFirstMonth', v)} /> : employee.evalFirstMonth ? new Date(employee.evalFirstMonth).toLocaleDateString() : '-'}
+                            {isEditing ? <Input type="date" value={form.evalFirstMonth || ''} onChange={(v) => updateForm('evalFirstMonth', v)} /> : formatDateDisplay(employee.evalFirstMonth)}
                           </ProfileField>
                           <ProfileField label="3rd Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? <Input type="date" value={form.evalThirdMonth || ''} onChange={(v) => updateForm('evalThirdMonth', v)} /> : employee.evalThirdMonth ? new Date(employee.evalThirdMonth).toLocaleDateString() : '-'}
+                            {isEditing ? (
+                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
+                                <span>{formatDateDisplay(form.evalThirdMonth)}</span>
+                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
+                              </div>
+                            ) : (
+                              formatDateDisplay(employee.evalThirdMonth)
+                            )}
                           </ProfileField>
                           <ProfileField label="5th Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? <Input type="date" value={form.evalFifthMonth || ''} onChange={(v) => updateForm('evalFifthMonth', v)} /> : employee.evalFifthMonth ? new Date(employee.evalFifthMonth).toLocaleDateString() : '-'}
+                            {isEditing ? (
+                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
+                                <span>{formatDateDisplay(form.evalFifthMonth)}</span>
+                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
+                              </div>
+                            ) : (
+                              formatDateDisplay(employee.evalFifthMonth)
+                            )}
                           </ProfileField>
                           <ProfileField label="6th Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? <Input type="date" value={form.evalSixthMonth || ''} onChange={(v) => updateForm('evalSixthMonth', v)} /> : employee.evalSixthMonth ? new Date(employee.evalSixthMonth).toLocaleDateString() : '-'}
+                            {isEditing ? (
+                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
+                                <span>{formatDateDisplay(form.evalSixthMonth)}</span>
+                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
+                              </div>
+                            ) : (
+                              formatDateDisplay(employee.evalSixthMonth)
+                            )}
                           </ProfileField>
                           <ProfileField label="Anniversary" icon={Calendar} editing={isEditing}>
-                            {isEditing ? <Input type="date" value={form.evalAnniversary || ''} onChange={(v) => updateForm('evalAnniversary', v)} /> : employee.evalAnniversary ? new Date(employee.evalAnniversary).toLocaleDateString() : '-'}
+                            {isEditing ? (
+                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
+                                <span>{formatDateDisplay(form.evalAnniversary)}</span>
+                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
+                              </div>
+                            ) : (
+                              formatDateDisplay(employee.evalAnniversary)
+                            )}
                           </ProfileField>
                         </div>
                       </ProfileSection>
@@ -3065,6 +3140,7 @@ function Input({
         className={cn(
           'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
           error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]',
+          disabled ? 'bg-[#F9FAFB] text-[#9CA3AF] cursor-not-allowed border-[#E5E7EB] opacity-75 focus:ring-0' : '',
           onAppendSpecialChar ? "pr-10" : "",
           className
         )}
