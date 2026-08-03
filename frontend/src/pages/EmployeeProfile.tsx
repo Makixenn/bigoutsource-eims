@@ -204,6 +204,7 @@ const editableFields: Array<keyof EmployeeForm> = [
   'lmsAccount',
   'pcName',
   'biosDate',
+  'deviceType',
   'windowsKey',
   'diskEncryptionKey',
   'rustdeskId',
@@ -2098,6 +2099,18 @@ export default function EmployeeProfile() {
                         <div className="w-full lg:w-[30%] flex flex-col">
                           <ProfileSection icon={ShieldAlert} title="Security Compliance" iconColorClass="text-rose-600 bg-rose-50" className="flex-1 flex flex-col justify-start">
                             <div className="grid grid-cols-1 gap-y-8">
+                              {(form.deviceType === 'Windows' || form.deviceType === 'Mac') && (
+                                <ProfileField label={form.deviceType === 'Windows' ? 'Bitlocker' : 'Filevault'} icon={ShieldAlert} editing={editingIT}>
+                                  {editingIT ? (
+                                    <Input
+                                      value={form.diskEncryptionKey}
+                                      onChange={(v) => updateForm('diskEncryptionKey', v)}
+                                      placeholder={form.deviceType === 'Windows' ? '123456-123456-123456-123456-123456-123456-123456-123456' : 'ABCD-1234-EFGH-5678'}
+                                    />
+                                  ) : employee.diskEncryptionKey || <span className="text-[#9CA3AF]">Not Set</span>}
+                                </ProfileField>
+                              )}
+
                               <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
