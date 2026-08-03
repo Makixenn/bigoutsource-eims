@@ -1,13 +1,14 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, loadEnv} from 'vite';
 import dns from 'dns';
 
 // Fix Node 17+ DNS resolution timeouts in Docker by forcing IPv4
 dns.setDefaultResultOrder('ipv4first');
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -28,7 +29,7 @@ export default defineConfig(() => {
       },
       proxy: {
         '/api': {
-          target: process.env.API_TARGET || 'http://127.0.0.1:5001',
+          target: env.API_TARGET || 'http://backend:5001',
           changeOrigin: true
         }
       }

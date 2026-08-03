@@ -44,8 +44,8 @@ export const NotificationService = {
       if (notification.type === EMPLOYEE_ADDED_TYPE) {
         return hasCapability(user.capabilities, 'notifications.hr_action') || hasCapability(user.capabilities, 'notifications.it_action');
       }
-      if (notification.type === 'eval_due') {
-        return hasCapability(user.capabilities, 'employees.evaluations.manage');
+      if (notification.type === 'eval_due' || notification.type === 'eval_due_batched') {
+        return hasCapability(user.capabilities, 'notifications.hr_action.evaluations');
       }
       return true;
     });
@@ -668,6 +668,68 @@ export const NotificationService = {
           fieldsList: [],
           note
         }));
+      }
+    }
+    
+    if (emailPromises.length > 0) {
+      Promise.allSettled(emailPromises).catch(console.error);
+    }
+
+    return createdNotifications;
+  },
+
+  async notifyBatchedEvaluationsDue(evaluations) {
+    const recipients = await UserProfileModel.findAll({ status: 'active' });
+    
+    const eligibleRecipients = [];
+    for (const recipient of recipients) {
+      const capabilities = await RoleService.resolveUserCapabilities(recipient);
+      if (hasCapability(capabilities, 'notifications.hr_action.evaluations')) {
+        eligibleRecipients.push(recipient);
+      }
+    }
+
+    if (eligibleRecipients.length === 0 || evaluations.length === 0) return [];
+
+    const dueTodayCount = evaluations.filter(e => e.timing === 'due_today').length;
+    const upcomingCount = evaluations.filter(e => e.timing === 'upcoming').length;
+
+    let message = '';
+    if (dueTodayCount > 0 && upcomingCount > 0) {
+      message = `${dueTodayCount} evaluation(s) due today and ${upcomingCount} upcoming.`;
+    } else if (dueTodayCount > 0) {
+      message = `${dueTodayCount} evaluation(s) due today.`;
+    } else {
+      message = `${upcomingCount} evaluation(s) coming up soon.`;
+    }
+
+    const baseNotification = {
+      type: 'eval_due_batched',
+      actorId: null,
+      actorName: 'System',
+      actorRole: 'System',
+      message,
+      entityType: 'evaluations',
+      entityId: 'batched_evals',
+      entityLabel: 'Multiple Employees',
+      actionUrl: `/evaluations`,
+      details: {
+        totalDue: dueTodayCount,
+        totalUpcoming: upcomingCount,
+      }
+    };
+
+    const notificationsToCreate = eligibleRecipients.map(r => ({
+      ...baseNotification,
+      recipientId: r.id,
+    }));
+
+    const createdNotifications = await NotificationModel.createMany(notificationsToCreate);
+
+    const emailPromises = [];
+    for (const r of eligibleRecipients) {
+      if (r.email) {
+        emailPromises.push(EmailService.sendBatchedEvaluationsEmail(r.email, evaluations));
       }
     }
     
