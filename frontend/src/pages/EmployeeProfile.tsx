@@ -1963,188 +1963,194 @@ export default function EmployeeProfile() {
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                       className="space-y-8"
                     >
-                      <ProfileSection icon={Laptop} title="System Accounts" iconColorClass="text-purple-600 bg-purple-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
-                            {editingIT ? (
-                              <div className="flex items-center gap-2">
-                                <Input value={form.boEmail} onChange={(v) => { updateForm('boEmail', v); setIsBoEmailEdited(true); }} placeholder="username@bigoutsource.com" />
-                                {!isBoEmailEdited && (
-                                  <button type="button" onClick={() => regenerateField('boEmail')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate email">
-                                    Auto
-                                  </button>
+                      <div className="flex flex-col lg:flex-row gap-8 items-stretch">
+                        <div className="w-full lg:w-[70%] flex flex-col gap-8">
+                          <ProfileSection icon={Laptop} title="System Accounts" iconColorClass="text-purple-600 bg-purple-50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
+                                {editingIT ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input value={form.boEmail} onChange={(v) => { updateForm('boEmail', v); setIsBoEmailEdited(true); }} placeholder="username@bigoutsource.com" />
+                                    {!isBoEmailEdited && (
+                                      <button type="button" onClick={() => regenerateField('boEmail')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate email">
+                                        Auto
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+
+                              <ProfileField label="Snappy Email Password" icon={Key} editing={editingIT}>
+                                {editingIT ? (
+                                  <Input type="text" value={form.emailPassword} onChange={(v) => updateForm('emailPassword', v)} placeholder="Password" />
+                                ) : canViewSecrets ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono">{showPassword ? employee.emailPassword || 'No password set' : '••••••••••••'}</span>
+                                    {employee.emailPassword && (
+                                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700">
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
                                 )}
-                              </div>
-                            ) : employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>}
-                          </ProfileField>
+                              </ProfileField>
 
-                          <ProfileField label="Snappy Email Password" icon={Key} editing={editingIT}>
-                            {editingIT ? (
-                              <Input type="text" value={form.emailPassword} onChange={(v) => updateForm('emailPassword', v)} placeholder="Password" />
-                            ) : canViewSecrets ? (
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono">{showPassword ? employee.emailPassword || 'No password set' : '••••••••••••'}</span>
-                                {employee.emailPassword && (
-                                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700">
-                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                  </button>
+                              <ProfileField label="LMS Account" icon={Laptop} editing={editingIT}>
+                                {editingIT ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input value={form.lmsAccount} onChange={(v) => { updateForm('lmsAccount', v); setIsLmsAccountEdited(true); }} placeholder="LMS Username" />
+                                    {!isLmsAccountEdited && (
+                                      <button type="button" onClick={() => regenerateField('lmsAccount')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate LMS">
+                                        Auto
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+
+                              <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
+                                {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="user@outlook.com" /> : employee.outlookEmail || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+
+                              <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
+                                {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="user@teams.com" /> : employee.teamsAccount || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+
+                              <div className="md:col-span-2">
+                                <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
+                                  {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="user@mattermost.com" /> : employee.mattermostAccount || <span className="text-[#9CA3AF]">Not Set</span>}
+                                </ProfileField>
+                              </div>
+                            </div>
+                          </ProfileSection>
+
+                          <ProfileSection icon={Key} title="Device Assets & Credentials" iconColorClass="text-indigo-600 bg-indigo-50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
+                                {editingIT ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input value={form.pcName} onChange={(v) => { updateForm('pcName', v); setIsPcNameEdited(true); }} placeholder="BO-PC-XXXX" />
+                                    {!isPcNameEdited && (
+                                      <button type="button" onClick={() => regenerateField('pcName')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate PC Name">
+                                        Auto
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+
+                              <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
+                                {editingIT ? <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+
+                              <ProfileField label="Device Type" icon={Laptop} editing={editingIT}>
+                                {editingIT ? (
+                                  <Select value={form.deviceType} onChange={(v) => updateForm('deviceType', v)}>
+                                    <option value="Windows">Windows</option>
+                                    <option value="Mac">Mac</option>
+                                    <option value="Linux">Linux</option>
+                                  </Select>
+                                ) : employee.deviceType || 'Windows'}
+                              </ProfileField>
+
+                              <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
+                                {editingSecrets ? (
+                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                                ) : canViewSecrets ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                    {employee.windowsKey && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(employee.windowsKey);
+                                          toast.success('Windows key copied to clipboard');
+                                        }}
+                                        className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
+                                        title="Copy License Key"
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
                                 )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                            )}
-                          </ProfileField>
+                              </ProfileField>
 
-                          <ProfileField label="LMS Account" icon={Laptop} editing={editingIT}>
-                            {editingIT ? (
-                              <div className="flex items-center gap-2">
-                                <Input value={form.lmsAccount} onChange={(v) => { updateForm('lmsAccount', v); setIsLmsAccountEdited(true); }} placeholder="LMS Username" />
-                                {!isLmsAccountEdited && (
-                                  <button type="button" onClick={() => regenerateField('lmsAccount')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate LMS">
-                                    Auto
-                                  </button>
-                                )}
-                              </div>
-                            ) : employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>}
-                          </ProfileField>
-
-                          <ProfileField label="Outlook Email" icon={Mail} editing={editingIT}>
-                            {editingIT ? <Input value={form.outlookEmail} onChange={(v) => updateForm('outlookEmail', v)} placeholder="user@outlook.com" /> : employee.outlookEmail || <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-
-
-                          <ProfileField label="Teams Account" icon={Mail} editing={editingIT}>
-                            {editingIT ? <Input value={form.teamsAccount} onChange={(v) => updateForm('teamsAccount', v)} placeholder="user@teams.com" /> : employee.teamsAccount || <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-
-                          <div className="md:col-span-2">
-                            <ProfileField label="Mattermost Account" icon={Mail} editing={editingIT}>
-                              {editingIT ? <Input value={form.mattermostAccount} onChange={(v) => updateForm('mattermostAccount', v)} placeholder="user@mattermost.com" /> : employee.mattermostAccount || <span className="text-[#9CA3AF]">Not Set</span>}
-                            </ProfileField>
-                          </div>
-                        </div>
-                      </ProfileSection>
-
-                      <ProfileSection icon={Key} title="Device Assets & Credentials" iconColorClass="text-indigo-600 bg-indigo-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
-                            {editingIT ? (
-                              <div className="flex items-center gap-2">
-                                <Input value={form.pcName} onChange={(v) => { updateForm('pcName', v); setIsPcNameEdited(true); }} placeholder="BO-PC-XXXX" />
-                                {!isPcNameEdited && (
-                                  <button type="button" onClick={() => regenerateField('pcName')} className="p-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 shrink-0" title="Auto-generate PC Name">
-                                    Auto
-                                  </button>
-                                )}
-                              </div>
-                            ) : employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>}
-                          </ProfileField>
-
-                          <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
-                            {editingIT ? <Input type="date" value={form.biosDate} onChange={(v) => updateForm('biosDate', v)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-
-                          <ProfileField label="Device Type" icon={Laptop} editing={editingIT}>
-                            {editingIT ? (
-                              <Select value={form.deviceType} onChange={(v) => updateForm('deviceType', v)}>
-                                <option value="Windows">Windows</option>
-                                <option value="Mac">Mac</option>
-                                <option value="Linux">Linux</option>
-                              </Select>
-                            ) : employee.deviceType || 'Windows'}
-                          </ProfileField>
-
-                          <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
-                            {editingSecrets ? (
-                              <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                            ) : canViewSecrets ? (
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
-                                {employee.windowsKey && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(employee.windowsKey);
-                                      toast.success('Windows key copied to clipboard');
-                                    }}
-                                    className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
-                                    title="Copy License Key"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                            )}
-                          </ProfileField>
-
-                          <div className="md:col-span-2">
-                            <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>
-                              {editingSecrets ? (
-                                <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="123 456 789" />
-                              ) : canViewSecrets ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-indigo-600">{employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}</span>
-                                  {employee.rustdeskId && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(employee.rustdeskId);
-                                        toast.success('REMOTE ID copied to clipboard');
-                                      }}
-                                      className="p-1 text-indigo-600 hover:text-indigo-800 bg-indigo-50 rounded-md"
-                                      title="Copy REMOTE ID"
-                                    >
-                                      <Copy className="w-3.5 h-3.5" />
-                                    </button>
+                              <div className="md:col-span-2">
+                                <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>
+                                  {editingSecrets ? (
+                                    <Input value={form.rustdeskId} onChange={(v) => updateForm('rustdeskId', v)} placeholder="123 456 789" />
+                                  ) : canViewSecrets ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono font-bold text-indigo-600">{employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                      {employee.rustdeskId && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(employee.rustdeskId);
+                                            toast.success('REMOTE ID copied to clipboard');
+                                          }}
+                                          className="p-1 text-indigo-600 hover:text-indigo-800 bg-indigo-50 rounded-md"
+                                          title="Copy REMOTE ID"
+                                        >
+                                          <Copy className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
                                   )}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                              )}
-                            </ProfileField>
-                          </div>
+                                </ProfileField>
+                              </div>
+                            </div>
+                          </ProfileSection>
                         </div>
-                      </ProfileSection>
 
-                      <ProfileSection icon={ShieldAlert} title="Security Compliance" iconColorClass="text-rose-600 bg-rose-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
-                            {editingIT ? (
-                              <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
-                                <option value="active">Active (Protected)</option>
-                                <option value="uninstalled">Uninstalled / Missing</option>
-                                <option value="expired">Expired / Outdated</option>
-                              </Select>
-                            ) : (
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                employee.esetStatus === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                {employee.esetStatus || 'Unknown'}
-                              </span>
-                            )}
-                          </ProfileField>
+                        <div className="w-full lg:w-[30%] flex flex-col">
+                          <ProfileSection icon={ShieldAlert} title="Security Compliance" iconColorClass="text-rose-600 bg-rose-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 gap-y-8">
+                              <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
+                                {editingIT ? (
+                                  <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
+                                    <option value="active">Active (Protected)</option>
+                                    <option value="uninstalled">Uninstalled / Missing</option>
+                                    <option value="expired">Expired / Outdated</option>
+                                  </Select>
+                                ) : (
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                                    employee.esetStatus === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                  }`}>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    {employee.esetStatus || 'Unknown'}
+                                  </span>
+                                )}
+                              </ProfileField>
 
-                          <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
-                            {editingIT ? (
-                              <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
-                                <option value="installed">Installed & Running</option>
-                                <option value="uninstalled">Uninstalled / Missing</option>
-                                <option value="error">Error / Not Reporting</option>
-                              </Select>
-                            ) : (
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                employee.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                {employee.activityWatchStatus || 'Unknown'}
-                              </span>
-                            )}
-                          </ProfileField>
+                              <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
+                                {editingIT ? (
+                                  <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
+                                    <option value="installed">Installed & Running</option>
+                                    <option value="uninstalled">Uninstalled / Missing</option>
+                                    <option value="error">Error / Not Reporting</option>
+                                  </Select>
+                                ) : (
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                                    employee.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                  }`}>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    {employee.activityWatchStatus || 'Unknown'}
+                                  </span>
+                                )}
+                              </ProfileField>
+                            </div>
+                          </ProfileSection>
                         </div>
-                      </ProfileSection>
+                      </div>
+
                       <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
