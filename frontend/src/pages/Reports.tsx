@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import ExcelJS from 'exceljs';
-import { FileText, Download, PieChart, BarChart, ShieldAlert, Trash2, Loader2, TrendingUp, ClipboardList, X, Users, ArrowLeft, ChevronRight, CheckCircle2, Columns } from 'lucide-react';
+import { FileText, Download, PieChart, BarChart, ShieldAlert, Trash2, Loader2, TrendingUp, ClipboardList, X, Users, ArrowLeft, ChevronRight, CheckCircle2, Columns, CalendarCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -611,6 +611,59 @@ async function generateDepartmentRoster(params?: any): Promise<ReportData> {
   };
 }
 
+// ─── Report 8: Employee Evaluations ────────────────────────────────────────────
+
+async function generateEvaluationReport(params?: any): Promise<ReportData> {
+  const scope = params?.departmentScope || 'all';
+  const [allEmployees, accounts] = await Promise.all([
+    employeeService.list().then(asArray),
+    accountService.list().then(asArray)
+  ]);
+  const employees = allEmployees.filter(e => !e.isArchived);
+  
+  let targetAccounts = accounts;
+  if (scope === 'internal') targetAccounts = accounts.filter(a => a.accountType === 'internal');
+  else if (scope === 'external') targetAccounts = accounts.filter(a => a.accountType === 'external');
+  else if (scope.startsWith('dept_')) {
+    const dName = scope.replace('dept_', '');
+    targetAccounts = accounts.filter(a => a.name === dName);
+  }
+
+  const accountNames = targetAccounts.map(a => a.name);
+
+  const filteredEmployees = employees.filter(e => {
+    if (scope === 'all') return true;
+    const acc = e.accountAssignment || (e as any).account || '';
+    return accountNames.includes(acc);
+  });
+
+  if (!filteredEmployees.length) throw new Error('No employee records found for this scope.');
+
+  const rows = filteredEmployees.map((e) => ({
+    'Employee ID': na(e.id),
+    'Full Name': na(e.fullName),
+    'Position': na(e.position),
+    'Department/Campaign': na(e.accountAssignment),
+    'Site': na(e.site),
+    'Employee Status': na(capitalize(e.employeeStatus)),
+    'Sex': na(capitalize(e.sex)),
+    'Civil Status': na(capitalize(e.civilStatus)),
+    'Date Hired': na(e.dateHired),
+    '1st Month Eval': na(e.evalFirstMonth),
+    '3rd Month Eval': na(e.evalThirdMonth),
+    '5th Month Eval': na(e.evalFifthMonth),
+    '6th Month Eval': na(e.evalSixthMonth),
+    'Anniversary Eval': na(e.evalAnniversary)
+  }));
+
+  const safeScope = scope.replace(/[^a-zA-Z0-9]/g, '_');
+  return {
+    sheets: [{ name: 'Evaluations', rows }],
+    filename: `Employee_Evaluations_Report_${safeScope}.xlsx`,
+    message: `${filteredEmployees.length} employee evaluation records exported`
+  };
+}
+
 // ─── Report definitions ───────────────────────────────────────────────────────
 
 type ReportDef = {
@@ -683,6 +736,14 @@ const REPORTS: ReportDef[] = [
     generate: generateAuditHistory,
     requiresDepartmentScope: true,
   },
+  {
+    title: 'Employee Evaluations Report',
+    desc: 'Extract tracking dates for all 1st Month, 3rd Month, 5th Month, 6th Month, and Anniversary evaluations.',
+    icon: CalendarCheck,
+    color: 'text-orange-600 bg-orange-50 border-orange-100 group-hover:bg-orange-600 group-hover:border-orange-600 group-hover:text-white',
+    generate: generateEvaluationReport,
+    requiresDepartmentScope: true,
+  }
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
