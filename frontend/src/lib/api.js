@@ -37,11 +37,22 @@ async function doRefresh() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new Error('No refresh token available');
   
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken })
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      signal: controller.signal
+    });
+  } catch (error) {
+    throw new Error('Refresh request timed out or failed');
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload.success === false) {
@@ -55,6 +66,9 @@ async function doRefresh() {
 export async function apiRequest(path, options = {}) {
   const isFormData = options.body instanceof FormData;
   
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for entire request
+
   const makeRequest = async () => {
     const token = getAuthToken();
     const headers = {
@@ -63,19 +77,13 @@ export async function apiRequest(path, options = {}) {
       ...options.headers,
     };
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
     try {
-      const response = await fetch(`${API_BASE_URL}${path}`, {
+      return await fetch(`${API_BASE_URL}${path}`, {
         ...options,
         headers,
         signal: controller.signal
       });
-      clearTimeout(timeoutId);
-      return response;
     } catch (error) {
-      clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
         throw new Error('The server took too long to respond. It might be restarting or offline.');
       }
@@ -83,42 +91,57 @@ export async function apiRequest(path, options = {}) {
     }
   };
 
-  let response = await makeRequest();
+  try {
+    let response = await makeRequest();
 
-  if (response.status === 401 && path !== '/auth/refresh' && path !== '/auth/login' && path !== '/auth/login/mfa') {
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshPromise = doRefresh().finally(() => {
-        isRefreshing = false;
-        refreshPromise = null;
-      });
+    if (response.status === 401 && path !== '/auth/refresh' && path !== '/auth/login' && path !== '/auth/login/mfa') {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = doRefresh().finally(() => {
+          isRefreshing = false;
+          refreshPromise = null;
+        });
+      }
+
+      try {
+        await refreshPromise;
+        // Retry the original request
+        response = await makeRequest();
+      } catch (refreshError) {
+        clearAuthToken();
+        clearRefreshToken();
+        // Let it fall through to throw the original 401
+      }
     }
 
+    const contentType = response.headers.get('content-type') || '';
+    let payload = {};
+    
     try {
-      await refreshPromise;
-      // Retry the original request
-      response = await makeRequest();
-    } catch (refreshError) {
-      clearAuthToken();
-      clearRefreshToken();
-      // Let it fall through to throw the original 401
+      if (contentType.includes('application/json')) {
+        payload = await response.json();
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        throw new Error('The connection dropped while reading data from the server.');
+      }
+      payload = {};
     }
+
+    if (!response.ok) {
+      throw new Error(payload.message || 'API request failed');
+    }
+
+    if (!contentType.includes('application/json')) {
+      throw new Error('API returned a non-JSON response. Check VITE_API_BASE_URL and backend routing.');
+    }
+
+    if (payload.success === false) {
+      throw new Error(payload.message || 'API request failed');
+    }
+
+    return payload.data;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const contentType = response.headers.get('content-type') || '';
-  const payload = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
-
-  if (!response.ok) {
-    throw new Error(payload.message || 'API request failed');
-  }
-
-  if (!contentType.includes('application/json')) {
-    throw new Error('API returned a non-JSON response. Check VITE_API_BASE_URL and backend routing.');
-  }
-
-  if (payload.success === false) {
-    throw new Error(payload.message || 'API request failed');
-  }
-
-  return payload.data;
 }

@@ -1,11 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CalendarCheck, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { CalendarCheck, ChevronLeft, ChevronRight, Search, BarChart3, AlertCircle } from "lucide-react";
 import { PageLayout } from "@/src/components/layout/PageLayout";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { toast } from "react-hot-toast";
 import { employeeService } from "@/src/features/employees/services/employeeService";
 import { cn } from "@/src/lib/utils";
 import { Employee } from "@/src/types";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 function normalizeEmployeeList(value: any) {
   if (Array.isArray(value)) return value;
@@ -87,8 +97,9 @@ export default function Evaluations() {
         const data = await employeeService.list();
         const activeRecords = normalizeEmployeeList(data).filter(e => e.status === "active" && !e.isArchived);
         setEmployees(activeRecords);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to load employees for evaluations", error);
+        toast.error(error.message || "Unable to connect to the server to load evaluations. Please try refreshing.");
       } finally {
         setIsLoading(false);
       }
@@ -136,14 +147,147 @@ export default function Evaluations() {
     }).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
   }, [employees, currentDate, searchTerm]);
 
+  const analyticsStats = useMemo(() => {
+    let dueThisMonth = 0;
+    let dueNextMonth = 0;
+    let dueTodayCount = 0;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const nextMonthDate = new Date(now);
+    nextMonthDate.setMonth(currentMonth + 1);
+    const nextMonthMonth = nextMonthDate.getMonth();
+    const nextMonthYear = nextMonthDate.getFullYear();
+
+    // Forecast for next 6 months
+    const forecastMonths = Array.from({ length: 6 }).map((_, i) => {
+      const d = new Date(now);
+      d.setMonth(currentMonth + i);
+      return {
+        label: d.toLocaleString('default', { month: 'short' }),
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        count: 0
+      };
+    });
+
+    const milestoneCounts: Record<string, number> = {
+      '1st Month': 0,
+      '3rd Month': 0,
+      '5th Month': 0,
+      '6th Month': 0,
+      'Anniversary': 0
+    };
+
+    employees.forEach(emp => {
+      MILESTONES.forEach(m => {
+        const dateStr = emp[m.field];
+        if (!dateStr) return;
+        
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return;
+
+        const status = getEvalStatus(dateStr);
+        
+        if (status?.type === 'due') {
+          dueTodayCount++;
+        }
+
+        const forecastBucket = forecastMonths.find(fm => fm.month === d.getMonth() && fm.year === d.getFullYear());
+        if (forecastBucket) {
+          forecastBucket.count++;
+        }
+
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          dueThisMonth++;
+          milestoneCounts[m.label]++;
+        }
+        if (d.getMonth() === nextMonthMonth && d.getFullYear() === nextMonthYear) dueNextMonth++;
+      });
+    });
+
+    const milestoneData = Object.entries(milestoneCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([name, value]) => ({ name, value }));
+
+    return {
+      dueThisMonth,
+      dueNextMonth,
+      dueTodayCount,
+      forecastData: forecastMonths.map(fm => ({ name: fm.label, Total: fm.count })),
+      milestoneData
+    };
+  }, [employees]);
+
   if (!can("employees.view")) return null;
 
   const monthYearLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
 
   return (
     <PageLayout title="Evaluations">
       <div className="flex flex-col gap-6">
         
+        {/* Analytics Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Stat Cards */}
+          <div className="flex flex-col gap-6">
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5E7EB] p-6 flex flex-col justify-between flex-1">
+              <div>
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Due This Month</p>
+                <h3 className="text-4xl font-bold text-gray-900">{analyticsStats.dueThisMonth}</h3>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <CalendarCheck className="w-4 h-4 text-blue-500" />
+                <span>Current focus workload</span>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5E7EB] p-6 flex flex-col justify-between flex-1">
+              <div>
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Due Next Month</p>
+                <h3 className="text-4xl font-bold text-gray-900">{analyticsStats.dueNextMonth}</h3>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <BarChart3 className="w-4 h-4 text-orange-500" />
+                <span>Upcoming forecast pipeline</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5E7EB] p-6 flex flex-col justify-between flex-1">
+              <div>
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Due Today</p>
+                <h3 className="text-4xl font-bold text-red-600">{analyticsStats.dueTodayCount}</h3>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-red-700 font-medium">Focus for today</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Forecast Chart */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-[#E5E7EB] flex flex-col">
+            <h3 className="text-lg font-semibold text-[#111827] mb-6 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-gray-400" />
+              6-Month Forecast
+            </h3>
+            <div className="flex-1 min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsStats.forecastData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <RechartsTooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="Total" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
         {/* Header Controls */}
         <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-[#E5E7EB]">
           <div className="flex items-center gap-4">
