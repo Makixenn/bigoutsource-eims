@@ -57,7 +57,6 @@ import {
 } from "@/src/features/employees/components/DirectoryUI";
 import { useRealtimeSubscription } from "@/src/hooks/useRealtimeSubscription";
 import { queryClient } from "@/src/providers/QueryProvider";
-import Confetti from "react-confetti";
 
 function CategoryAccordion({
   category,
