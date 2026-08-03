@@ -1801,147 +1801,155 @@ export default function EmployeeProfile() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                      className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch"
+                      className="space-y-8"
                     >
-                      {/* COLUMN 1: LEFT */}
-                      <div className="flex flex-col gap-8 h-full">
-                        <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
-                            {editingHR ? <Input value={form.position} onChange={(v) => updateForm('position', v)} placeholder="e.g. Customer Service Rep" /> : employee.position || <span className="text-red-500 font-black">Not Assigned</span>}
-                          </ProfileField>
-                          
-                          <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
-                            {editingHR ? (
-                              <div className="relative">
-                                <Input
-                                  value={form.accountAssignment}
-                                  onChange={(v) => {
-                                    updateForm('accountAssignment', v);
-                                    setIsAccountDropdownOpen(true);
-                                  }}
-                                  onFocus={() => setIsAccountDropdownOpen(true)}
-                                  onBlur={() => setTimeout(() => setIsAccountDropdownOpen(false), 200)}
-                                  placeholder="Type or select DEPARTMENT/CAMPAIGN."
-                                />
-                                {isAccountDropdownOpen && accounts.length > 0 && (
-                                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                    {accounts
-                                      .filter(acc => acc.name.toLowerCase().includes((form.accountAssignment || '').toLowerCase()))
-                                      .map((acc) => (
-                                        <button
-                                          key={acc.id}
-                                          type="button"
-                                          className="w-full px-4 py-2 text-left text-xs font-bold text-[#374151] hover:bg-[#F3F4F6]"
-                                          onClick={() => {
-                                            updateForm('accountAssignment', acc.name);
-                                            setIsAccountDropdownOpen(false);
-                                          }}
-                                        >
-                                          {acc.name}
-                                        </button>
-                                      ))}
+                      {/* ROW 1: EMPLOYEE INFORMATION (65%) & HMO INFORMATION (35%) */}
+                      <div className="flex flex-col lg:flex-row gap-8 items-stretch">
+                        <div className="w-full lg:w-[65%] flex flex-col">
+                          <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
+                                {editingHR ? <Input value={form.position} onChange={(v) => updateForm('position', v)} placeholder="e.g. Customer Service Rep" /> : employee.position || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+                              
+                              <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
+                                {editingHR ? (
+                                  <div className="relative">
+                                    <Input
+                                      value={form.accountAssignment}
+                                      onChange={(v) => {
+                                        updateForm('accountAssignment', v);
+                                        setIsAccountDropdownOpen(true);
+                                      }}
+                                      onFocus={() => setIsAccountDropdownOpen(true)}
+                                      onBlur={() => setTimeout(() => setIsAccountDropdownOpen(false), 200)}
+                                      placeholder="Type or select DEPARTMENT/CAMPAIGN."
+                                    />
+                                    {isAccountDropdownOpen && accounts.length > 0 && (
+                                      <div className="absolute z-50 w-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        {accounts
+                                          .filter(acc => acc.name.toLowerCase().includes((form.accountAssignment || '').toLowerCase()))
+                                          .map((acc) => (
+                                            <button
+                                              key={acc.id}
+                                              type="button"
+                                              className="w-full px-4 py-2 text-left text-xs font-bold text-[#374151] hover:bg-[#F3F4F6]"
+                                              onClick={() => {
+                                                updateForm('accountAssignment', acc.name);
+                                                setIsAccountDropdownOpen(false);
+                                              }}
+                                            >
+                                              {acc.name}
+                                            </button>
+                                          ))}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
-                          </ProfileField>
-
-                          <ProfileField label="Site Assignment" icon={MapPin} editing={editingHR}>
-                            {editingHR ? (
-                              <Select value={form.siteId} onChange={(v) => {
-                                const sel = sites.find(s => s.id === v);
-                                setForm(curr => ({ ...curr, siteId: v, site: sel ? sel.name : v }));
-                              }}>
-                                <option value="">Select site</option>
-                                {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                              </Select>
-                            ) : employee.site || <span className="text-red-500 font-black">Not Assigned</span>}
-                          </ProfileField>
-
-                          <ProfileField label="Employee Status" icon={User} editing={editingHR}>
-                            {editingHR ? (
-                              <Select value={form.employeeStatus} onChange={(v) => updateForm('employeeStatus', v)}>
-                                <option value="Regular">Regular</option>
-                                <option value="Probationary">Probationary</option>
-                                <option value="Contractual">Contractual</option>
-                                <option value="Project-Based">Project-Based</option>
-                                <option value="Intern">Intern</option>
-                              </Select>
-                            ) : employee.employeeStatus || 'Regular'}
-                          </ProfileField>
-
-                          <ProfileField label="Status" icon={User} editing={false}>
-                            <span className="font-bold capitalize">{employee.status || 'active'}</span>
-                          </ProfileField>
-
-                          <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
-                            {editingHR ? <Input type="date" value={form.dateHired} onChange={(v) => updateForm('dateHired', v)} /> : employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-
-                          {(form.status === 'floating' || employee.status === 'floating') && (
-                            <ProfileField label="Float Date" icon={Calendar} editing={editingHR}>
-                              {editingHR ? <Input type="date" value={form.floatDate} onChange={(v) => updateForm('floatDate', v)} /> : employee.floatDate ? new Date(employee.floatDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
-                            </ProfileField>
-                          )}
-
-                          {(form.status === 'inactive' || form.status === 'separated') && (
-                            <>
-                              <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
-                                {editingHR ? <Input type="date" value={form.separationDate} onChange={(v) => updateForm('separationDate', v)} /> : employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                                ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
                               </ProfileField>
-                              <ProfileField label="Separation Reason" icon={Briefcase} editing={editingHR}>
-                                {editingHR ? <Input value={form.separationReason} onChange={(v) => updateForm('separationReason', v)} placeholder="Reason for separation" /> : employee.separationReason || <span className="text-[#9CA3AF]">Not Set</span>}
-                              </ProfileField>
-                            </>
-                          )}
-                        </div>
-                      </ProfileSection>
 
-                      <ProfileSection icon={Briefcase} title="Issuances" iconColorClass="text-purple-600 bg-purple-50" className="flex-1 flex flex-col justify-start">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="ID Issuance" icon={Briefcase} editing={editingHR}>
-                            {editingHR ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
-                          </ProfileField>
-                          <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={editingHR}>
-                            {editingHR ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
-                          </ProfileField>
+                              <ProfileField label="Site Assignment" icon={MapPin} editing={editingHR}>
+                                {editingHR ? (
+                                  <Select value={form.siteId} onChange={(v) => {
+                                    const sel = sites.find(s => s.id === v);
+                                    setForm(curr => ({ ...curr, siteId: v, site: sel ? sel.name : v }));
+                                  }}>
+                                    <option value="">Select site</option>
+                                    {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                  </Select>
+                                ) : employee.site || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+
+                              <ProfileField label="Employee Status" icon={User} editing={editingHR}>
+                                {editingHR ? (
+                                  <Select value={form.employeeStatus} onChange={(v) => updateForm('employeeStatus', v)}>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Probationary">Probationary</option>
+                                    <option value="Contractual">Contractual</option>
+                                    <option value="Project-Based">Project-Based</option>
+                                    <option value="Intern">Intern</option>
+                                  </Select>
+                                ) : employee.employeeStatus || 'Regular'}
+                              </ProfileField>
+
+                              <ProfileField label="Status" icon={User} editing={false}>
+                                <span className="font-bold capitalize">{employee.status || 'active'}</span>
+                              </ProfileField>
+
+                              <ProfileField label="Date Hired" icon={Calendar} editing={editingHR}>
+                                {editingHR ? <Input type="date" value={form.dateHired} onChange={(v) => updateForm('dateHired', v)} /> : employee.dateHired ? new Date(employee.dateHired).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+
+                              {(form.status === 'floating' || employee.status === 'floating') && (
+                                <ProfileField label="Float Date" icon={Calendar} editing={editingHR}>
+                                  {editingHR ? <Input type="date" value={form.floatDate} onChange={(v) => updateForm('floatDate', v)} /> : employee.floatDate ? new Date(employee.floatDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                                </ProfileField>
+                              )}
+
+                              {(form.status === 'inactive' || form.status === 'separated') && (
+                                <>
+                                  <ProfileField label="Separation Date" icon={Calendar} editing={editingHR}>
+                                    {editingHR ? <Input type="date" value={form.separationDate} onChange={(v) => updateForm('separationDate', v)} /> : employee.separationDate ? new Date(employee.separationDate).toLocaleDateString() : <span className="text-[#9CA3AF]">Not Set</span>}
+                                  </ProfileField>
+                                  <ProfileField label="Separation Reason" icon={Briefcase} editing={editingHR}>
+                                    {editingHR ? <Input value={form.separationReason} onChange={(v) => updateForm('separationReason', v)} placeholder="Reason for separation" /> : employee.separationReason || <span className="text-[#9CA3AF]">Not Set</span>}
+                                  </ProfileField>
+                                </>
+                              )}
+                            </div>
+                          </ProfileSection>
                         </div>
-                      </ProfileSection>
+
+                        <div className="w-full lg:w-[35%] flex flex-col">
+                          <ProfileSection icon={ShieldCheck} title="HMO Information" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="HMO Enrollment" icon={Calendar} editing={editingHR}>
+                                {editingHR ? <Input type="date" value={form.hmoEnrollment || ''} onChange={(v) => updateForm('hmoEnrollment', v)} /> : employee.hmoEnrollment ? new Date(employee.hmoEnrollment).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                              </ProfileField>
+                              <ProfileField label="HMO Member Code" icon={Briefcase} editing={editingHR}>
+                                {editingHR ? <Input value={form.hmoMemberCode || ''} onChange={(v) => updateForm('hmoMemberCode', v)} placeholder="Code" /> : employee.hmoMemberCode || <span className="text-[#9CA3AF]">-</span>}
+                              </ProfileField>
+                            </div>
+                          </ProfileSection>
+                        </div>
                       </div>
 
-                      {/* COLUMN 2: RIGHT */}
-                      <div className="flex flex-col gap-8 h-full">
-                        <ProfileSection icon={ShieldCheck} title="Government Identifiers" iconColorClass="text-emerald-600 bg-emerald-50" className="flex-1 flex flex-col justify-start">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="SSS Number" icon={ShieldCheck} editing={editingHR}>
-                            {editingHR ? <Input value={form.sssNo} onChange={(v) => updateForm('sssNo', v)} placeholder="00-0000000-0" /> : employee.sssNo || <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-                          <ProfileField label="TIN Number" icon={ShieldCheck} editing={editingHR}>
-                            {editingHR ? <Input value={form.tinNo} onChange={(v) => updateForm('tinNo', v)} placeholder="000-000-000-000" /> : employee.tinNo || <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-                          <ProfileField label="PhilHealth Number" icon={ShieldCheck} editing={editingHR}>
-                            {editingHR ? <Input value={form.philhealthNo} onChange={(v) => updateForm('philhealthNo', v)} placeholder="00-000000000-0" /> : employee.philhealthNo || <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
-                          <ProfileField label="Pag-IBIG Number" icon={ShieldCheck} editing={editingHR}>
-                            {editingHR ? <Input value={form.pagibigNo} onChange={(v) => updateForm('pagibigNo', v)} placeholder="0000-0000-0000" /> : employee.pagibigNo || <span className="text-[#9CA3AF]">Not Set</span>}
-                          </ProfileField>
+                      {/* ROW 2: GOVERNMENT IDENTIFIERS (65%) & ISSUANCES (35%) */}
+                      <div className="flex flex-col lg:flex-row gap-8 items-stretch">
+                        <div className="w-full lg:w-[65%] flex flex-col">
+                          <ProfileSection icon={ShieldCheck} title="Government Identifiers" iconColorClass="text-emerald-600 bg-emerald-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="SSS Number" icon={ShieldCheck} editing={editingHR}>
+                                {editingHR ? <Input value={form.sssNo} onChange={(v) => updateForm('sssNo', v)} placeholder="00-0000000-0" /> : employee.sssNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+                              <ProfileField label="TIN Number" icon={ShieldCheck} editing={editingHR}>
+                                {editingHR ? <Input value={form.tinNo} onChange={(v) => updateForm('tinNo', v)} placeholder="000-000-000-000" /> : employee.tinNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+                              <ProfileField label="PhilHealth Number" icon={ShieldCheck} editing={editingHR}>
+                                {editingHR ? <Input value={form.philhealthNo} onChange={(v) => updateForm('philhealthNo', v)} placeholder="00-000000000-0" /> : employee.philhealthNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+                              <ProfileField label="Pag-IBIG Number" icon={ShieldCheck} editing={editingHR}>
+                                {editingHR ? <Input value={form.pagibigNo} onChange={(v) => updateForm('pagibigNo', v)} placeholder="0000-0000-0000" /> : employee.pagibigNo || <span className="text-[#9CA3AF]">Not Set</span>}
+                              </ProfileField>
+                            </div>
+                          </ProfileSection>
                         </div>
-                      </ProfileSection>
 
-                      <ProfileSection icon={ShieldCheck} title="HMO Information" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="HMO Enrollment" icon={Calendar} editing={editingHR}>
-                            {editingHR ? <Input type="date" value={form.hmoEnrollment || ''} onChange={(v) => updateForm('hmoEnrollment', v)} /> : employee.hmoEnrollment ? new Date(employee.hmoEnrollment).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
-                          </ProfileField>
-                          <ProfileField label="HMO Member Code" icon={Briefcase} editing={editingHR}>
-                            {editingHR ? <Input value={form.hmoMemberCode || ''} onChange={(v) => updateForm('hmoMemberCode', v)} placeholder="Code" /> : employee.hmoMemberCode || <span className="text-[#9CA3AF]">-</span>}
-                          </ProfileField>
+                        <div className="w-full lg:w-[35%] flex flex-col">
+                          <ProfileSection icon={Briefcase} title="Issuances" iconColorClass="text-purple-600 bg-purple-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="ID Issuance" icon={Briefcase} editing={editingHR}>
+                                {editingHR ? <Input type="date" value={form.idIssuance || ''} onChange={(v) => updateForm('idIssuance', v)} /> : employee.idIssuance ? new Date(employee.idIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                              </ProfileField>
+                              <ProfileField label="Hoodie Issuance" icon={Briefcase} editing={editingHR}>
+                                {editingHR ? <Input type="date" value={form.hoodieIssuance || ''} onChange={(v) => updateForm('hoodieIssuance', v)} /> : employee.hoodieIssuance ? new Date(employee.hoodieIssuance).toLocaleDateString() : <span className="text-[#9CA3AF]">-</span>}
+                              </ProfileField>
+                            </div>
+                          </ProfileSection>
                         </div>
-                      </ProfileSection>
                       </div>
 
-                      <div className="col-span-1 lg:col-span-2 h-[150px] shrink-0 w-full" />
+                      <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
 
