@@ -81,6 +81,7 @@ type EmployeeForm = {
   pcName: string;
   biosDate: string;
   deviceType: 'Windows' | 'MacOS' | string;
+  diskEncryptionKey: string;
   windowsKey: string;
   rustdeskId: string;
   esetStatus: 'active' | 'inactive';
@@ -143,6 +144,7 @@ const emptyEmployee: EmployeeForm = {
   pcName: '',
   biosDate: '',
   deviceType: 'Windows',
+  diskEncryptionKey: '',
   windowsKey: '',
   rustdeskId: '',
   esetStatus: 'inactive',
@@ -203,6 +205,7 @@ const editableFields: Array<keyof EmployeeForm> = [
   'pcName',
   'biosDate',
   'windowsKey',
+  'diskEncryptionKey',
   'rustdeskId',
   'esetStatus',
   'activityWatchStatus',
@@ -362,6 +365,23 @@ function formatWindowsLicenseKey(value = '') {
     .toUpperCase()
     .slice(0, 25)
     .match(/.{1,5}/g)
+    ?.join('-') || '';
+}
+
+function formatBitlocker(value = '') {
+  return value
+    .replace(/[^0-9]/g, '')
+    .slice(0, 48)
+    .match(/.{1,6}/g)
+    ?.join('-') || '';
+}
+
+function formatFilevault(value = '') {
+  return value
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase()
+    .slice(0, 16)
+    .match(/.{1,4}/g)
     ?.join('-') || '';
 }
 
@@ -566,6 +586,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     pcName: emp?.pcName || '',
     biosDate: emp?.biosDate ? String(emp.biosDate).slice(0, 10) : '',
     deviceType: emp?.deviceType || 'Windows',
+    diskEncryptionKey: emp?.diskEncryptionKey || '',
     windowsKey: formatWindowsLicenseKey(emp?.windowsKey || ''),
     rustdeskId: formatRustdeskId(emp?.rustdeskId || emp?.rustDeskId || ''),
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
@@ -908,6 +929,12 @@ export default function EmployeeProfile() {
       value = formatRustdeskId(value);
     } else if (field === 'windowsKey') {
       value = formatWindowsLicenseKey(value);
+    } else if (field === 'diskEncryptionKey') {
+      if (form.deviceType === 'Windows') {
+        value = formatBitlocker(value);
+      } else if (form.deviceType === 'Mac') {
+        value = formatFilevault(value);
+      }
     } else if (typeof value === 'string') {
       value = applyCharacterLimit(field, value);
     }
@@ -1061,6 +1088,7 @@ export default function EmployeeProfile() {
         siteName: selectedSite?.name,
         biosDate: form.biosDate || '',
         deviceType: form.deviceType,
+        diskEncryptionKey: form.diskEncryptionKey.trim(),
         windowsKey: form.windowsKey.trim(),
         rustdeskId: form.rustdeskId.trim(),
         esetStatus: form.esetStatus,
@@ -2002,8 +2030,8 @@ export default function EmployeeProfile() {
                       className="space-y-8"
                     >
                       <div className="flex flex-col lg:flex-row gap-8 items-stretch">
-                        <div className="w-full lg:w-[70%] flex flex-col gap-8">
-                          <ProfileSection icon={Laptop} title="System Accounts" iconColorClass="text-purple-600 bg-purple-50">
+                        <div className="w-full lg:w-[70%] flex flex-col">
+                          <ProfileSection icon={Laptop} title="System Accounts" iconColorClass="text-purple-600 bg-purple-50" className="flex-1 flex flex-col justify-start">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                               <ProfileField label="Snappy Email" icon={Mail} editing={editingIT}>
                                 {editingIT ? (
@@ -2064,7 +2092,52 @@ export default function EmployeeProfile() {
                             </div>
                           </ProfileSection>
 
-                          <ProfileSection icon={Key} title="Device Assets & Credentials" iconColorClass="text-indigo-600 bg-indigo-50">
+                          
+                        </div>
+
+                        <div className="w-full lg:w-[30%] flex flex-col">
+                          <ProfileSection icon={ShieldAlert} title="Security Compliance" iconColorClass="text-rose-600 bg-rose-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 gap-y-8">
+                              <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
+                                {editingIT ? (
+                                  <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
+                                    <option value="active">Active (Protected)</option>
+                                    <option value="uninstalled">Uninstalled / Missing</option>
+                                    <option value="expired">Expired / Outdated</option>
+                                  </Select>
+                                ) : (
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                                    employee.esetStatus === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                  }`}>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    {employee.esetStatus || 'Unknown'}
+                                  </span>
+                                )}
+                              </ProfileField>
+
+                              <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
+                                {editingIT ? (
+                                  <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
+                                    <option value="installed">Installed & Running</option>
+                                    <option value="uninstalled">Uninstalled / Missing</option>
+                                    <option value="error">Error / Not Reporting</option>
+                                  </Select>
+                                ) : (
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                                    employee.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                  }`}>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    {employee.activityWatchStatus || 'Unknown'}
+                                  </span>
+                                )}
+                              </ProfileField>
+                            </div>
+                          </ProfileSection>
+                        </div>
+                      </div>
+                                            <div className="flex flex-col lg:flex-row gap-8 items-stretch mt-8">
+                        <div className={`w-full ${isInternalAccount ? 'lg:w-[50%]' : 'lg:w-full'} flex flex-col`}>
+                          <ProfileSection icon={Key} title="Device Assets & Credentials" iconColorClass="text-indigo-600 bg-indigo-50" className="flex-1 flex flex-col justify-start">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                               <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
                                 {editingIT ? (
@@ -2147,49 +2220,9 @@ export default function EmployeeProfile() {
                             </div>
                           </ProfileSection>
                         </div>
-
-                        <div className="w-full lg:w-[30%] flex flex-col">
-                          <ProfileSection icon={ShieldAlert} title="Security Compliance" iconColorClass="text-rose-600 bg-rose-50" className="flex-1 flex flex-col justify-start">
-                            <div className="grid grid-cols-1 gap-y-8">
-                              <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
-                                {editingIT ? (
-                                  <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
-                                    <option value="active">Active (Protected)</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="expired">Expired / Outdated</option>
-                                  </Select>
-                                ) : (
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                    employee.esetStatus === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                                  }`}>
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    {employee.esetStatus || 'Unknown'}
-                                  </span>
-                                )}
-                              </ProfileField>
-
-                              <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
-                                {editingIT ? (
-                                  <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
-                                    <option value="installed">Installed & Running</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="error">Error / Not Reporting</option>
-                                  </Select>
-                                ) : (
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                    employee.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                                  }`}>
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    {employee.activityWatchStatus || 'Unknown'}
-                                  </span>
-                                )}
-                              </ProfileField>
-                            </div>
-                          </ProfileSection>
-                        </div>
-                      </div>
-                      {isInternalAccount && (
-                        <ProfileSection icon={Wifi} title="Network Devices (MAC Addresses)" iconColorClass="text-blue-600 bg-blue-50">
+                        {isInternalAccount && (
+                          <div className="w-full lg:w-[50%] flex flex-col">
+                            <ProfileSection icon={Wifi} title="Network Devices (MAC Addresses)" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
                           <div className="space-y-4">
                             {editingIT ? (
                               <div className="border border-[#E5E7EB] rounded-xl overflow-hidden bg-white">
@@ -2298,7 +2331,9 @@ export default function EmployeeProfile() {
                             )}
                           </div>
                         </ProfileSection>
-                      )}
+                          </div>
+                        )}
+                      </div>
                       <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}

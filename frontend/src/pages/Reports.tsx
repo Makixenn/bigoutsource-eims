@@ -178,6 +178,7 @@ async function generateEmployeeMasterList(params?: any): Promise<ReportData> {
       'ESET Status': na(capitalize(e.esetStatus)),
       'Activity Watch': na(capitalize(e.activityWatchStatus)),
       'Windows Key': na(e.windowsKey),
+      'Disk Encryption Key': na(e.diskEncryptionKey),
       'MAC Addresses': Array.isArray(e.macAddresses) ? e.macAddresses.map((m: any) => `${m.mac} (${m.type})`).join(', ') : 'N/A',
       'BIOS Date': na(e.biosDate),
       'Outlook Email': na(e.outlookEmail),
@@ -238,6 +239,7 @@ async function generateITAssetReport(params?: any): Promise<ReportData> {
     'PC Name': na(e.pcName),
     'Remote ID': na(e.rustDeskId),
     'Windows Key': na(e.windowsKey),
+    'Disk Encryption Key': na(e.diskEncryptionKey),
     'MAC Addresses': Array.isArray(e.macAddresses) ? e.macAddresses.map((m: any) => `${m.mac} (${m.type})`).join(', ') : 'N/A',
     'ESET Status': na(capitalize(e.esetStatus)),
     'Activity Watch': na(capitalize(e.activityWatchStatus)),
@@ -1133,7 +1135,7 @@ export default function Reports() {
                         <div className="p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] space-y-6">
                           {(() => {
                             const allAvailableColumns = Array.from(new Set(previewData.sheets.flatMap(s => s.rows.flatMap(r => Object.keys(r)))));
-                            const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'Email Password', 'LMS Account', 'MAC Addresses'];
+                            const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'Disk Encryption Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'Email Password', 'LMS Account', 'MAC Addresses'];
                             const hrColumns = allAvailableColumns.filter(c => !itFieldNames.includes(c));
                             const itColumns = allAvailableColumns.filter(c => itFieldNames.includes(c));
 

@@ -23,6 +23,7 @@ export interface Employee {
   deviceType: string;
   dateHired: string;
   biosDate: string;
+  diskEncryptionKey?: string;
   windowsKey: string;
   windowsLicenseKey?: string;
   rustDeskId: string;
