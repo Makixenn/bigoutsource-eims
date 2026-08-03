@@ -1092,8 +1092,7 @@ export default function EmployeeProfile() {
         evalThirdMonth: form.evalThirdMonth,
         evalFifthMonth: form.evalFifthMonth,
         evalSixthMonth: form.evalSixthMonth,
-        evalAnniversary: form.evalAnniversary,
-        macAddresses: form.macAddresses
+        evalAnniversary: form.evalAnniversary
       });
 
       const normalized = normalizeEmployee(updated);
@@ -1838,6 +1837,51 @@ export default function EmployeeProfile() {
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                       className="space-y-8"
                     >
+                      {/* ROW 1: EMPLOYEE INFORMATION (65%) & HMO INFORMATION (35%) */}
+                      <div className="flex flex-col lg:flex-row gap-8 items-stretch">
+                        <div className="w-full lg:w-[65%] flex flex-col">
+                          <ProfileSection icon={Briefcase} title="EMPLOYEE INFORMATION" iconColorClass="text-blue-600 bg-blue-50" className="flex-1 flex flex-col justify-start">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                              <ProfileField label="Position" icon={Briefcase} editing={editingHR}>
+                                {editingHR ? <Input value={form.position} onChange={(v) => updateForm('position', v)} placeholder="e.g. Customer Service Rep" /> : employee.position || <span className="text-red-500 font-black">Not Assigned</span>}
+                              </ProfileField>
+                              
+                              <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
+                                {editingHR ? (
+                                  <div className="relative">
+                                    <Input
+                                      value={form.accountAssignment}
+                                      onChange={(v) => {
+                                        updateForm('accountAssignment', v);
+                                        setIsAccountDropdownOpen(true);
+                                      }}
+                                      onFocus={() => setIsAccountDropdownOpen(true)}
+                                      onBlur={() => setTimeout(() => setIsAccountDropdownOpen(false), 200)}
+                                      placeholder="Type or select DEPARTMENT/CAMPAIGN."
+                                    />
+                                    {isAccountDropdownOpen && accounts.length > 0 && (
+                                      <div className="absolute z-50 w-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                          const filtered = accounts.filter(acc => acc.name.toLowerCase().includes((form.accountAssignment || '').toLowerCase()));
+                                          if (filtered.length === 0) {
+                                            return <div className="px-4 py-3 text-sm text-gray-500 italic">Department not found. Please create it in the Departments tab first.</div>;
+                                          }
+                                          return filtered.map((acc) => (
+                                            <button
+                                              key={acc.id}
+                                              type="button"
+                                              className="w-full px-4 py-2 text-left text-xs font-bold text-[#374151] hover:bg-[#F3F4F6]"
+                                              onClick={() => {
+                                                updateForm('accountAssignment', acc.name);
+                                                setIsAccountDropdownOpen(false);
+                                              }}
+                                            >
+                                              {acc.name}
+                                            </button>
+                                          ));
+                                        })()}
+                                      </div>
+                                    )}
                                   </div>
                                 ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
                               </ProfileField>
@@ -2143,8 +2187,7 @@ export default function EmployeeProfile() {
                             </div>
                           </ProfileSection>
                         </div>
-                      </ProfileSection>
-
+                      </div>
                       {isInternalAccount && (
                         <ProfileSection icon={Wifi} title="Network Devices (MAC Addresses)" iconColorClass="text-blue-600 bg-blue-50">
                           <div className="space-y-4">
@@ -2256,8 +2299,6 @@ export default function EmployeeProfile() {
                           </div>
                         </ProfileSection>
                       )}
-                      </div>
-
                       <div className="h-[150px] shrink-0 w-full" />
                     </motion.div>
                   )}
