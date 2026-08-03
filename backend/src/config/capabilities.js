@@ -16,6 +16,7 @@ export const CAPABILITIES = {
   'employees.create.it_fields': 'Fill out IT Exclusive Fields',
   'employees.edit': 'Edit employee identity/HR fields',
   'employees.evaluations.manage': 'Manage employee evaluation dates, issuances, and HMO info',
+  'employees.evaluations.view': 'View employee evaluations dashboard',
   'employees.delete': 'Archive Employees',
   'employees.unarchive': 'Unarchive Employees',
   'employees.it.view': 'View employee account & device info',
@@ -94,7 +95,7 @@ export const META_CAPABILITIES = ['users.manage', 'roles.manage', 'settings.mana
 export const ROLE_CAPABILITIES = {
   super_admin: ALL_CAPABILITIES,
   admin: [
-    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.create.it_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.delete', 'employees.unarchive',
+    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.create.it_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.evaluations.view', 'employees.delete', 'employees.unarchive',
     'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view', 'departments.edit',
@@ -108,7 +109,7 @@ export const ROLE_CAPABILITIES = {
     'notifications.system', 'notifications.system.export_alerts'
   ],
   hr_admin: [
-    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.delete', 'employees.unarchive',
+    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.evaluations.view', 'employees.delete', 'employees.unarchive',
     'departments.view', 'departments.edit',
     'imports.manage',
     'reports.view', 'reports.export',

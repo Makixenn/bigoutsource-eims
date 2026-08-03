@@ -63,10 +63,24 @@ export async function apiRequest(path, options = {}) {
       ...options.headers,
     };
 
-    return fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('The server took too long to respond. It might be restarting or offline.');
+      }
+      throw error;
+    }
   };
 
   let response = await makeRequest();

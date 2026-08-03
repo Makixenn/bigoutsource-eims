@@ -57,7 +57,6 @@ import {
 } from "@/src/features/employees/components/DirectoryUI";
 import { useRealtimeSubscription } from "@/src/hooks/useRealtimeSubscription";
 import { queryClient } from "@/src/providers/QueryProvider";
-import Confetti from "react-confetti";
 
 function CategoryAccordion({
   category,
@@ -1594,6 +1593,18 @@ export default function Directory() {
     setSelectedFields(null);
   };
 
+  const selectAllFields = () => {
+    const allAvailableFields = selectableDirectoryFields
+      .filter((field) => {
+        if (field.requireHR && !showHRFields) return false;
+        if (field.requireIT && !showITFields) return false;
+        return true;
+      })
+      .map((field) => field.key);
+    
+    setSelectedFields(allAvailableFields.slice(0, maxSelectableFieldCount));
+  };
+
   const toggleSort = (field: DirectoryFieldKey) => {
     if (!sortableFieldKeys.includes(field)) return;
 
@@ -2172,14 +2183,24 @@ export default function Directory() {
                   : "Default fields shown"}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={resetFields}
-              disabled={!isCustomFieldView}
-              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[0.625rem] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Reset
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={selectAllFields}
+                disabled={selectedSelectableFieldCount >= selectableDirectoryFields.filter(f => (!f.requireHR || showHRFields) && (!f.requireIT || showITFields)).length}
+                className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[0.625rem] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={resetFields}
+                disabled={!isCustomFieldView}
+                className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[0.625rem] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Reset
+              </button>
+            </div>
           </div>
           <div className="max-h-[78vh] space-y-3 overflow-y-auto pr-4 pb-4">
             {[

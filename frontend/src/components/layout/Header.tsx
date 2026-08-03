@@ -415,7 +415,7 @@ function NotificationBell() {
                               onClick={() => setIsOpen(false)}
                               className="mt-3 inline-flex items-center justify-center rounded-lg bg-[#111827] px-3 py-2 text-xs font-black text-white transition-colors hover:bg-[#374151]"
                             >
-                              View profile
+                              {notification.type?.startsWith('eval') ? 'View Evaluations' : 'View profile'}
                             </Link>
                           )}
                         </div>

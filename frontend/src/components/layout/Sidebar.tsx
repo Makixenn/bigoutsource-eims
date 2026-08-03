@@ -11,7 +11,8 @@ import {
   Laptop,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CalendarCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
@@ -25,6 +26,7 @@ import { useState } from 'react';
 const navItems: { icon: LucideIcon; label: string; path: string; capability?: Capability }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Users, label: 'Employee Records', path: '/directory', capability: 'employees.view' },
+  { icon: CalendarCheck, label: 'Evaluations', path: '/evaluations', capability: 'employees.evaluations.view' },
   { icon: Building2, label: 'Departments', path: '/departments', capability: 'departments.view' },
   { icon: Laptop, label: 'IT Assets', path: '/assets', capability: 'assets.view' },
   { icon: FileText, label: 'Reports', path: '/reports', capability: 'reports.view' },
