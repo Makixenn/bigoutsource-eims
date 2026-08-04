@@ -552,7 +552,13 @@ function computeEvalDates(firstMonthDate?: string) {
 }
 
 function formatDateDisplay(dateStr?: string) {
-  if (!dateStr) return '-';
+  if (!dateStr) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100/90 text-gray-500 border border-gray-200/80 select-none">
+        Not set yet
+      </span>
+    );
+  }
   const cleanStr = String(dateStr).split('T')[0];
   const parts = cleanStr.split('-');
   if (parts.length !== 3) return dateStr;
