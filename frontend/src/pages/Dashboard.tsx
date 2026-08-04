@@ -332,7 +332,7 @@ export default function Dashboard() {
     devices.forEach((device) => {
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
       const isMissingAW = device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing';
-      const isUnlicensed = !device.windowsKey;
+      const isUnlicensed = !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac';
 
       if (!isMissingEset && !isMissingAW && !isUnlicensed) {
         fullyCompliant++;
@@ -367,7 +367,7 @@ export default function Dashboard() {
 
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
       const isMissingAW = device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing';
-      const isUnlicensed = !device.windowsKey;
+      const isUnlicensed = !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac';
 
       const isCompliant = !isMissingEset && !isMissingAW && !isUnlicensed;
       if (!deptStats.has(dept)) {
@@ -480,7 +480,7 @@ export default function Dashboard() {
       },
       {
         label: 'Unlicensed Windows',
-        value: devices.filter((device) => !device.windowsKey).length,
+        value: devices.filter((device) => !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac').length,
         color: '#CA8A04',
         bg: 'rgba(202, 138, 4, 0.15)',
       },

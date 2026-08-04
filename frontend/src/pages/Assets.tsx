@@ -236,7 +236,7 @@ export default function Assets() {
     let result = devices;
 
     if (licenseFilter !== 'All') {
-      result = result.filter(d => licenseFilter === 'Licensed' ? !!d.windowsKey : !d.windowsKey);
+      result = result.filter(d => licenseFilter === 'Licensed' ? !!d.windowsKey : (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac'));
     }
 
     if (accountFilter !== 'All Account') {
@@ -292,7 +292,7 @@ export default function Assets() {
   const stats = useMemo(
     () => [
       { label: 'Total Assigned', value: devices.filter((device) => device.status === 'assigned').length, icon: Laptop, color: 'text-blue-600' },
-      { label: 'Unlicensed Win', value: devices.filter((device) => !device.windowsKey).length, icon: Key, color: 'text-orange-600' },
+      { label: 'Unlicensed Win', value: devices.filter((device) => !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac').length, icon: Key, color: 'text-orange-600' },
       { label: 'ESET Active', value: devices.filter((device) => device.esetStatus === 'active').length, icon: ShieldCheck, color: 'text-green-600' },
       { label: 'Missing BIOS', value: devices.filter((device) => !device.biosDate).length, icon: Cpu, color: 'text-red-600' },
     ],

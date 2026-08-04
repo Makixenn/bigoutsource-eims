@@ -2179,30 +2179,32 @@ export default function EmployeeProfile() {
                                 ) : employee.deviceType || 'Windows'}
                               </ProfileField>
 
-                              <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
-                                {editingSecrets ? (
-                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                                ) : canViewSecrets ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
-                                    {employee.windowsKey && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(employee.windowsKey);
-                                          toast.success('Windows key copied to clipboard');
-                                        }}
-                                        className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
-                                        title="Copy License Key"
-                                      >
-                                        <Copy className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                                )}
-                              </ProfileField>
+                              {form.deviceType !== 'Linux' && form.deviceType !== 'Mac' && (
+                                <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
+                                  {editingSecrets ? (
+                                    <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                                  ) : canViewSecrets ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                      {employee.windowsKey && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(employee.windowsKey);
+                                            toast.success('Windows key copied to clipboard');
+                                          }}
+                                          className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
+                                          title="Copy License Key"
+                                        >
+                                          <Copy className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
+                                  )}
+                                </ProfileField>
+                              )}
 
                               <div className="md:col-span-2">
                                 <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>

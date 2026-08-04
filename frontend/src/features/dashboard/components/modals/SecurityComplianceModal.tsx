@@ -19,7 +19,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
     devices.forEach(d => {
         const isMissingEset = d.esetStatus === 'inactive' || d.esetStatus === 'Inactive';
         const isMissingAW = d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing';
-        const isUnlicensed = !d.windowsKey;
+        const isUnlicensed = !d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac';
         if (!isMissingEset && !isMissingAW && !isUnlicensed) {
             compliantCount++;
         }
@@ -40,7 +40,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
     devices.forEach(d => {
         if (d.esetStatus === 'inactive' || d.esetStatus === 'Inactive') missingEset++;
         if (d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing') missingAw++;
-        if (!d.windowsKey) unlicensed++;
+        if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') unlicensed++;
     });
 
     return [
@@ -69,7 +69,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
             issues.push('Missing AW');
             if (risk !== 'Critical') risk = 'High';
         }
-        if (!d.windowsKey) {
+        if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') {
             issues.push('Unlicensed OS');
             if (risk === 'Low') risk = 'Medium';
         }
