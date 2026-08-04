@@ -7,14 +7,23 @@ interface SecurityAlertsModalProps {
   isOpen: boolean;
   onClose: () => void;
   devices: any[];
+  employees: any[];
 }
+
+const PASSWORD_RULES = [
+  { label: 'At least 12 characters', test: (value: string) => value.length >= 12 },
+  { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
+  { label: 'One lowercase letter', test: (value: string) => /[a-z]/.test(value) },
+  { label: 'One number', test: (value: string) => /\d/.test(value) },
+  { label: 'One special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
+];
 
 function formatTime(value?: string) {
   if (!value) return 'Unknown';
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
 }
 
-export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlertsModalProps) {
+export function SecurityAlertsModal({ isOpen, onClose, devices, employees }: SecurityAlertsModalProps) {
   
   const alertsData = useMemo(() => {
     const alerts: any[] = [];
@@ -49,9 +58,36 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
                 status: 'Active'
             });
         }
+        if (!d.diskEncryptionKey) {
+            const issueName = d.deviceType === 'Windows' ? 'Missing Bitlocker' : 
+                              (d.deviceType === 'Mac' || d.deviceType === 'MacOS' ? 'Missing Filevault' : 'Missing Encryption');
+            alerts.push({
+                id: `ALT-${d.id.substring(0, 4)}-CRYPT`,
+                asset: d.pcName || d.name || 'Unknown Asset',
+                issue: issueName,
+                severity: 'High',
+                dateDetected: d.updatedAt || new Date().toISOString(),
+                status: 'Active'
+            });
+        }
+
+        const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
+        if (emp) {
+            const pw = emp.emailPassword || '';
+            if (!PASSWORD_RULES.every(rule => rule.test(pw))) {
+                alerts.push({
+                    id: `ALT-${d.id.substring(0, 4)}-PWD`,
+                    asset: d.pcName || d.name || 'Unknown Asset',
+                    issue: 'Weak Password',
+                    severity: 'High', // User requested High/Critical, using High
+                    dateDetected: d.updatedAt || new Date().toISOString(),
+                    status: 'Active'
+                });
+            }
+        }
     });
     return alerts.sort((a, b) => new Date(b.dateDetected).getTime() - new Date(a.dateDetected).getTime());
-  }, [devices]);
+  }, [devices, employees]);
 
   const stats = useMemo(() => {
     const critical = alertsData.filter(a => a.severity === 'Critical').length;
