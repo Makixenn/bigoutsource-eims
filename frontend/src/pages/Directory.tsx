@@ -306,7 +306,7 @@ function calculateIncompleteData(employee: EmployeeRecord) {
   if (!employee.pcName) { mildCount++; itMissing++; }
   if (!employee.biosDate) { mildCount++; itMissing++; }
   if (!employee.rustdeskId && !employee.rustDeskId) { mildCount++; itMissing++; }
-  if (!employee.windowsKey && !employee.windowsLicenseKey) { mildCount++; itMissing++; }
+  if (employee.deviceType !== 'Linux' && employee.deviceType !== 'Mac' && !employee.windowsKey && !employee.windowsLicenseKey) { mildCount++; itMissing++; }
   if (!employee.boEmail && !employee.bigoutsourceEmail) { mildCount++; itMissing++; }
   if (!employee.emailPassword) { mildCount++; itMissing++; }
   if (!employee.lmsAccount) { mildCount++; itMissing++; }
@@ -689,7 +689,7 @@ const directoryFields: Array<DirectoryFieldDef> = [
     label: "Windows Key",
     category: "DEVICE & SECURITY",
     requireIT: true,
-    render: (emp) => emp.windowsKey || "-",
+    render: (emp) => (emp.deviceType === 'Linux' || emp.deviceType === 'Mac') ? "N/A" : (emp.windowsKey || "-"),
   },
   {
     key: "remoteId",
@@ -2267,9 +2267,9 @@ export default function Directory() {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-[300px]">
-              <div className="relative flex-1">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full xl:flex-1">
+              <div className="relative flex-1 w-full lg:min-w-[300px]">
                 <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -2279,7 +2279,7 @@ export default function Directory() {
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
                 <FilterDropdown
                   value={siteFilter}
                   onChange={setSiteFilter}
@@ -2308,7 +2308,7 @@ export default function Directory() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 w-full xl:w-auto">
               {can("imports.manage") && (
                 <>
                   <input
