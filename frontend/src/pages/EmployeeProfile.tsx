@@ -2114,9 +2114,8 @@ export default function EmployeeProfile() {
                               <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
-                                    <option value="active">Active (Protected)</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="expired">Expired / Outdated</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
                                   </Select>
                                 ) : (
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
@@ -2131,9 +2130,8 @@ export default function EmployeeProfile() {
                               <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
-                                    <option value="installed">Installed & Running</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="error">Error / Not Reporting</option>
+                                    <option value="installed">Installed</option>
+                                    <option value="missing">Missing</option>
                                   </Select>
                                 ) : (
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
