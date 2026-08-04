@@ -1062,7 +1062,7 @@ export default function Directory() {
   const { can } = useAuth();
   const canViewHR = can("employees.edit");
   const canViewIT = can("employees.it.edit");
-  const canViewArchived = can("employees.delete") || can("employees.unarchive");
+  const canViewArchived = can("archiving.finalize") || can("archiving.unarchive") || can("archiving.initiate");
 
   const reqHRFields = can("employees.create.hr_fields.required");
   const optHRFields = can("employees.create.hr_fields.optional");
