@@ -29,7 +29,6 @@ import { settingsService } from '@/src/features/settings/services/settingsServic
 import { userService } from '@/src/services/userService';
 import { PASSWORD_RULES } from '@/src/lib/utils';
 
-import { apiRequest } from '@/src/lib/api';
 
 type SettingsTab = 'profile' | 'notifications' | 'password';
 
@@ -244,31 +243,7 @@ export default function Settings() {
                   <TextSizeSelector value={textSize} onChange={setTextSize} />
                 </div>
                 
-                {isSuperAdmin && (
-                  <div className="mt-8 flex flex-col items-center justify-center p-6 border rounded-2xl bg-white shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-                    <h3 className="text-sm font-black text-gray-800 mb-2">Test Evaluation Dates</h3>
-                    <p className="text-xs text-gray-500 mb-4 text-center max-w-sm">
-                      Since this is going on a live server, use this button to manually trigger the daily evaluation check right now instead of waiting for 10:00 AM server time.
-                    </p>
-                    <button
-                      onClick={async (e) => {
-                        const btn = e.currentTarget;
-                        btn.disabled = true;
-                        try {
-                          await apiRequest('/notifications/trigger-cron', { method: 'POST' });
-                          toast.success('Evaluation checks triggered successfully! Check your bell icon and email.');
-                        } catch (error) {
-                          toast.error('Failed to trigger evaluation checks');
-                        } finally {
-                          btn.disabled = false;
-                        }
-                      }}
-                      className="px-4 py-2 bg-[#111827] text-white rounded-xl text-xs font-black shadow-md hover:bg-[#374151] transition-colors disabled:opacity-50"
-                    >
-                      Trigger Evaluation Check
-                    </button>
-                  </div>
-                )}
+
               </div>
             </motion.aside>
           )}
