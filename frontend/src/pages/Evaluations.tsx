@@ -51,7 +51,7 @@ function getEvalStatus(dateStr?: string | null) {
 
   if (diffDays === 0) return { label: "Due Today", type: "due" };
   if (diffDays > 0 && diffDays <= 7) return { label: "Upcoming", type: "upcoming" };
-  if (diffDays < 0) return { label: "Overdue", type: "overdue" };
+  if (diffDays < 0) return { label: "Past", type: "overdue" };
   return { label: "Future", type: "future" };
 }
 
@@ -85,6 +85,7 @@ export default function Evaluations() {
     return d;
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => {
     if (!can("employees.evaluations.view")) {
@@ -136,16 +137,27 @@ export default function Evaluations() {
       if (!matchesSearch) return false;
 
       // 2. Check if any evaluation falls in the current target month/year
+      //    AND matches the selected statusFilter
       const hasEvalThisMonth = MILESTONES.some(m => {
         const dateStr = emp[m.field];
         if (!dateStr) return false;
         const d = new Date(dateStr);
-        return d.getMonth() === targetMonth && d.getFullYear() === targetYear;
+        const inTargetMonth = d.getMonth() === targetMonth && d.getFullYear() === targetYear;
+        if (!inTargetMonth) return false;
+
+        if (statusFilter !== "ALL") {
+          const status = getEvalStatus(dateStr);
+          if (statusFilter === "PAST" && status.type !== "overdue") return false;
+          if (statusFilter === "DUE TODAY" && status.type !== "due") return false;
+          if (statusFilter === "UPCOMING" && status.type !== "upcoming" && status.type !== "future") return false;
+        }
+
+        return true;
       });
 
       return hasEvalThisMonth;
     }).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
-  }, [employees, currentDate, searchTerm]);
+  }, [employees, currentDate, searchTerm, statusFilter]);
 
   const analyticsStats = useMemo(() => {
     let dueThisMonth = 0;
@@ -309,16 +321,27 @@ export default function Evaluations() {
               </button>
             </div>
           </div>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search employee or dept..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
+          <div className="flex items-center gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-600 font-medium cursor-pointer"
+            >
+              <option value="ALL">All Status</option>
+              <option value="PAST">Past</option>
+              <option value="DUE TODAY">Due Today</option>
+              <option value="UPCOMING">Upcoming</option>
+            </select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search employee or dept..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
           </div>
         </div>
 

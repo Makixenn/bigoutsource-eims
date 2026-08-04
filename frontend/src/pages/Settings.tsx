@@ -243,7 +243,57 @@ export default function Settings() {
                   <TextSizeSelector value={textSize} onChange={setTextSize} />
                 </div>
                 
+                {isSuperAdmin && (
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col items-center justify-center p-6 border rounded-2xl bg-white shadow-sm text-center" style={{ borderColor: 'var(--color-border)' }}>
+                      <h3 className="text-sm font-black text-gray-800 mb-2">Test Evaluation Dates</h3>
+                      <p className="text-xs text-gray-500 mb-4 max-w-xs mx-auto">
+                        Manually trigger the daily evaluation check right now instead of waiting for 08:00 AM (bypasses daily limits).
+                      </p>
+                      <button
+                        onClick={async (e) => {
+                          const btn = e.currentTarget;
+                          btn.disabled = true;
+                          try {
+                            await apiRequest('/notifications/trigger-cron', { method: 'POST' });
+                            toast.success('Evaluation checks triggered successfully! Check your email.');
+                          } catch (error) {
+                            toast.error('Failed to trigger evaluation checks');
+                          } finally {
+                            btn.disabled = false;
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#111827] text-white rounded-xl text-xs font-black shadow-md hover:bg-[#374151] transition-colors disabled:opacity-50 mt-auto"
+                      >
+                        Trigger Evaluation Check
+                      </button>
+                    </div>
 
+                    <div className="flex flex-col items-center justify-center p-6 border rounded-2xl bg-white shadow-sm text-center" style={{ borderColor: 'var(--color-border)' }}>
+                      <h3 className="text-sm font-black text-gray-800 mb-2">Test Birthdays</h3>
+                      <p className="text-xs text-gray-500 mb-4 max-w-xs mx-auto">
+                        Manually trigger the daily birthday check right now instead of waiting for 08:00 AM.
+                      </p>
+                      <button
+                        onClick={async (e) => {
+                          const btn = e.currentTarget;
+                          btn.disabled = true;
+                          try {
+                            await apiRequest('/notifications/trigger-birthdays', { method: 'POST' });
+                            toast.success('Birthday checks triggered successfully! Check your email.');
+                          } catch (error) {
+                            toast.error('Failed to trigger birthday checks');
+                          } finally {
+                            btn.disabled = false;
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#111827] text-white rounded-xl text-xs font-black shadow-md hover:bg-[#374151] transition-colors disabled:opacity-50 mt-auto"
+                      >
+                        Trigger Birthday Check
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.aside>
           )}

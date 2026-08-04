@@ -1,0 +1,100 @@
+  pc_name: '',
+  separation_date: '',
+  separation_reason: '',
+  position: 'Test',
+  float_date: '',
+  employee_status: 'Probationary',
+  is_archived: false,
+  is_ready_for_archive: false
+}
+Employee action email sent to ojt@bigoutsource.ph: <0ac91464-2f40-8148-509c-c5afb163b4e5@bigoutsource.ph>
+Employee action email sent to eims@bigoutsource.ph: <85088eae-11da-ef32-439e-f278368a08fe@bigoutsource.ph>
+Employee action email sent to lyndonmicboss@outlook.com: <06b7a60f-6193-8175-67c5-8cfb4ae83828@bigoutsource.ph>
+Employee action email sent to estivakirsten1214@outlook.com: <431a4854-be74-bdb3-a111-eede5c6bc779@bigoutsource.ph>
+MFA email sent: <afadf44e-7a63-55fe-fc1d-584982f91f6c@bigoutsource.ph>
+[Frontend Socket Error] Connecting_to_http://localhost:5001
+[Socket] Origin check: http://localhost:3000
+[Socket] Connection attempt from ::ffff:172.18.0.1
+[Socket] Sending presence:sync to ojt@bigoutsource.ph: [
+  {
+    user_id: '2ad4f08e-f6a9-41b1-868b-16ddaa1ee8fa',
+    email: 'ojt@bigoutsource.ph',
+    full_name: 'ojt',
+    online_at: '2026-08-04T02:13:38.936Z'
+  }
+]
+[Socket] Sending requested presence:sync to ojt@bigoutsource.ph: [
+  {
+    user_id: '2ad4f08e-f6a9-41b1-868b-16ddaa1ee8fa',
+    email: 'ojt@bigoutsource.ph',
+    full_name: 'ojt',
+    online_at: '2026-08-04T02:13:38.936Z'
+  }
+]
+MFA email sent: <804f6c84-87b8-3c4a-bab5-6f09e14aecb6@bigoutsource.ph>
+[Frontend Socket Error] Connecting_to_http://localhost:5001
+[Socket] Origin check: http://localhost:3000
+[Socket] Connection attempt from ::ffff:172.18.0.1
+[Socket] Sending presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:17.191Z'
+  }
+]
+[Socket] Sending requested presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:17.191Z'
+  }
+]
+[Frontend Socket Error] Connecting_to_http://localhost:5001
+[Socket] Origin check: http://localhost:3000
+[Socket] Connection attempt from ::ffff:172.18.0.1
+[Socket] Sending presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:50.831Z'
+  }
+]
+[Socket] Sending requested presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:50.831Z'
+  }
+]
+[Frontend Socket Error] Connecting_to_http://localhost:5001
+[Socket] Origin check: http://localhost:3000
+[Socket] Connection attempt from ::ffff:172.18.0.1
+[Socket] Sending presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:59.611Z'
+  }
+]
+[Socket] Sending requested presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:59.611Z'
+  }
+]
+[Socket] Sending requested presence:sync to eims@bigoutsource.ph: [
+  {
+    user_id: 'ed745bae-fbb8-41aa-8564-46bf7b50b823',
+    email: 'eims@bigoutsource.ph',
+    full_name: 'Local Super Admin',
+    online_at: '2026-08-04T02:24:59.611Z'
+  }
+]
+Daily evaluation date checks completed.

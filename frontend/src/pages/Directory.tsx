@@ -906,7 +906,7 @@ function capitalizeNameInput(value = "") {
 
 function normalizePhoneInput(value = "") {
   if (value.toUpperCase() === "N/A") return "N/A";
-  return value.replace(/\D/g, "").slice(0, 11);
+  return value.replace(/[^\d+\- ()]/g, "").slice(0, 20);
 }
 
 function formatRustdeskId(value = "") {
@@ -1938,9 +1938,9 @@ export default function Directory() {
       if (
         form.phone.trim() &&
         form.phone.trim().toUpperCase() !== "N/A" &&
-        form.phone.length !== 11
+        form.phone.length > 20
       ) {
-        errors.phone = "Phone number must be exactly 11 digits.";
+        errors.phone = "Phone number cannot exceed 20 characters.";
       }
     }
     if (

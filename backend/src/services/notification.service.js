@@ -394,7 +394,7 @@ export const NotificationService = {
 
     if (targetRecipients.length === 0) return [];
 
-    const actorName = actor.userLabel || 'A user';
+    const actorName = actor.userName || actor.userEmail || 'A user';
     const employeeLabel = employee.fullName || employee.employeeNumber || 'An employee';
 
     const baseNotification = {
@@ -428,7 +428,8 @@ export const NotificationService = {
           employeeName: employeeLabel,
           actorName,
           roleSpecificMessage: 'has permanently deleted the employee from the database.',
-          actionUrl: `/directory`,
+          actionUrl: `/logs`,
+          buttonText: 'View Audit Logs',
           fieldsList: []
         }));
       }
@@ -517,11 +518,7 @@ export const NotificationService = {
     const isUnarchiving = changes.some(c => c.field === 'isArchived' && c.to === 'false');
     const isArchiving = changes.some(c => c.field === 'isArchived' && c.to === 'true');
 
-    if (isUnarchiving) {
-      // Do not send field update notifications during an unarchive, 
-      // as the 'Employee Unarchived' notification covers it perfectly.
-      return [];
-    }
+    // Allow field update notifications to trigger alongside unarchive notifications.
 
     if (hrChanges.length > 0) {
       for (const r of eligibleRecipients) {
@@ -678,7 +675,7 @@ export const NotificationService = {
     return createdNotifications;
   },
 
-  async notifyBatchedEvaluationsDue(evaluations) {
+  async notifyBatchedEvaluationsDue(evaluations, options = { sendEmailOnly: false }) {
     const recipients = await UserProfileModel.findAll({ status: 'active' });
     
     const eligibleRecipients = [];
@@ -719,12 +716,14 @@ export const NotificationService = {
       }
     };
 
-    const notificationsToCreate = eligibleRecipients.map(r => ({
-      ...baseNotification,
-      recipientId: r.id,
-    }));
-
-    const createdNotifications = await NotificationModel.createMany(notificationsToCreate);
+    let createdNotifications = [];
+    if (!options.sendEmailOnly) {
+      const notificationsToCreate = eligibleRecipients.map(r => ({
+        ...baseNotification,
+        recipientId: r.id,
+      }));
+      createdNotifications = await NotificationModel.createMany(notificationsToCreate);
+    }
 
     const emailPromises = [];
     for (const r of eligibleRecipients) {

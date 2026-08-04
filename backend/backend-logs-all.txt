@@ -1,0 +1,18 @@
+
+> employee-tracker-server@1.0.0 dev
+> npx prisma generate && node --watch src/server.js
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma config detected, skipping environment variable loading.
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 185ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+Initializing scheduler...
+CronService initialized. Evaluation checks scheduled for 10:00 AM daily.
+API listening on port 5001

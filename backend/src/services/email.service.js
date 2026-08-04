@@ -73,7 +73,7 @@ export const EmailService = {
     }
   },
 
-  async sendEmployeeActionEmail(toEmail, { actionName, employeeName, actorName, roleSpecificMessage, actionUrl, fieldsList, auditLogId, note, successBox, themeColor = '#1f6fa0' }) {
+  async sendEmployeeActionEmail(toEmail, { actionName, employeeName, actorName, roleSpecificMessage, actionUrl, fieldsList, auditLogId, note, successBox, themeColor = '#1f6fa0', buttonText = 'View Employee Record' }) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const linkUrl = actionUrl.startsWith('http') ? actionUrl : `${frontendUrl}${actionUrl}`;
     
@@ -137,7 +137,7 @@ export const EmailService = {
             
             <div style="margin: 25px 0;">
               <a href="${linkUrl}" style="background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-right: 10px;">
-                View Employee Record
+                ${buttonText}
               </a>
               ${auditLogId ? `
               <a href="${frontendUrl}/logs?undo=${auditLogId}" style="background-color: #ef4444; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">

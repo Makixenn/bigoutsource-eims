@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import type React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Eye, EyeOff, Key, Loader2, Pencil, Search, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Eye, EyeOff, Key, Loader2, Pencil, Search, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -129,6 +129,7 @@ export default function UserManagement() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showAllRoles, setShowAllRoles] = useState(false);
 
   const { data: fetchedUsers = [], isLoading: isUsersLoading } = useUsersQuery(refreshTrigger);
 
@@ -187,15 +188,22 @@ export default function UserManagement() {
     };
   }, [view]);
 
-  const summary = useMemo(
-    () => ({
-      active: users.filter((user) => user.status === 'active').length,
-      admins: users.filter((user) => user.role === 'admin' && user.status === 'active').length,
-      superAdmins: users.filter((user) => user.role === 'super_admin' && user.status === 'active').length,
-      viewers: users.filter((user) => user.role === 'viewer' && user.status === 'active').length,
-    }),
-    [users]
-  );
+  const roleCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of roles) counts[r.slug] = 0;
+    for (const u of users) {
+      if (u.status === 'active' && u.role) {
+        counts[u.role] = (counts[u.role] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [users, roles]);
+
+  const activeCount = useMemo(() => users.filter((u) => u.status === 'active').length, [users]);
+
+  const sortedRoles = useMemo(() => {
+    return [...roles].sort((a, b) => (roleCounts[b.slug] || 0) - (roleCounts[a.slug] || 0));
+  }, [roles, roleCounts]);
 
   const filteredUsers = useMemo(() => {
     let result = users.filter((user) => {
@@ -524,11 +532,49 @@ export default function UserManagement() {
               </div>
             </motion.div>
           ) : (
-            <motion.div key="content-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                <SummaryCard label="Active Accounts" count={summary.active} icon={UsersRound} color="text-green-700" bg="bg-green-50" />
-                <SummaryCard label="Super Admins" count={summary.superAdmins} icon={ShieldCheck} color="text-[#111827]" bg="bg-[#F3F4F6]" />
-                <SummaryCard label="Admins" count={summary.admins} icon={ShieldCheck} color="text-blue-700" bg="bg-blue-50" />
-                <SummaryCard label="Viewers" count={summary.viewers} icon={UsersRound} color="text-purple-700" bg="bg-purple-50" />
+            <motion.div key="content-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="flex flex-col gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                  <SummaryCard label="Active Accounts" count={activeCount} icon={UsersRound} color="text-green-700" bg="bg-green-50" />
+                  
+                  {sortedRoles.slice(0, showAllRoles ? undefined : 2).map((r, i) => {
+                    const colors = [
+                      { color: "text-[#111827]", bg: "bg-[#F3F4F6]" },
+                      { color: "text-blue-700", bg: "bg-blue-50" },
+                      { color: "text-purple-700", bg: "bg-purple-50" },
+                      { color: "text-orange-700", bg: "bg-orange-50" },
+                      { color: "text-teal-700", bg: "bg-teal-50" },
+                      { color: "text-rose-700", bg: "bg-rose-50" },
+                    ];
+                    const scheme = colors[i % colors.length];
+                    return (
+                      <SummaryCard key={r.slug} label={r.name} count={roleCounts[r.slug] || 0} icon={ShieldCheck} color={scheme.color} bg={scheme.bg} />
+                    );
+                  })}
+
+                  {!showAllRoles && sortedRoles.length > 2 && (
+                    <button 
+                      onClick={() => setShowAllRoles(true)}
+                      className="p-6 rounded-2xl border border-dashed border-[#CBD5E1] hover:border-blue-500 hover:bg-blue-50/50 bg-gray-50 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <div className="p-2 rounded-full bg-white shadow-sm text-gray-400 group-hover:text-blue-600 transition-colors">
+                        <ChevronDown className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-bold text-gray-500 group-hover:text-blue-700">View {sortedRoles.length - 2} More Roles</span>
+                    </button>
+                  )}
+                </div>
+
+                {showAllRoles && sortedRoles.length > 2 && (
+                  <div className="flex justify-center -mt-2">
+                    <button 
+                      onClick={() => setShowAllRoles(false)}
+                      className="text-[11px] font-black text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors uppercase tracking-widest px-4 py-2 hover:bg-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-gray-300"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      Show Less
+                    </button>
+                  </div>
+                )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -68,3 +68,14 @@ export function requireAnyPermission(capabilities) {
     return next();
   };
 }
+
+/** Require strictly the Super Admin role. */
+export function requireSuperAdmin() {
+  return (req, res, next) => {
+    if (!req.user) return next(new AppError('Authentication required', 401));
+    if (!req.user.roles || !req.user.roles.includes('super_admin')) {
+      return next(new AppError('Only the Super Admin can perform this action', 403));
+    }
+    return next();
+  };
+}
