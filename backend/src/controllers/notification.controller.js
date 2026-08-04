@@ -1,5 +1,4 @@
 import { NotificationService } from '../services/notification.service.js';
-import { CronService } from '../services/cron.service.js';
 import { success } from '../utils/apiResponse.js';
 
 export const NotificationController = {

@@ -306,7 +306,7 @@ function calculateIncompleteData(employee: EmployeeRecord) {
   if (!employee.pcName) { mildCount++; itMissing++; }
   if (!employee.biosDate) { mildCount++; itMissing++; }
   if (!employee.rustdeskId && !employee.rustDeskId) { mildCount++; itMissing++; }
-  if (!employee.windowsKey && !employee.windowsLicenseKey) { mildCount++; itMissing++; }
+  if (employee.deviceType !== 'Linux' && employee.deviceType !== 'Mac' && !employee.windowsKey && !employee.windowsLicenseKey) { mildCount++; itMissing++; }
   if (!employee.boEmail && !employee.bigoutsourceEmail) { mildCount++; itMissing++; }
   if (!employee.emailPassword) { mildCount++; itMissing++; }
   if (!employee.lmsAccount) { mildCount++; itMissing++; }
@@ -689,7 +689,7 @@ const directoryFields: Array<DirectoryFieldDef> = [
     label: "Windows Key",
     category: "DEVICE & SECURITY",
     requireIT: true,
-    render: (emp) => emp.windowsKey || "-",
+    render: (emp) => (emp.deviceType === 'Linux' || emp.deviceType === 'Mac') ? "N/A" : (emp.windowsKey || "-"),
   },
   {
     key: "remoteId",
@@ -1062,7 +1062,7 @@ export default function Directory() {
   const { can } = useAuth();
   const canViewHR = can("employees.edit");
   const canViewIT = can("employees.it.edit");
-  const canViewArchived = can("employees.delete") || can("employees.unarchive");
+  const canViewArchived = can("archiving.finalize") || can("archiving.unarchive") || can("archiving.initiate");
 
   const reqHRFields = can("employees.create.hr_fields.required");
   const optHRFields = can("employees.create.hr_fields.optional");
@@ -2267,9 +2267,9 @@ export default function Directory() {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-[300px]">
-              <div className="relative flex-1">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full xl:flex-1">
+              <div className="relative flex-1 w-full lg:min-w-[300px]">
                 <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -2279,7 +2279,7 @@ export default function Directory() {
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
                 <FilterDropdown
                   value={siteFilter}
                   onChange={setSiteFilter}
@@ -2308,7 +2308,7 @@ export default function Directory() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 w-full xl:w-auto">
               {can("imports.manage") && (
                 <>
                   <input
@@ -2390,96 +2390,98 @@ export default function Directory() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative"
+                className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm flex flex-col relative"
               >
-                <table
-                  className={cn(
-                    "table-fixed border-collapse text-left",
-                    Object.keys(colWidths).length > 0 ? "w-max" : "w-full",
-                  )}
-                  style={{
-                    minWidth: Object.keys(colWidths).length > 0 ? undefined : Math.max(1024, visibleFields.length * 200) + "px"
-                  }}
-                >
-                  <colgroup>
-                    {visibleFields.map((field) => (
-                      <col
-                        key={field.key}
-                        style={{
-                          width: colWidths[field.key]
-                            ? `${colWidths[field.key]}px`
-                            : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%`,
-                        }}
-                      />
-                    ))}
-                    <col style={{ width: actionColumnWidth }} />
-                  </colgroup>
-                  <thead>
-                    <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                <div className="w-full overflow-x-auto min-w-0">
+                  <table
+                    className={cn(
+                      "table-fixed border-collapse text-left",
+                      Object.keys(colWidths).length > 0 ? "w-max" : "w-full",
+                    )}
+                    style={{
+                      minWidth: Object.keys(colWidths).length > 0 ? undefined : Math.max(1024, visibleFields.length * 200) + "px"
+                    }}
+                  >
+                    <colgroup>
                       {visibleFields.map((field) => (
-                        <ResizableHeader
+                        <col
                           key={field.key}
-                          columnKey={field.key}
-                          onResize={handleResize}
-                          className={cn(
-                            "h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle",
-                            field.key === "fullName"
-                              ? "pl-4 pr-3"
-                              : "pl-6 pr-3",
-                          )}
-                        >
-                          <div className="truncate cursor-default select-none">
-                            {field.key === "boEmail" ? "Email" : field.label}
-                          </div>
-                        </ResizableHeader>
+                          style={{
+                            width: colWidths[field.key]
+                              ? `${colWidths[field.key]}px`
+                              : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%`,
+                          }}
+                        />
                       ))}
-                      <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="">
-                    {[...Array(skeletonRowCount)].map((_, index) => (
-                      <tr
-                        key={`skeleton-${index}`}
-                        className={cn(
-                          tableRowHeightClass,
-                          "animate-pulse border-b border-[#F3F4F6] last:border-0",
-                        )}
-                      >
+                      <col style={{ width: actionColumnWidth }} />
+                    </colgroup>
+                    <thead>
+                      <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                         {visibleFields.map((field) => (
-                          <td
+                          <ResizableHeader
                             key={field.key}
+                            columnKey={field.key}
+                            onResize={handleResize}
                             className={cn(
-                              "py-0 align-middle",
+                              "h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle",
                               field.key === "fullName"
                                 ? "pl-4 pr-3"
                                 : "pl-6 pr-3",
                             )}
                           >
-                            <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                          </td>
+                            <div className="truncate cursor-default select-none">
+                              {field.key === "boEmail" ? "Email" : field.label}
+                            </div>
+                          </ResizableHeader>
                         ))}
-                        <td className="px-4 py-0 text-right align-middle">
-                          <div className="h-9 w-24 bg-gray-200 rounded-xl ml-auto"></div>
-                        </td>
+                        <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
                       </tr>
-                    ))}
-                    {[...Array(skeletonEmptyRowCount)].map((_, index) => (
-                      <tr
-                        key={`placeholder-${index}`}
-                        className={cn(
-                          tableRowHeightClass,
-                          "pointer-events-none border-b border-[#F3F4F6] last:border-0",
-                        )}
-                      >
-                        <td
-                          colSpan={visibleFields.length + 1}
-                          className="px-4 py-0 align-middle"
-                        />
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
+                    </thead>
+                    <tbody className="">
+                      {[...Array(skeletonRowCount)].map((_, index) => (
+                        <tr
+                          key={`skeleton-${index}`}
+                          className={cn(
+                            tableRowHeightClass,
+                            "animate-pulse border-b border-[#F3F4F6] last:border-0",
+                          )}
+                        >
+                          {visibleFields.map((field) => (
+                            <td
+                              key={field.key}
+                              className={cn(
+                                "py-0 align-middle",
+                                field.key === "fullName"
+                                  ? "pl-4 pr-3"
+                                  : "pl-6 pr-3",
+                              )}
+                            >
+                              <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                            </td>
+                          ))}
+                          <td className="px-4 py-0 text-right align-middle">
+                            <div className="h-9 w-24 bg-gray-200 rounded-xl ml-auto"></div>
+                          </td>
+                        </tr>
+                      ))}
+                      {[...Array(skeletonEmptyRowCount)].map((_, index) => (
+                        <tr
+                          key={`placeholder-${index}`}
+                          className={cn(
+                            tableRowHeightClass,
+                            "pointer-events-none border-b border-[#F3F4F6] last:border-0",
+                          )}
+                        >
+                          <td
+                            colSpan={visibleFields.length + 1}
+                            className="px-4 py-0 align-middle"
+                          />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between shrink-0">
                   <div>
                     <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest cursor-default select-none">
                       Total Personnel: {filteredEmployees.length}
@@ -2503,185 +2505,187 @@ export default function Directory() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto"
+                className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm flex flex-col"
               >
-                <table
-                  className={cn(
-                    "table-fixed border-collapse text-left",
-                    Object.keys(colWidths).length > 0 ? "w-max" : "w-full",
-                  )}
-                  style={{
-                    minWidth: Object.keys(colWidths).length > 0 ? undefined : Math.max(1024, visibleFields.length * 200) + "px"
-                  }}
-                >
-                  <colgroup>
-                    {visibleFields.map((field) => (
-                      <col
-                        key={field.key}
-                        style={{
-                          width: colWidths[field.key]
-                            ? `${colWidths[field.key]}px`
-                            : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%`,
-                        }}
-                      />
-                    ))}
-                    <col style={{ width: actionColumnWidth }} />
-                  </colgroup>
-                  <thead>
-                    <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                      {visibleFields.map((field) => {
-                        const isSortable = sortableFieldKeys.includes(
-                          field.key,
-                        );
-                        const isActiveSort = sortConfig?.key === field.key;
-                        const SortIcon = isActiveSort
-                          ? sortConfig?.direction === "asc"
-                            ? ArrowUp
-                            : ArrowDown
-                          : ArrowUpDown;
+                <div className="w-full overflow-x-auto min-w-0">
+                  <table
+                    className={cn(
+                      "table-fixed border-collapse text-left",
+                      Object.keys(colWidths).length > 0 ? "w-max" : "w-full",
+                    )}
+                    style={{
+                      minWidth: Object.keys(colWidths).length > 0 ? undefined : Math.max(1024, visibleFields.length * 200) + "px"
+                    }}
+                  >
+                    <colgroup>
+                      {visibleFields.map((field) => (
+                        <col
+                          key={field.key}
+                          style={{
+                            width: colWidths[field.key]
+                              ? `${colWidths[field.key]}px`
+                              : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%`,
+                          }}
+                        />
+                      ))}
+                      <col style={{ width: actionColumnWidth }} />
+                    </colgroup>
+                    <thead>
+                      <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                        {visibleFields.map((field) => {
+                          const isSortable = sortableFieldKeys.includes(
+                            field.key,
+                          );
+                          const isActiveSort = sortConfig?.key === field.key;
+                          const SortIcon = isActiveSort
+                            ? sortConfig?.direction === "asc"
+                              ? ArrowUp
+                              : ArrowDown
+                            : ArrowUpDown;
 
-                        return (
-                          <ResizableHeader
-                            key={field.key}
-                            columnKey={field.key}
-                            onResize={handleResize}
-                            className={cn(
-                              "h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle",
-                              field.key === "fullName"
-                                ? "pl-4 pr-3"
-                                : "pl-6 pr-3",
-                            )}
-                          >
-                            {isSortable ? (
-                              <button
-                                type="button"
-                                onClick={() => toggleSort(field.key)}
-                                aria-sort={
-                                  isActiveSort
-                                    ? sortConfig?.direction === "asc"
-                                      ? "ascending"
-                                      : "descending"
-                                    : "none"
-                                }
-                                className={cn(
-                                  "flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]",
-                                  isActiveSort && "text-[#111827]",
-                                )}
-                              >
-                                <span className="truncate">
+                          return (
+                            <ResizableHeader
+                              key={field.key}
+                              columnKey={field.key}
+                              onResize={handleResize}
+                              className={cn(
+                                "h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle",
+                                field.key === "fullName"
+                                  ? "pl-4 pr-3"
+                                  : "pl-6 pr-3",
+                              )}
+                            >
+                              {isSortable ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSort(field.key)}
+                                  aria-sort={
+                                    isActiveSort
+                                      ? sortConfig?.direction === "asc"
+                                        ? "ascending"
+                                        : "descending"
+                                      : "none"
+                                  }
+                                  className={cn(
+                                    "flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]",
+                                    isActiveSort && "text-[#111827]",
+                                  )}
+                                >
+                                  <span className="truncate">
+                                    {field.key === "boEmail"
+                                      ? "Email"
+                                      : field.label}
+                                  </span>
+                                  <SortIcon
+                                    className={cn(
+                                      "h-3.5 w-3.5 shrink-0",
+                                      isActiveSort
+                                        ? "text-[#111827]"
+                                        : "text-[#9CA3AF]",
+                                    )}
+                                  />
+                                </button>
+                              ) : (
+                                <div className="truncate cursor-default select-none">
                                   {field.key === "boEmail"
                                     ? "Email"
                                     : field.label}
-                                </span>
-                                <SortIcon
-                                  className={cn(
-                                    "h-3.5 w-3.5 shrink-0",
-                                    isActiveSort
-                                      ? "text-[#111827]"
-                                      : "text-[#9CA3AF]",
-                                  )}
-                                />
-                              </button>
-                            ) : (
-                              <div className="truncate cursor-default select-none">
-                                {field.key === "boEmail"
-                                  ? "Email"
-                                  : field.label}
-                              </div>
-                            )}
-                          </ResizableHeader>
-                        );
-                      })}
-                      <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="">
-                    {paginatedEmployees.map((emp, index) => (
-                      <motion.tr
-                        key={emp.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: index * 0.05,
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 30,
-                        }}
-                        className={cn(
-                          tableRowHeightClass,
-                          "hover:bg-[#F9FAFB] transition-colors group border-b border-[#F3F4F6] last:border-0",
-                        )}
-                      >
-                        {visibleFields.map((field) => (
-                          <td
-                            key={field.key}
-                            className={cn(
-                              "py-0 align-middle text-sm font-bold text-[#111827]",
-                              field.key === "fullName"
-                                ? "pl-4 pr-3"
-                                : "pl-6 pr-3",
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                field.key !== "fullName" && "truncate",
+                                </div>
                               )}
-                            >
-                              {field.render(emp)}
-                            </div>
-                          </td>
-                        ))}
-                        <td className="px-4 py-0 text-right align-middle">
-                          <Link
-                            to={`/employee/${emp.id}`}
-                            className="group inline-flex h-9 items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-[#9CA3AF] transition-all duration-300 ease-out hover:bg-white hover:text-[#111827] hover:shadow-sm"
-                          >
-                            <span className="truncate">View Profile</span>
-                            <ChevronRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
-                          </Link>
-                        </td>
-                      </motion.tr>
-                    ))}
-                    {Array.from({ length: placeholderRowCount }).map(
-                      (_, index) => (
-                        <tr
-                          key={`placeholder-${index}`}
+                            </ResizableHeader>
+                          );
+                        })}
+                        <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="">
+                      {paginatedEmployees.map((emp, index) => (
+                        <motion.tr
+                          key={emp.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            delay: index * 0.05,
+                            type: "spring",
+                            stiffness: 380,
+                            damping: 30,
+                          }}
                           className={cn(
                             tableRowHeightClass,
-                            "pointer-events-none border-b border-[#F3F4F6] last:border-0",
+                            "hover:bg-[#F9FAFB] transition-colors group border-b border-[#F3F4F6] last:border-0",
                           )}
                         >
+                          {visibleFields.map((field) => (
+                            <td
+                              key={field.key}
+                              className={cn(
+                                "py-0 align-middle text-sm font-bold text-[#111827]",
+                                field.key === "fullName"
+                                  ? "pl-4 pr-3"
+                                  : "pl-6 pr-3",
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  field.key !== "fullName" && "truncate",
+                                )}
+                              >
+                                {field.render(emp)}
+                              </div>
+                            </td>
+                          ))}
+                          <td className="px-4 py-0 text-right align-middle">
+                            <Link
+                              to={`/employee/${emp.id}`}
+                              className="group inline-flex h-9 items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-[#9CA3AF] transition-all duration-300 ease-out hover:bg-white hover:text-[#111827] hover:shadow-sm"
+                            >
+                              <span className="truncate">View Profile</span>
+                              <ChevronRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+                            </Link>
+                          </td>
+                        </motion.tr>
+                      ))}
+                      {Array.from({ length: placeholderRowCount }).map(
+                        (_, index) => (
+                          <tr
+                            key={`placeholder-${index}`}
+                            className={cn(
+                              tableRowHeightClass,
+                              "pointer-events-none border-b border-[#F3F4F6] last:border-0",
+                            )}
+                          >
+                            <td
+                              colSpan={visibleFields.length + 1}
+                              className="px-4 py-0 align-middle"
+                            />
+                          </tr>
+                        ),
+                      )}
+                      {showTableEmptyState && (
+                        <tr className="h-[40rem]">
                           <td
                             colSpan={visibleFields.length + 1}
-                            className="px-4 py-0 align-middle"
-                          />
-                        </tr>
-                      ),
-                    )}
-                    {showTableEmptyState && (
-                      <tr className="h-[40rem]">
-                        <td
-                          colSpan={visibleFields.length + 1}
-                          className="px-4 py-0 text-center align-middle"
-                        >
-                          <div className="mx-auto flex max-w-md flex-col items-center justify-center">
-                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
-                              <Search className="h-8 w-8 text-[#D1D5DB]" />
+                            className="px-4 py-0 text-center align-middle"
+                          >
+                            <div className="mx-auto flex max-w-md flex-col items-center justify-center">
+                              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
+                                <Search className="h-8 w-8 text-[#D1D5DB]" />
+                              </div>
+                              <h3 className="text-lg font-bold text-[#111827] cursor-default select-none">
+                                No records found
+                              </h3>
+                              <p className="text-sm text-[#6B7280] cursor-default select-none">
+                                Try adjusting your filters or search keywords.
+                              </p>
                             </div>
-                            <h3 className="text-lg font-bold text-[#111827] cursor-default select-none">
-                              No records found
-                            </h3>
-                            <p className="text-sm text-[#6B7280] cursor-default select-none">
-                              Try adjusting your filters or search keywords.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
+                <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between shrink-0">
                   <div>
                     <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest cursor-default select-none">
                       Total Personnel: {filteredEmployees.length}

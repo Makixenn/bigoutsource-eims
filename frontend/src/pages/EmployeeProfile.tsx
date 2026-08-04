@@ -91,6 +91,11 @@ type EmployeeForm = {
   separationReason: string;
   isArchived?: boolean;
   isReadyForArchive?: boolean;
+  archiveInitiator?: string;
+  archiveItClearance?: boolean;
+  archiveHrClearance?: boolean;
+  archiveOpsClearance?: boolean;
+  archiveFinanceClearance?: boolean;
   avatarUrl?: string;
   position: string;
   nickname: string;
@@ -552,7 +557,13 @@ function computeEvalDates(firstMonthDate?: string) {
 }
 
 function formatDateDisplay(dateStr?: string) {
-  if (!dateStr) return '-';
+  if (!dateStr) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100/90 text-gray-500 border border-gray-200/80 select-none">
+        Not set yet
+      </span>
+    );
+  }
   const cleanStr = String(dateStr).split('T')[0];
   const parts = cleanStr.split('-');
   if (parts.length !== 3) return dateStr;
@@ -649,7 +660,7 @@ export default function EmployeeProfile() {
   const [archiveSeparationReasonOther, setArchiveSeparationReasonOther] = useState<string>('');
   const [archiveSeparationDate, setArchiveSeparationDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [archiveStep, setArchiveStep] = useState<1 | 2>(1);
-  const [hrCheckboxes, setHrCheckboxes] = useState({ position: false, accountAssignment: false, site: false });
+  const [clearanceCheckboxes, setClearanceCheckboxes] = useState({ it: false, hr: false, operations: false, finance: false });
   const [itCheckboxes, setItCheckboxes] = useState<Record<string, boolean>>({});
   const [unarchivePosition, setUnarchivePosition] = useState('');
   const [unarchiveAccountAssignment, setUnarchiveAccountAssignment] = useState('');
@@ -728,8 +739,8 @@ export default function EmployeeProfile() {
 
   const reqITFields = useMemo(() => ['admin', 'it'].includes(user?.role?.toLowerCase() || ''), [user]);
   const isSuperAdmin = ['super admin', 'superadmin', 'super_admin'].includes(user?.role?.toLowerCase() || '');
-  const canArchivePermission = can('employees.delete');
-  const canUnarchivePermission = can('employees.unarchive');
+  const canArchivePermission = can('archiving.initiate') || can('archiving.finalize');
+  const canUnarchivePermission = can('archiving.unarchive');
   const canArchiveEmployee = isSuperAdmin || canArchivePermission || canUnarchivePermission || canEditHR || canEditIT;
   
   const hasActiveITAccounts = useMemo(() => {
@@ -1159,8 +1170,9 @@ export default function EmployeeProfile() {
         }
       } else {
         if (archiveStep === 2) {
-          if (!hrCheckboxes.position && !hrCheckboxes.accountAssignment && !hrCheckboxes.site) {
-            toast.error("Please check at least one box before proceeding");
+          const requiresOps = isInternalAccount;
+          if (!clearanceCheckboxes.it || !clearanceCheckboxes.hr || (requiresOps && !clearanceCheckboxes.operations) || !clearanceCheckboxes.finance) {
+            toast.error("All applicable department clearances must be checked to proceed.");
             return;
           }
         }
@@ -1177,6 +1189,8 @@ export default function EmployeeProfile() {
           // IT Admin is initiating the archive request
           updateData = {
             is_ready_for_archive: true,
+            archive_initiator: 'IT',
+            archive_it_clearance: true,
           };
           
           if (itCheckboxes.boEmail) { updateData.boEmail = ''; updateData.emailPassword = ''; }
@@ -1203,12 +1217,13 @@ export default function EmployeeProfile() {
             separation_date: sepDate,
             floatDate: flDate,
 
-            position: hrCheckboxes.position ? '' : employee.position,
-            accountAssignment: hrCheckboxes.accountAssignment ? '' : employee.accountAssignment,
-            siteId: hrCheckboxes.site ? null : employee.siteId,
-            siteName: hrCheckboxes.site ? '' : employee.site,
+            // Keep historical data for position, accountAssignment, and site
             is_archived: true,
             is_ready_for_archive: false,
+            archive_it_clearance: true,
+            archive_hr_clearance: true,
+            archive_ops_clearance: isInternalAccount ? true : false,
+            archive_finance_clearance: true,
           };
         }
       } else {
@@ -1244,7 +1259,7 @@ export default function EmployeeProfile() {
       setShowArchiveModal(false);
       setArchiveIntent(null);
       setArchiveStep(1);
-      setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+      setClearanceCheckboxes({ it: false, hr: false, operations: false, finance: false });
       setItCheckboxes({});
       setUnarchivePosition('');
       setUnarchiveAccountAssignment('');
@@ -1607,7 +1622,7 @@ export default function EmployeeProfile() {
                               type="button"
                               onClick={() => {
                                 setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
-                                setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+                                setClearanceCheckboxes({ it: false, hr: false, operations: false, finance: false });
                                 setItCheckboxes({});
                                 
                                 if (employee.isArchived) {
@@ -2085,9 +2100,8 @@ export default function EmployeeProfile() {
                               <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
-                                    <option value="active">Active (Protected)</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="expired">Expired / Outdated</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
                                   </Select>
                                 ) : (
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
@@ -2102,9 +2116,8 @@ export default function EmployeeProfile() {
                               <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
-                                    <option value="installed">Installed & Running</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="error">Error / Not Reporting</option>
+                                    <option value="installed">Installed</option>
+                                    <option value="missing">Missing</option>
                                   </Select>
                                 ) : (
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
@@ -2150,30 +2163,32 @@ export default function EmployeeProfile() {
                                 ) : employee.deviceType || 'Windows'}
                               </ProfileField>
 
-                              <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
-                                {editingSecrets ? (
-                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                                ) : canViewSecrets ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
-                                    {employee.windowsKey && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(employee.windowsKey);
-                                          toast.success('Windows key copied to clipboard');
-                                        }}
-                                        className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
-                                        title="Copy License Key"
-                                      >
-                                        <Copy className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                                )}
-                              </ProfileField>
+                              {form.deviceType !== 'Linux' && form.deviceType !== 'Mac' && (
+                                <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
+                                  {editingSecrets ? (
+                                    <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                                  ) : canViewSecrets ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                      {employee.windowsKey && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(employee.windowsKey);
+                                            toast.success('Windows key copied to clipboard');
+                                          }}
+                                          className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
+                                          title="Copy License Key"
+                                        >
+                                          <Copy className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
+                                  )}
+                                </ProfileField>
+                              )}
 
                               <div className="md:col-span-2">
                                 <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>
@@ -2709,17 +2724,23 @@ export default function EmployeeProfile() {
                         ))
                       ) : (
                         <>
-                          <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.position} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, position: e.target.checked }))} />
-                            <span className="text-sm font-bold text-gray-700">Job Title</span>
+                          <label className={cn("flex items-center gap-3 p-3 border rounded-xl transition-colors", employee.archiveInitiator === 'IT' ? "bg-gray-100 opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-gray-50")}>
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded disabled:opacity-50" checked={employee.archiveInitiator === 'IT' || clearanceCheckboxes.it} disabled={employee.archiveInitiator === 'IT'} onChange={(e) => setClearanceCheckboxes(prev => ({ ...prev, it: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">IT Department</span>
                           </label>
                           <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.accountAssignment} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, accountAssignment: e.target.checked }))} />
-                            <span className="text-sm font-bold text-gray-700">Department/Campaign</span>
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={clearanceCheckboxes.hr} onChange={(e) => setClearanceCheckboxes(prev => ({ ...prev, hr: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">HR Department</span>
                           </label>
+                          {isInternalAccount && (
+                            <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                              <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={clearanceCheckboxes.operations} onChange={(e) => setClearanceCheckboxes(prev => ({ ...prev, operations: e.target.checked }))} />
+                              <span className="text-sm font-bold text-gray-700">Operations Department</span>
+                            </label>
+                          )}
                           <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={hrCheckboxes.site} onChange={(e) => setHrCheckboxes(prev => ({ ...prev, site: e.target.checked }))} />
-                            <span className="text-sm font-bold text-gray-700">Site</span>
+                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={clearanceCheckboxes.finance} onChange={(e) => setClearanceCheckboxes(prev => ({ ...prev, finance: e.target.checked }))} />
+                            <span className="text-sm font-bold text-gray-700">Finance Department</span>
                           </label>
                         </>
                       )}
@@ -2735,7 +2756,7 @@ export default function EmployeeProfile() {
                     setShowArchiveModal(false);
                     setArchiveIntent(null);
                     setArchiveStep(1);
-                    setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+                    setClearanceCheckboxes({ it: false, hr: false, operations: false, finance: false });
                     setItCheckboxes({});
                   }}
                   disabled={isArchiving}
@@ -2749,7 +2770,7 @@ export default function EmployeeProfile() {
                     type="button"
                     onClick={() => {
                       setArchiveStep(2);
-                      setHrCheckboxes({ position: false, accountAssignment: false, site: false });
+                      setClearanceCheckboxes({ it: false, hr: false, operations: false, finance: false });
                       setItCheckboxes({});
                     }}
                     disabled={isArchiving || (!archiveSeparationReason.trim() || !archiveSeparationDate)}
@@ -2759,7 +2780,7 @@ export default function EmployeeProfile() {
                   </button>
                 ) : (
                   (() => {
-                    const isAnyHrChecked = Boolean(hrCheckboxes.position || hrCheckboxes.accountAssignment || hrCheckboxes.site);
+                    const isAnyHrChecked = Boolean(clearanceCheckboxes.it || clearanceCheckboxes.hr || clearanceCheckboxes.operations || clearanceCheckboxes.finance);
                     const isAnyItChecked = activeITAccountKeys.length > 0 
                       ? activeITAccountKeys.some(acc => itCheckboxes[acc.key])
                       : isAnyHrChecked;

@@ -134,6 +134,16 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (isReadyForArchive !== undefined) {
     payload.is_ready_for_archive = toBoolean(isReadyForArchive);
   }
+  const archiveInitiator = valueFrom(data, 'archive_initiator', 'archiveInitiator');
+  if (archiveInitiator !== undefined) payload.archive_initiator = stringOrEmpty(archiveInitiator);
+  const archiveItClearance = valueFrom(data, 'archive_it_clearance', 'archiveItClearance');
+  if (archiveItClearance !== undefined) payload.archive_it_clearance = toBoolean(archiveItClearance);
+  const archiveHrClearance = valueFrom(data, 'archive_hr_clearance', 'archiveHrClearance');
+  if (archiveHrClearance !== undefined) payload.archive_hr_clearance = toBoolean(archiveHrClearance);
+  const archiveOpsClearance = valueFrom(data, 'archive_ops_clearance', 'archiveOpsClearance');
+  if (archiveOpsClearance !== undefined) payload.archive_ops_clearance = toBoolean(archiveOpsClearance);
+  const archiveFinanceClearance = valueFrom(data, 'archive_finance_clearance', 'archiveFinanceClearance');
+  if (archiveFinanceClearance !== undefined) payload.archive_finance_clearance = toBoolean(archiveFinanceClearance);
   if (data?.provisioningStatus !== undefined) {
     payload.provisioning_status = stringOrEmpty(data.provisioningStatus);
   }
@@ -230,6 +240,11 @@ function normalize(row) {
     emergencyContactNumber: row.emergencyContactNumber || row.emergency_contact_number || '',
     isArchived: row.isArchived ?? row.is_archived ?? false,
     isReadyForArchive: row.isReadyForArchive ?? row.is_ready_for_archive ?? false,
+    archiveInitiator: row.archiveInitiator || row.archive_initiator || '',
+    archiveItClearance: row.archiveItClearance ?? row.archive_it_clearance ?? false,
+    archiveHrClearance: row.archiveHrClearance ?? row.archive_hr_clearance ?? false,
+    archiveOpsClearance: row.archiveOpsClearance ?? row.archive_ops_clearance ?? false,
+    archiveFinanceClearance: row.archiveFinanceClearance ?? row.archive_finance_clearance ?? false,
     provisioningStatus: row.provisioningStatus || row.provisioning_status || 'pending_hr',
     idIssuance: row.idIssuance || row.id_issuance || '',
     hoodieIssuance: row.hoodieIssuance || row.hoodie_issuance || '',

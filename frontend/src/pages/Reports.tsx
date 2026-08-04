@@ -260,12 +260,12 @@ async function generateSecurityAudit(): Promise<ReportData> {
 
   const noEset = employees.filter((e) => String(e.esetStatus ?? '').toLowerCase() !== 'active');
   const noAw = employees.filter((e) => String(e.activityWatchStatus ?? '').toLowerCase() !== 'installed');
-  const noKey = employees.filter((e) => !e.windowsKey);
+  const noKey = employees.filter((e) => !e.windowsKey && e.deviceType !== 'Linux' && e.deviceType !== 'Mac');
   const flagged = employees.filter(
     (e) =>
       String(e.esetStatus ?? '').toLowerCase() !== 'active' ||
       String(e.activityWatchStatus ?? '').toLowerCase() !== 'installed' ||
-      !e.windowsKey
+      (!e.windowsKey && e.deviceType !== 'Linux' && e.deviceType !== 'Mac')
   );
 
   const summaryRows = [
@@ -280,7 +280,7 @@ async function generateSecurityAudit(): Promise<ReportData> {
     const issues: string[] = [];
     if (String(e.esetStatus ?? '').toLowerCase() !== 'active') issues.push('ESET Inactive');
     if (String(e.activityWatchStatus ?? '').toLowerCase() !== 'installed') issues.push('Activity Watch Missing');
-    if (!e.windowsKey) issues.push('No Windows Key');
+    if (!e.windowsKey && e.deviceType !== 'Linux' && e.deviceType !== 'Mac') issues.push('No Windows Key');
     return {
       'Employee ID': na(e.id),
       'Full Name': na(e.fullName),
@@ -289,7 +289,7 @@ async function generateSecurityAudit(): Promise<ReportData> {
       'Remote ID': na(e.rustDeskId),
       'ESET Status': na(capitalize(e.esetStatus)),
       'Activity Watch': na(capitalize(e.activityWatchStatus)),
-      'Windows Key': e.windowsKey ? 'Present' : 'Missing',
+      'Windows Key': (e.deviceType === 'Linux' || e.deviceType === 'Mac') ? 'N/A' : (e.windowsKey ? 'Present' : 'Missing'),
       'Issues': na(issues.join('; ')),
     };
   });
