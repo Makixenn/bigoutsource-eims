@@ -78,6 +78,13 @@ model Employee {
   isReadyForArchive Boolean  @default(false) @map("is_ready_for_archive")
   provisioningStatus String  @default("pending_hr") @map("provisioning_status")
 
+  archiveInitiator        String   @default("") @map("archive_initiator")
+  archiveItClearance      Boolean  @default(false) @map("archive_it_clearance")
+  archiveHrClearance      Boolean  @default(false) @map("archive_hr_clearance")
+  archiveOpsClearance     Boolean  @default(false) @map("archive_ops_clearance")
+  archiveFinanceClearance Boolean  @default(false) @map("archive_finance_clearance")
+
+
   outlookEmail      String   @default("") @map("outlook_email")
   mattermostAccount String   @default("") @map("mattermost_account")
   teamsAccount      String   @default("") @map("teams_account")

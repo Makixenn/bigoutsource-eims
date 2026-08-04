@@ -30,7 +30,7 @@ const HR_WRITE_FIELDS = [
 ];
 const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount', 'provisioningStatus', 'macAddresses', 'deviceType'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId', 'diskEncryptionKey'];
-const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive'];
+const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive', 'archiveInitiator', 'archive_initiator', 'archiveItClearance', 'archive_it_clearance', 'archiveHrClearance', 'archive_hr_clearance', 'archiveOpsClearance', 'archive_ops_clearance', 'archiveFinanceClearance', 'archive_finance_clearance'];
 const EVALUATIONS_WRITE_FIELDS = ['idIssuance', 'hoodieIssuance', 'hmoEnrollment', 'hmoMemberCode', 'evalFirstMonth', 'evalThirdMonth', 'evalFifthMonth', 'evalSixthMonth', 'evalAnniversary'];
 
 function blankFields(target, fields) {
@@ -74,9 +74,8 @@ export function filterEmployeeWritePayload(data, user, isCreate = false) {
     }
     if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
-    if (caps.includes('employees.delete') || caps.includes('employees.unarchive') || caps.includes('employees.archive') || caps.includes('notifications.hr_action.archive') || caps.includes('notifications.it_action.archive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('archiving.finalize') || caps.includes('archiving.initiate') || caps.includes('archiving.unarchive') || caps.includes('employees.archive') || caps.includes('notifications.hr_action.archive') || caps.includes('notifications.it_action.archive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.evaluations.manage')) EVALUATIONS_WRITE_FIELDS.forEach((field) => allowed.add(field));
-    if (caps.includes('employees.delete') || caps.includes('employees.unarchive')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
   }
 
   const filtered = {};

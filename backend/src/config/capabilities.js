@@ -17,8 +17,12 @@ export const CAPABILITIES = {
   'employees.edit': 'Edit employee identity/HR fields',
   'employees.evaluations.manage': 'Manage employee evaluation dates, issuances, and HMO info',
   'employees.evaluations.view': 'View employee evaluations dashboard',
-  'employees.delete': 'Archive Employees',
-  'employees.unarchive': 'Unarchive Employees',
+
+  // Archiving
+  'archiving.initiate': 'Initiate Archive Employee',
+  'archiving.finalize': 'Archive Employee',
+  'archiving.unarchive': 'Unarchive Employee',
+
   'employees.it.view': 'View employee account & device info',
   'employees.it.edit': 'Edit employee account & device info',
 
@@ -94,8 +98,9 @@ export const META_CAPABILITIES = ['users.manage', 'roles.manage', 'settings.mana
 // Default capability sets for the five seeded roles (the agreed access matrix).
 export const ROLE_CAPABILITIES = {
   super_admin: ALL_CAPABILITIES,
-  admin: [
-    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.create.it_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.evaluations.view', 'employees.delete', 'employees.unarchive',
+  director: [
+    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.create.it_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.evaluations.view',
+    'archiving.initiate', 'archiving.finalize', 'archiving.unarchive',
     'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view', 'departments.edit',
@@ -109,7 +114,8 @@ export const ROLE_CAPABILITIES = {
     'notifications.system', 'notifications.system.export_alerts'
   ],
   hr_admin: [
-    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.evaluations.view', 'employees.delete', 'employees.unarchive',
+    'employees.view', 'employees.create', 'employees.create.hr_fields.required', 'employees.edit', 'employees.evaluations.manage', 'employees.evaluations.view',
+    'archiving.initiate', 'archiving.finalize', 'archiving.unarchive',
     'departments.view', 'departments.edit',
     'imports.manage',
     'reports.view', 'reports.export',
@@ -120,6 +126,7 @@ export const ROLE_CAPABILITIES = {
   ],
   it_admin: [
     'employees.view', 'employees.create', 'employees.create.it_fields.required',
+    'archiving.initiate',
     'employees.it.view', 'employees.it.edit', 'employees.secrets.view', 'employees.secrets.edit',
     'assets.view', 'assets.edit',
     'departments.view',
