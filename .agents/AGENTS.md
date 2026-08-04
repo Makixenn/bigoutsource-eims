@@ -4,3 +4,7 @@
 - Always use `REMOTE ID` instead of `RustDesk ID`.
 - Use `EMPLOYEE INFORMATION` instead of `Work & Account Info` for section titles.
 
+# Workflow Rules
+- Always run `docker compose restart` after implementing code changes.
+
+
