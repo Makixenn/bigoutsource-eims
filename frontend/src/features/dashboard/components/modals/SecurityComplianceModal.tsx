@@ -61,7 +61,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
         const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
         const pw = emp ? (emp.emailPassword || '') : '';
         if (!PASSWORD_RULES.every(rule => rule.test(pw))) {
-          weakPassword++;
+          missingPassword++;
         }     
     });
 
