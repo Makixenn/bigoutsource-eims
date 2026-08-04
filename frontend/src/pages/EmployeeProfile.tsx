@@ -552,7 +552,13 @@ function computeEvalDates(firstMonthDate?: string) {
 }
 
 function formatDateDisplay(dateStr?: string) {
-  if (!dateStr) return '-';
+  if (!dateStr) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100/90 text-gray-500 border border-gray-200/80 select-none">
+        Not set yet
+      </span>
+    );
+  }
   const cleanStr = String(dateStr).split('T')[0];
   const parts = cleanStr.split('-');
   if (parts.length !== 3) return dateStr;
@@ -2085,9 +2091,8 @@ export default function EmployeeProfile() {
                               <ProfileField label="ESET Antivirus" icon={ShieldAlert} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.esetStatus} onChange={(v) => updateForm('esetStatus', v)}>
-                                    <option value="active">Active (Protected)</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="expired">Expired / Outdated</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
                                   </Select>
                                 ) : (
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
@@ -2102,9 +2107,8 @@ export default function EmployeeProfile() {
                               <ProfileField label="Activity Watch" icon={Clock} editing={editingIT}>
                                 {editingIT ? (
                                   <Select value={form.activityWatchStatus} onChange={(v) => updateForm('activityWatchStatus', v)}>
-                                    <option value="installed">Installed & Running</option>
-                                    <option value="uninstalled">Uninstalled / Missing</option>
-                                    <option value="error">Error / Not Reporting</option>
+                                    <option value="installed">Installed</option>
+                                    <option value="missing">Missing</option>
                                   </Select>
                                 ) : (
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
@@ -2150,30 +2154,32 @@ export default function EmployeeProfile() {
                                 ) : employee.deviceType || 'Windows'}
                               </ProfileField>
 
-                              <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
-                                {editingSecrets ? (
-                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                                ) : canViewSecrets ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
-                                    {employee.windowsKey && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(employee.windowsKey);
-                                          toast.success('Windows key copied to clipboard');
-                                        }}
-                                        className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
-                                        title="Copy License Key"
-                                      >
-                                        <Copy className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                                )}
-                              </ProfileField>
+                              {form.deviceType !== 'Linux' && form.deviceType !== 'Mac' && (
+                                <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
+                                  {editingSecrets ? (
+                                    <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                                  ) : canViewSecrets ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                      {employee.windowsKey && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(employee.windowsKey);
+                                            toast.success('Windows key copied to clipboard');
+                                          }}
+                                          className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
+                                          title="Copy License Key"
+                                        >
+                                          <Copy className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
+                                  )}
+                                </ProfileField>
+                              )}
 
                               <div className="md:col-span-2">
                                 <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>
