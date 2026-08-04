@@ -3,6 +3,14 @@ import { Shield, Download, Search } from 'lucide-react';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { BaseDashboardModal } from './BaseDashboardModal';
 
+const PASSWORD_RULES = [
+  { label: 'At least 12 characters', test: (value: string) => value.length >= 12 },
+  { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
+  { label: 'One lowercase letter', test: (value: string) => /[a-z]/.test(value) },
+  { label: 'One number', test: (value: string) => /\d/.test(value) },
+  { label: 'One special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
+];
+
 interface SecurityComplianceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,38 +27,52 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
     devices.forEach(d => {
         const isMissingEset = d.esetStatus === 'inactive' || d.esetStatus === 'Inactive';
         const isMissingAW = d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing';
+
         const isUnlicensed = !d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac';
-        if (!isMissingEset && !isMissingAW && !isUnlicensed) {
+        const isMissingEncryption = !d.diskEncryptionKey;
+
+        const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
+        const pw = emp ? (emp.emailPassword || '') : '';
+        const isPasswordValid = PASSWORD_RULES.every(rule => rule.test(pw));
+
+        if (!isMissingEset && !isMissingAW && !isUnlicensed && !isMissingEncryption && isPasswordValid) {
             compliantCount++;
         }
     });
 
     const score = devices.length > 0 ? ((compliantCount / devices.length) * 100).toFixed(1) : '100.0';
     return { score, compliantCount, total: devices.length };
-  }, [devices]);
+  }, [devices, employees]);
 
   const categories = useMemo(() => {
     let missingEset = 0;
     let unlicensed = 0;
     let missingAw = 0;
-    // Mocked values for others
-    const passwordCompliance = Math.floor(devices.length * 0.95);
-    const encrypted = Math.floor(devices.length * 0.90);
+    let missingPassword = 0;
+    let missingEncryption = 0;
 
     devices.forEach(d => {
         if (d.esetStatus === 'inactive' || d.esetStatus === 'Inactive') missingEset++;
         if (d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing') missingAw++;
+
         if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') unlicensed++;
+        if (!d.diskEncryptionKey) missingEncryption++;
+        
+        const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
+        const pw = emp ? (emp.emailPassword || '') : '';
+        if (!PASSWORD_RULES.every(rule => rule.test(pw))) {
+          weakPassword++;
+        }     
     });
 
     return [
         { name: 'Antivirus (ESET)', passed: devices.length - missingEset, failed: missingEset, total: devices.length },
         { name: 'Activity Watch', passed: devices.length - missingAw, failed: missingAw, total: devices.length },
         { name: 'OS Licensing', passed: devices.length - unlicensed, failed: unlicensed, total: devices.length },
-        { name: 'Password Compliance', passed: passwordCompliance, failed: devices.length - passwordCompliance, total: devices.length },
-        { name: 'Device Encryption', passed: encrypted, failed: devices.length - encrypted, total: devices.length },
+        { name: 'Password Compliance', passed: devices.length - missingPassword, failed: missingPassword, total: devices.length },
+        { name: 'Device Encryption', passed: devices.length - missingEncryption, failed: missingEncryption, total: devices.length },
     ];
-  }, [devices]);
+  }, [devices, employees]);
 
   const nonCompliantAssets = useMemo(() => {
     const assets: any[] = [];
@@ -69,8 +91,24 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
             issues.push('Missing AW');
             if (risk !== 'Critical') risk = 'High';
         }
-        if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') {
-            issues.push('Unlicensed OS');
+        if (!d.diskEncryptionKey) {
+             if (d.deviceType === 'Windows') {
+              issues.push('Missing Bitlocker');
+            } else if (d.deviceType === 'Mac' || d.deviceType === 'MacOS') {
+              issues.push('Missing Filevault');
+            } else {
+              issues.push('Missing Encryption');
+            }
+            if (risk !== 'Critical') risk = 'High';
+          }
+          if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') {
+           issues.push('Unlicensed OS');
+            if (risk === 'Low') risk = 'Medium';
+          } 
+
+        const pw = emp ? (emp.emailPassword || '') : '';
+        if (!PASSWORD_RULES.every(rule => rule.test(pw))) {
+            issues.push('Weak Password');
             if (risk === 'Low') risk = 'Medium';
         }
 

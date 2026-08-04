@@ -29,6 +29,14 @@ const SiteChart = lazy(() => import('@/src/features/dashboard/components/Dashboa
 const ComplianceChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.ComplianceChart })));
 const SecurityOverviewChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.SecurityOverviewChart })));
 
+const PASSWORD_RULES = [
+  { label: 'At least 12 characters', test: (value: string) => value.length >= 12 },
+  { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
+  { label: 'One lowercase letter', test: (value: string) => /[a-z]/.test(value) },
+  { label: 'One number', test: (value: string) => /\d/.test(value) },
+  { label: 'One special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
+];
+
 function asArray(value: any) {
   return Array.isArray(value) ? value : [];
 }
@@ -328,18 +336,27 @@ export default function Dashboard() {
     let missingEset = 0;
     let missingActivityWatch = 0;
     let unlicensed = 0;
+    let missingEncryption = 0;
+    let weakPassword = 0;
 
     devices.forEach((device) => {
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
       const isMissingAW = device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing';
       const isUnlicensed = !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac';
+      const isMissingEncryption = !device.diskEncryptionKey;
+      
+      const emp = employees.find(e => e.id === (device.assigneeId || device.userId));
+      const pw = emp ? (emp.emailPassword || '') : '';
+      const isWeakPassword = !PASSWORD_RULES.every(rule => rule.test(pw));
 
-      if (!isMissingEset && !isMissingAW && !isUnlicensed) {
+      if (!isMissingEset && !isMissingAW && !isUnlicensed && !isMissingEncryption && !isWeakPassword) {
         fullyCompliant++;
       } else {
         if (isMissingEset) missingEset++;
         if (isMissingAW) missingActivityWatch++;
         if (isUnlicensed) unlicensed++;
+        if (isMissingEncryption) missingEncryption++;
+        if (isWeakPassword) weakPassword++;
       }
     });
 
@@ -348,9 +365,11 @@ export default function Dashboard() {
     if (missingEset > 0) results.push({ name: 'Missing ESET', count: missingEset, color: '#EF4444' });
     if (missingActivityWatch > 0) results.push({ name: 'Missing Activity Watch', count: missingActivityWatch, color: '#F59E0B' });
     if (unlicensed > 0) results.push({ name: 'Unlicensed OS', count: unlicensed, color: '#FCD34D' });
+    if (missingEncryption > 0) results.push({ name: 'Missing Encryption', count: missingEncryption, color: '#8B5CF6' });
+    if (weakPassword > 0) results.push({ name: 'Weak Password', count: weakPassword, color: '#EC4899' });
 
     return results;
-  }, [devices]);
+  }, [devices, employees]);
 
   const complianceByDepartment = useMemo(() => {
     const deptStats = new Map();
@@ -368,8 +387,12 @@ export default function Dashboard() {
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
       const isMissingAW = device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing';
       const isUnlicensed = !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac';
+      const isMissingEncryption = !device.diskEncryptionKey;
+      
+      const pw = emp.emailPassword || '';
+      const isWeakPassword = !PASSWORD_RULES.every(rule => rule.test(pw));
 
-      const isCompliant = !isMissingEset && !isMissingAW && !isUnlicensed;
+      const isCompliant = !isMissingEset && !isMissingAW && !isUnlicensed && !isMissingEncryption && !isWeakPassword;
       if (!deptStats.has(dept)) {
         deptStats.set(dept, { Compliant: 0, NonCompliant: 0 });
       }
@@ -465,27 +488,61 @@ export default function Dashboard() {
   }, [employees]);
 
   const securityAlerts = useMemo(
-    () => [
-      {
-        label: 'Inactive ESET',
-        value: devices.filter((device) => device.esetStatus === 'inactive' || device.esetStatus === 'Inactive').length,
-        color: '#DC2626',
-        bg: 'rgba(220, 38, 38, 0.15)',
-      },
-      {
-        label: 'Missing ActivityWatch',
-        value: devices.filter((device) => device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing').length,
-        color: '#EA580C',
-        bg: 'rgba(234, 88, 12, 0.15)',
-      },
-      {
-        label: 'Unlicensed Windows',
-        value: devices.filter((device) => !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac').length,
-        color: '#CA8A04',
-        bg: 'rgba(202, 138, 4, 0.15)',
-      },
-    ],
-    [devices]
+    () => {
+      let missingEset = 0;
+      let missingAW = 0;
+      let unlicensed = 0;
+      let missingEncryption = 0;
+      let weakPassword = 0;
+
+      devices.forEach((device) => {
+        if (device.esetStatus === 'inactive' || device.esetStatus === 'Inactive') missingEset++;
+        if (device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing') missingAW++;
+        if (!device.windowsKey) unlicensed++;
+        if (!device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac') unlicensed++;
+
+
+        const emp = employees.find(e => e.id === (device.assigneeId || device.userId));
+        const pw = emp ? (emp.emailPassword || '') : '';
+        if (!PASSWORD_RULES.every(rule => rule.test(pw))) {
+          weakPassword++;
+        }
+      });
+
+      return [
+        {
+          label: 'Inactive ESET',
+          value: missingEset,
+          color: '#DC2626',
+          bg: 'rgba(220, 38, 38, 0.15)',
+        },
+        {
+          label: 'Missing ActivityWatch',
+          value: missingAW,
+          color: '#EA580C',
+          bg: 'rgba(234, 88, 12, 0.15)',
+        },
+        {
+          label: 'Unlicensed Windows',
+          value: unlicensed,
+          color: '#CA8A04',
+          bg: 'rgba(202, 138, 4, 0.15)',
+        },
+        {
+          label: 'Missing Encryption',
+          value: missingEncryption,
+          color: '#8B5CF6',
+          bg: 'rgba(139, 92, 246, 0.15)',
+        },
+        {
+          label: 'Weak Password',
+          value: weakPassword,
+          color: '#EC4899',
+          bg: 'rgba(236, 72, 153, 0.15)',
+        },
+      ];
+    },
+    [devices, employees]
   );
 
   const totalPersonnel = employees.length;
@@ -1066,7 +1123,7 @@ export default function Dashboard() {
 
         <SecurityComplianceModal isOpen={activeModal === 'Security Compliance'} onClose={() => setActiveModal(null)} devices={devices} employees={employees} />
         <ComplianceByDeptModal isOpen={activeModal === 'Compliance by Department'} onClose={() => setActiveModal(null)} complianceByDepartment={complianceByDepartment} />
-        <SecurityAlertsModal isOpen={activeModal === 'Security Alerts'} onClose={() => setActiveModal(null)} devices={devices} />
+        <SecurityAlertsModal isOpen={activeModal === 'Security Alerts'} onClose={() => setActiveModal(null)} devices={devices} employees={employees} />
 
         <RecentActivityLogsModal isOpen={activeModal === 'Recent Activity Logs'} onClose={() => setActiveModal(null)} logs={logs} />
       </Suspense>

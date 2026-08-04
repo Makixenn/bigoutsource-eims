@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Laptop, Cpu, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronRight, CheckCircle2, Edit2, Save, X, Loader2 } from 'lucide-react';
+import { Laptop, Cpu, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronRight, CheckCircle2, Edit2, Save, X, Loader2, ShieldAlert, Lock, Unlock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
@@ -17,13 +17,15 @@ import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 // sample comment
-export type AssetFieldKey = 'assigneeName' | 'pcName' | 'deviceType' | 'biosDate' | 'windowsKey' | 'rustdeskId' | 'activityWatchStatus' | 'esetStatus';
+export type AssetFieldKey = 'assigneeName' | 'pcName' | 'deviceType' | 'windowsKey' | 'rustdeskId' | 'diskEncryptionKey' | 'activityWatchStatus' | 'esetStatus';
 
 export const assetFields: Array<{ key: AssetFieldKey; label: string; width: string }> = [
-  { key: 'assigneeName', label: 'Assignee', width: 'w-[16%]' },
+  { key: 'assigneeName', label: 'Assignee', width: 'w-[14%]' },
   { key: 'pcName', label: 'PC Name', width: 'w-[12%]' },
   { key: 'deviceType', label: 'Device Type', width: 'w-[10%]' },
-  { key: 'rustdeskId', label: 'Remote ID', width: 'w-[12%]' },
+  { key: 'rustdeskId', label: 'Remote ID', width: 'w-[10%]' },
+  { key: 'windowsKey', label: 'OS License', width: 'w-[10%]' },
+  { key: 'diskEncryptionKey', label: 'Disk Encryption', width: 'w-[12%]' },
   { key: 'activityWatchStatus', label: 'Activity Watch', width: 'w-[10%]' },
   { key: 'esetStatus', label: 'ESET Status', width: 'w-[10%]' },
 ];
@@ -294,7 +296,7 @@ export default function Assets() {
       { label: 'Total Assigned', value: devices.filter((device) => device.status === 'assigned').length, icon: Laptop, color: 'text-blue-600' },
       { label: 'Unlicensed Win', value: devices.filter((device) => !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac').length, icon: Key, color: 'text-orange-600' },
       { label: 'ESET Active', value: devices.filter((device) => device.esetStatus === 'active').length, icon: ShieldCheck, color: 'text-green-600' },
-      { label: 'Missing BIOS', value: devices.filter((device) => !device.biosDate).length, icon: Cpu, color: 'text-red-600' },
+      { label: 'Missing Encryption', value: devices.filter((device) => !device.diskEncryptionKey).length, icon: Lock, color: 'text-red-600' },
     ],
     [devices]
   );
@@ -517,8 +519,11 @@ export default function Assets() {
                             isEditMode={isEditMode}
                             editContent={
                               field.key === 'assigneeName' ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-bold text-[#4B5563]">{device.assigneeName || 'Unassigned'}</span>
+                                <div className="flex flex-col gap-0.5 relative group">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-[#4B5563] group-hover:text-[#111827] transition-colors">{device.assigneeName || 'Unassigned'}</span>
+                                  </div>
+                                  <span className="text-[0.625rem] font-bold text-[#9CA3AF] uppercase tracking-wider">{device.assigneeAccount || 'No Department'}</span>
                                 </div>
                               ) : field.key === 'pcName' ? (
                                 <p className="text-sm font-black text-[#111827] font-mono px-2 py-1">{device.pcName || 'Unassigned'}</p>
@@ -529,6 +534,10 @@ export default function Assets() {
                                 </select>
                               ) : field.key === 'rustdeskId' ? (
                                 <input type="text" value={drafts[device.id]?.rustdeskId ?? (device.rustdeskId || '')} onChange={(e) => handleUpdateDraft(device.id, 'rustdeskId', formatRustdeskId(e.target.value))} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="123 456 789" />
+                              ) : field.key === 'windowsKey' ? (
+                                <input type="text" value={drafts[device.id]?.windowsKey ?? (device.windowsKey || '')} onChange={(e) => handleUpdateDraft(device.id, 'windowsKey', formatWindowsLicenseKey(e.target.value))} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827] uppercase" placeholder="XXXXX-XXXXX-XXXXX..." />
+                              ) : field.key === 'diskEncryptionKey' ? (
+                                <input type="text" value={drafts[device.id]?.diskEncryptionKey ?? (device.diskEncryptionKey || '')} onChange={(e) => handleUpdateDraft(device.id, 'diskEncryptionKey', e.target.value)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="Enter recovery key..." />
                               ) : field.key === 'activityWatchStatus' ? (
                                 <select value={drafts[device.id]?.activityWatchStatus ?? (device.activityWatchStatus || 'missing')} onChange={(e) => handleUpdateDraft(device.id, 'activityWatchStatus', e.target.value)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]">
                                   <option value="missing">Missing</option>
@@ -543,15 +552,18 @@ export default function Assets() {
                             }
                             viewContent={
                               field.key === 'assigneeName' ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-bold text-[#4B5563]">{device.assigneeName || 'Unassigned'}</span>
-                                  <Link to={`/employee/${device.assigneeId || device.id}`}><ExternalLink className="w-3 h-3 text-[#D1D5DB]" /></Link>
+                                <div className="flex flex-col gap-0.5 relative group">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-[#4B5563] group-hover:text-[#111827] transition-colors">{device.assigneeName || 'Unassigned'}</span>
+                                    <Link to={`/employee/${device.assigneeId || device.id}`}><ExternalLink className="w-3 h-3 text-[#D1D5DB] group-hover:text-[#6366F1] transition-colors" /></Link>
+                                  </div>
+                                  <span className="text-[0.625rem] font-bold text-[#9CA3AF] uppercase tracking-wider">{device.assigneeAccount || 'No Department'}</span>
                                 </div>
                               ) : field.key === 'pcName' ? (
                                 <p className="text-sm font-black text-[#111827] font-mono">{device.pcName || 'Unassigned'}</p>
                               ) : field.key === 'deviceType' ? (
                                 <span className={cn(
-                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
+                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter w-fit',
                                   device.deviceType === 'MacOS' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
                                 )}>
                                   {device.deviceType || 'Windows'}
@@ -560,18 +572,35 @@ export default function Assets() {
                                 <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
                                   <p className="text-xs font-black text-[#111827] font-mono">{device.rustdeskId || 'No Remote ID'}</p>
                                 </div>
+                              ) : field.key === 'windowsKey' ? (
+                                <span className={cn(
+                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter w-fit',
+                                  device.windowsKey ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                                )}>
+                                  {device.windowsKey ? 'Licensed' : 'Unlicensed'}
+                                </span>
+                              ) : field.key === 'diskEncryptionKey' ? (
+                                <span className={cn(
+                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter flex items-center gap-1 w-fit',
+                                  device.diskEncryptionKey ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                                )}>
+                                  {device.diskEncryptionKey ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                                  {device.diskEncryptionKey ? 'Secured' : 'Missing'}
+                                </span>
                               ) : field.key === 'activityWatchStatus' ? (
                                 <span className={cn(
-                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
-                                  device.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
+                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter flex items-center gap-1 w-fit',
+                                  device.activityWatchStatus === 'installed' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
                                 )}>
+                                  {device.activityWatchStatus === 'installed' ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
                                   {device.activityWatchStatus || 'Missing'}
                                 </span>
                               ) : field.key === 'esetStatus' ? (
                                 <span className={cn(
-                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
-                                  device.esetStatus === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
+                                  'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter flex items-center gap-1 w-fit',
+                                  device.esetStatus === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
                                 )}>
+                                  {device.esetStatus === 'active' ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
                                   {device.esetStatus || 'Inactive'}
                                 </span>
                               ) : null
