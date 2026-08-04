@@ -27,7 +27,8 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
     devices.forEach(d => {
         const isMissingEset = d.esetStatus === 'inactive' || d.esetStatus === 'Inactive';
         const isMissingAW = d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing';
-        const isUnlicensed = !d.windowsKey;
+
+        const isUnlicensed = !d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac';
         const isMissingEncryption = !d.diskEncryptionKey;
 
         const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
@@ -53,14 +54,15 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
     devices.forEach(d => {
         if (d.esetStatus === 'inactive' || d.esetStatus === 'Inactive') missingEset++;
         if (d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing') missingAw++;
-        if (!d.windowsKey) unlicensed++;
+
+        if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') unlicensed++;
         if (!d.diskEncryptionKey) missingEncryption++;
         
         const emp = employees.find(e => e.id === (d.assigneeId || d.userId));
         const pw = emp ? (emp.emailPassword || '') : '';
         if (!PASSWORD_RULES.every(rule => rule.test(pw))) {
-            missingPassword++;
-        }
+          weakPassword++;
+        }     
     });
 
     return [
@@ -90,19 +92,19 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
             if (risk !== 'Critical') risk = 'High';
         }
         if (!d.diskEncryptionKey) {
-            if (d.deviceType === 'Windows') {
-                issues.push('Missing Bitlocker');
+             if (d.deviceType === 'Windows') {
+              issues.push('Missing Bitlocker');
             } else if (d.deviceType === 'Mac' || d.deviceType === 'MacOS') {
-                issues.push('Missing Filevault');
+              issues.push('Missing Filevault');
             } else {
-                issues.push('Missing Encryption');
+              issues.push('Missing Encryption');
             }
             if (risk !== 'Critical') risk = 'High';
-        }
-        if (!d.windowsKey) {
-            issues.push('Unlicensed OS');
+          }
+          if (!d.windowsKey && d.deviceType !== 'Linux' && d.deviceType !== 'Mac') {
+           issues.push('Unlicensed OS');
             if (risk === 'Low') risk = 'Medium';
-        }
+          } 
 
         const pw = emp ? (emp.emailPassword || '') : '';
         if (!PASSWORD_RULES.every(rule => rule.test(pw))) {

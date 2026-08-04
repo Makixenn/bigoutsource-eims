@@ -552,7 +552,13 @@ function computeEvalDates(firstMonthDate?: string) {
 }
 
 function formatDateDisplay(dateStr?: string) {
-  if (!dateStr) return '-';
+  if (!dateStr) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100/90 text-gray-500 border border-gray-200/80 select-none">
+        Not set yet
+      </span>
+    );
+  }
   const cleanStr = String(dateStr).split('T')[0];
   const parts = cleanStr.split('-');
   if (parts.length !== 3) return dateStr;
@@ -1363,7 +1369,7 @@ export default function EmployeeProfile() {
                   <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter relative group overflow-hidden">
                     {employee.avatarUrl ? (
                       <img 
-                        src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} 
+                        src={employee.avatarUrl.startsWith('http') ? employee.avatarUrl : `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} 
                         alt={employee.fullName} 
                         className="w-full h-full object-cover" 
                         style={{ objectFit: 'cover' }}
@@ -2177,30 +2183,32 @@ export default function EmployeeProfile() {
                                 ) : employee.deviceType || 'Windows'}
                               </ProfileField>
 
-                              <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
-                                {editingSecrets ? (
-                                  <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                                ) : canViewSecrets ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
-                                    {employee.windowsKey && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(employee.windowsKey);
-                                          toast.success('Windows key copied to clipboard');
-                                        }}
-                                        className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
-                                        title="Copy License Key"
-                                      >
-                                        <Copy className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
-                                )}
-                              </ProfileField>
+                              {form.deviceType !== 'Linux' && form.deviceType !== 'Mac' && (
+                                <ProfileField label="Windows License Key" icon={Key} editing={editingSecrets}>
+                                  {editingSecrets ? (
+                                    <Input value={form.windowsKey} onChange={(v) => updateForm('windowsKey', v)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                                  ) : canViewSecrets ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs">{employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>}</span>
+                                      {employee.windowsKey && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(employee.windowsKey);
+                                            toast.success('Windows key copied to clipboard');
+                                          }}
+                                          className="p-1 text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md"
+                                          title="Copy License Key"
+                                        >
+                                          <Copy className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Hidden (Requires Secret Access)</span>
+                                  )}
+                                </ProfileField>
+                              )}
 
                               <div className="md:col-span-2">
                                 <ProfileField label="REMOTE ID" icon={Globe} editing={editingSecrets}>

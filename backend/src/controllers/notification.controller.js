@@ -1,16 +1,7 @@
 import { NotificationService } from '../services/notification.service.js';
-import { CronService } from '../services/cron.service.js';
 import { success } from '../utils/apiResponse.js';
 
 export const NotificationController = {
-  async triggerCron(req, res, next) {
-    try {
-      await CronService.checkEvaluations({ todayOnly: false });
-      return success(res, { success: true }, 'Triggered evaluation checks');
-    } catch (error) {
-      return next(error);
-    }
-  },
   async list(req, res, next) {
     try {
       const limit = Number.parseInt(req.query.limit, 10) || 30;

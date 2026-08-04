@@ -342,7 +342,7 @@ export default function Dashboard() {
     devices.forEach((device) => {
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
       const isMissingAW = device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing';
-      const isUnlicensed = !device.windowsKey;
+      const isUnlicensed = !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac';
       const isMissingEncryption = !device.diskEncryptionKey;
       
       const emp = employees.find(e => e.id === (device.assigneeId || device.userId));
@@ -386,7 +386,7 @@ export default function Dashboard() {
 
       const isMissingEset = device.esetStatus === 'inactive' || device.esetStatus === 'Inactive';
       const isMissingAW = device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing';
-      const isUnlicensed = !device.windowsKey;
+      const isUnlicensed = !device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac';
       const isMissingEncryption = !device.diskEncryptionKey;
       
       const pw = emp.emailPassword || '';
@@ -499,7 +499,8 @@ export default function Dashboard() {
         if (device.esetStatus === 'inactive' || device.esetStatus === 'Inactive') missingEset++;
         if (device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing') missingAW++;
         if (!device.windowsKey) unlicensed++;
-        if (!device.diskEncryptionKey) missingEncryption++;
+        if (!device.windowsKey && device.deviceType !== 'Linux' && device.deviceType !== 'Mac') unlicensed++;
+
 
         const emp = employees.find(e => e.id === (device.assigneeId || device.userId));
         const pw = emp ? (emp.emailPassword || '') : '';

@@ -61,9 +61,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const nextUser = toAppUser(apiUser);
       setUser(nextUser);
       return nextUser;
-    } catch (error) {
-      clearAuthToken();
-      setUser(null);
+    } catch (error: any) {
+      if (error?.status === 401 || error?.status === 403) {
+        clearAuthToken();
+        setUser(null);
+      }
       return null;
     }
   }, []);
