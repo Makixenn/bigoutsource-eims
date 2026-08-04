@@ -21,10 +21,10 @@ function diffInDays(futureDate, pastDate) {
 
 export const CronService = {
   start() {
-    console.log('CronService initialized. Evaluation checks scheduled for 10:00 AM daily.');
+    console.log('CronService initialized. Evaluation checks scheduled for 08:00 AM daily.');
     
-    // Run at 10:00 AM every day
-    cron.schedule('0 10 * * *', async () => {
+    // Run at 08:00 AM every day
+    cron.schedule('0 8 * * *', async () => {
       console.log('Running daily evaluation date checks...');
       try {
         await this.checkEvaluations();
@@ -128,7 +128,10 @@ export const CronService = {
 
       if (!alreadyBatched) {
         console.log(`Triggering batched notification for ${evaluationsToNotify.length} evaluations.`);
-        await NotificationService.notifyBatchedEvaluationsDue(evaluationsToNotify);
+        await NotificationService.notifyBatchedEvaluationsDue(evaluationsToNotify, { sendEmailOnly: false });
+      } else if (options.force) {
+        console.log(`Batched evaluation notifications were already sent today. Forcing email resend due to manual trigger.`);
+        await NotificationService.notifyBatchedEvaluationsDue(evaluationsToNotify, { sendEmailOnly: true });
       } else {
         console.log(`Batched evaluation notifications were already sent today.`);
       }

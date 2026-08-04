@@ -5,8 +5,18 @@ import { success } from '../utils/apiResponse.js';
 export const NotificationController = {
   async triggerCron(req, res, next) {
     try {
-      await CronService.checkEvaluations({ todayOnly: false });
+      await CronService.checkEvaluations({ todayOnly: false, force: true });
       return success(res, { success: true }, 'Triggered evaluation checks');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async triggerBirthdays(req, res, next) {
+    try {
+      const { processDailyBirthdays } = await import('../utils/scheduler.js');
+      await processDailyBirthdays();
+      return success(res, { success: true }, 'Triggered birthday checks');
     } catch (error) {
       return next(error);
     }

@@ -346,7 +346,7 @@ function formatEmployeeName(firstName = '', middleName = '', lastName = '', suff
 function normalizePhoneInput(value = '') {
   const upper = value.toUpperCase();
   if ('N/A'.startsWith(upper)) return upper;
-  return value.replace(/\D/g, '').slice(0, 11);
+  return value.replace(/[^\d+\- ()]/g, '').slice(0, 20);
 }
 
 function formatRustdeskId(value = '') {
@@ -1047,8 +1047,8 @@ export default function EmployeeProfile() {
       return;
     }
 
-    if (form.phone && form.phone.trim().toUpperCase() !== 'N/A' && form.phone.length !== 11) {
-      setFormErrors((current) => ({ ...current, phone: 'Phone number must be exactly 11 digits.' }));
+    if (form.phone && form.phone.trim().toUpperCase() !== 'N/A' && form.phone.length > 20) {
+      setFormErrors((current) => ({ ...current, phone: 'Phone number cannot exceed 20 characters.' }));
       toast.error('Please resolve the highlighted fields before saving');
       return;
     }
@@ -1876,43 +1876,14 @@ export default function EmployeeProfile() {
                               </ProfileField>
                               
                               <ProfileField label="DEPARTMENT/CAMPAIGN." icon={Briefcase} editing={editingHR}>
-                                {editingHR ? (
-                                  <div className="relative">
-                                    <Input
-                                      value={form.accountAssignment}
-                                      onChange={(v) => {
-                                        updateForm('accountAssignment', v);
-                                        setIsAccountDropdownOpen(true);
-                                      }}
-                                      onFocus={() => setIsAccountDropdownOpen(true)}
-                                      onBlur={() => setTimeout(() => setIsAccountDropdownOpen(false), 200)}
-                                      placeholder="Type or select DEPARTMENT/CAMPAIGN."
-                                    />
-                                    {isAccountDropdownOpen && accounts.length > 0 && (
-                                      <div className="absolute z-50 w-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                        {(() => {
-                                          const filtered = accounts.filter(acc => acc.name.toLowerCase().includes((form.accountAssignment || '').toLowerCase()));
-                                          if (filtered.length === 0) {
-                                            return <div className="px-4 py-3 text-sm text-gray-500 italic">Department not found. Please create it in the Departments tab first.</div>;
-                                          }
-                                          return filtered.map((acc) => (
-                                            <button
-                                              key={acc.id}
-                                              type="button"
-                                              className="w-full px-4 py-2 text-left text-xs font-bold text-[#374151] hover:bg-[#F3F4F6]"
-                                              onClick={() => {
-                                                updateForm('accountAssignment', acc.name);
-                                                setIsAccountDropdownOpen(false);
-                                              }}
-                                            >
-                                              {acc.name}
-                                            </button>
-                                          ));
-                                        })()}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
+                                  {editingHR ? (
+                                    <Select value={form.accountAssignment} onChange={(v) => updateForm('accountAssignment', v)}>
+                                      <option value="">Select a Department/Campaign</option>
+                                      {accounts.map(acc => (
+                                        <option key={acc.id} value={acc.name}>{acc.name}</option>
+                                      ))}
+                                    </Select>
+                                  ) : employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>}
                               </ProfileField>
 
                               <ProfileField label="Site Assignment" icon={MapPin} editing={editingHR}>

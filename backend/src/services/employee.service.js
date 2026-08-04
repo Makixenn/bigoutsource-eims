@@ -386,6 +386,10 @@ export const EmployeeService = {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
+
+    await NotificationService.notifyEmployeeDeleted({ employee, actor }).catch((error) => {
+      console.error('Unable to create employee-deleted notifications', error);
+    });
   },
 
   async notifyIT(id, user, meta = {}) {
