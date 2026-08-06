@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from "react-router-dom";
 import { CalendarCheck, ChevronLeft, ChevronRight, Search, BarChart3, AlertCircle } from "lucide-react";
 import { PageLayout } from "@/src/components/layout/PageLayout";
+import { Pagination } from "@/src/components/Pagination";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import { employeeService } from "@/src/features/employees/services/employeeService";
@@ -86,6 +88,8 @@ export default function Evaluations() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
 
   useEffect(() => {
     if (!can("employees.evaluations.view")) {
@@ -158,6 +162,18 @@ export default function Evaluations() {
       return hasEvalThisMonth;
     }).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
   }, [employees, currentDate, searchTerm, statusFilter]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, currentDate]);
+
+  const totalPages = Math.ceil(filteredEmployees.length / recordsPerPage) || 1;
+  
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    return filteredEmployees.slice(startIndex, startIndex + recordsPerPage);
+  }, [filteredEmployees, currentPage, recordsPerPage]);
 
   const analyticsStats = useMemo(() => {
     let dueThisMonth = 0;
@@ -240,8 +256,16 @@ export default function Evaluations() {
 
   return (
     <PageLayout title="Evaluations">
-      <div className="flex flex-col gap-6">
-        
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key="evaluations-content"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -15 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex flex-col gap-6"
+        >
+          
         {/* Analytics Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Stat Cards */}
@@ -346,41 +370,61 @@ export default function Evaluations() {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-[#F9FAFB] text-xs uppercase text-gray-500 font-bold border-b border-[#E5E7EB]">
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl shadow-sm overflow-hidden overflow-x-auto relative">
+            <table className="w-full text-left table-fixed border-collapse">
+              <thead className="sticky top-0 z-10 bg-[#F9FAFB] shadow-[0_1px_0_0_#E5E7EB]">
                 <tr>
-                  <th className="px-6 py-4">Employee</th>
+                  <th className="h-14 px-6 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle">Employee</th>
                   {MILESTONES.map(m => (
-                    <th key={m.field} className="px-6 py-4 whitespace-nowrap">{m.label}</th>
+                    <th key={m.field} className="h-14 px-6 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle whitespace-nowrap">{m.label}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[#E5E7EB]">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                      Loading evaluations...
-                    </td>
-                  </tr>
+                  [...Array(5)].map((_, i) => (
+                    <motion.tr 
+                      key={`skel-${i}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="animate-pulse"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-3 w-24 bg-gray-100 rounded"></div>
+                      </td>
+                      {[...Array(5)].map((_, j) => (
+                        <td key={`skel-td-${i}-${j}`} className="px-6 py-4">
+                          <div className="h-4 w-20 bg-gray-100 rounded mb-2"></div>
+                          <div className="h-5 w-16 bg-gray-200 rounded-full"></div>
+                        </td>
+                      ))}
+                    </motion.tr>
+                  ))
                 ) : filteredEmployees.length === 0 ? (
-                  <tr>
+                  <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <CalendarCheck className="w-8 h-8 text-gray-300" />
                         <p className="text-gray-500 font-medium">No evaluations scheduled for {monthYearLabel}</p>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ) : (
-                  filteredEmployees.map(emp => (
-                    <tr key={emp.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <Link to={`/employee/${emp.id}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                  paginatedEmployees.map((emp, index) => (
+                    <motion.tr 
+                      key={emp.id} 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.03 }}
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="px-6 py-4 align-middle">
+                        <Link to={`/employee/${emp.id}`} className="font-bold text-[#111827] text-sm hover:text-blue-600 transition-colors">
                           {emp.fullName || 'Unnamed Employee'}
                         </Link>
-                        <div className="text-xs text-gray-500 mt-0.5">{emp.accountAssignment || '-'}</div>
+                        <div className="text-xs font-medium text-[#6B7280] mt-0.5">{emp.accountAssignment || '-'}</div>
                       </td>
                       {MILESTONES.map(m => {
                         const dateStr = emp[m.field as keyof EmployeeRecord] as string | undefined;
@@ -388,7 +432,7 @@ export default function Evaluations() {
                         const isThisMonth = dateStr && new Date(dateStr).getMonth() === currentDate.getMonth() && new Date(dateStr).getFullYear() === currentDate.getFullYear();
                         
                         return (
-                          <td key={m.field} className={cn("px-6 py-4", isThisMonth ? "bg-blue-50/30" : "")}>
+                          <td key={m.field} className={cn("px-6 py-4 align-middle", isThisMonth ? "bg-blue-50/30" : "")}>
                             {dateStr ? (
                               <div className="flex flex-col gap-1.5 items-start">
                                 <span className={cn("text-sm font-medium whitespace-nowrap", isThisMonth ? "text-gray-900" : "text-gray-400")}>
@@ -402,15 +446,31 @@ export default function Evaluations() {
                           </td>
                         );
                       })}
-                    </tr>
+                    </motion.tr>
                   ))
                 )}
               </tbody>
             </table>
-          </div>
+            
+            <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest cursor-default select-none text-center sm:text-left">
+                  Total Evaluations: {filteredEmployees.length}
+                </p>
+                <p className="mt-1 text-xs font-black text-[#111827] cursor-default select-none text-center sm:text-left">
+                  Page {currentPage} of {totalPages}
+                </p>
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
         </div>
 
-      </div>
+        </motion.div>
+      </AnimatePresence>
     </PageLayout>
   );
 }
