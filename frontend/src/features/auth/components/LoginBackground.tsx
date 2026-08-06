@@ -130,11 +130,11 @@ export const LoginBackground: React.FC<LoginBackgroundProps> = ({ children }) =>
       {/* Canvas Layer */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 z-0 blur-[2px]"
+        className="fixed inset-0 z-0 blur-[2px] pointer-events-none"
       />
       {/* Light radial vignette */}
       <div 
-        className="absolute inset-0 z-0 pointer-events-none" 
+        className="fixed inset-0 z-0 pointer-events-none" 
         style={{ background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.04) 100%)' }} 
       />
       
