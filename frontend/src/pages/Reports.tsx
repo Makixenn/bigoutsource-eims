@@ -675,6 +675,7 @@ type ReportDef = {
   color: string;
   generate: (params?: any) => Promise<ReportData>;
   requiresDepartmentScope?: boolean;
+  requiredExportCapability: Capability;
 };
 
 const REPORTS: ReportDef[] = [
@@ -685,6 +686,7 @@ const REPORTS: ReportDef[] = [
     color: 'text-blue-600 bg-blue-50 border-blue-100 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white',
     generate: generateEmployeeMasterList,
     requiresDepartmentScope: true,
+    requiredExportCapability: 'reports.export.master_list',
   },
   {
     title: 'Workforce Analytics',
@@ -692,6 +694,7 @@ const REPORTS: ReportDef[] = [
     icon: TrendingUp,
     color: 'text-cyan-600 bg-cyan-50 border-cyan-100 group-hover:bg-cyan-600 group-hover:border-cyan-600 group-hover:text-white',
     generate: generateWorkforceAnalytics,
+    requiredExportCapability: 'reports.export.analytics',
   },
   {
     title: 'Department Roster',
@@ -700,6 +703,7 @@ const REPORTS: ReportDef[] = [
     color: 'text-blue-600 bg-blue-50 border-blue-100 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white',
     generate: generateDepartmentRoster,
     requiresDepartmentScope: true,
+    requiredExportCapability: 'reports.export.department_roster',
   },
   {
     title: 'IT Asset & License Report',
@@ -708,6 +712,7 @@ const REPORTS: ReportDef[] = [
     color: 'text-purple-600 bg-purple-50 border-purple-100 group-hover:bg-purple-600 group-hover:border-purple-600 group-hover:text-white',
     generate: generateITAssetReport,
     requiresDepartmentScope: true,
+    requiredExportCapability: 'reports.export.it_asset',
   },
   {
     title: 'Site Occupancy Report',
@@ -715,6 +720,7 @@ const REPORTS: ReportDef[] = [
     icon: BarChart,
     color: 'text-emerald-600 bg-emerald-50 border-emerald-100 group-hover:bg-emerald-600 group-hover:border-emerald-600 group-hover:text-white',
     generate: generateSiteOccupancy,
+    requiredExportCapability: 'reports.export.site_occupancy',
   },
   {
     title: 'Security Compliance Audit',
@@ -722,6 +728,7 @@ const REPORTS: ReportDef[] = [
     icon: ShieldAlert,
     color: 'text-red-600 bg-red-50 border-red-100 group-hover:bg-red-600 group-hover:border-red-600 group-hover:text-white',
     generate: generateSecurityAudit,
+    requiredExportCapability: 'reports.export.security_audit',
   },
   {
     title: 'Recent Terminations & Archives',
@@ -729,6 +736,7 @@ const REPORTS: ReportDef[] = [
     icon: Trash2,
     color: 'text-amber-600 bg-amber-50 border-amber-100 group-hover:bg-amber-600 group-hover:border-amber-600 group-hover:text-white',
     generate: generateTerminationsReport,
+    requiredExportCapability: 'reports.export.terminations',
   },
   {
     title: 'System Audit History',
@@ -737,6 +745,7 @@ const REPORTS: ReportDef[] = [
     color: 'text-slate-600 bg-slate-50 border-slate-100 group-hover:bg-slate-600 group-hover:border-slate-600 group-hover:text-white',
     generate: generateAuditHistory,
     requiresDepartmentScope: true,
+    requiredExportCapability: 'reports.export.system_audit',
   },
   {
     title: 'Employee Evaluations Report',
@@ -745,6 +754,7 @@ const REPORTS: ReportDef[] = [
     color: 'text-orange-600 bg-orange-50 border-orange-100 group-hover:bg-orange-600 group-hover:border-orange-600 group-hover:text-white',
     generate: generateEvaluationReport,
     requiresDepartmentScope: true,
+    requiredExportCapability: 'reports.export.evaluations',
   }
 ];
 
@@ -894,7 +904,7 @@ export default function Reports() {
           </motion.div>
         ) : (
           <motion.div key="content-reports" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {REPORTS.map((report, index) => {
+            {REPORTS.filter(report => can(report.requiredExportCapability)).map((report, index) => {
               const isGenerating = generating === report.title;
               const isDisabled = generating !== null;
 
@@ -1170,9 +1180,9 @@ export default function Reports() {
                               const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'LMS Account', 'MAC Addresses'];
                               const secretFieldNames = ['Email Password', 'Disk Encryption Key'];
                               
-                              const canViewHr = can('employees.edit') || can('employees.create.hr_fields.required');
-                              const canViewIt = can('employees.it.view');
-                              const canViewSecrets = can('employees.secrets.view');
+                              const canViewHr = can('reports.export.hr');
+                              const canViewIt = can('reports.export.it');
+                              const canViewSecrets = can('reports.export.secrets');
 
                               const allKeys = new Set<string>();
                               previewData.sheets.forEach(sheet => sheet.rows.forEach(row => Object.keys(row).forEach(k => allKeys.add(k))));
@@ -1215,9 +1225,9 @@ export default function Reports() {
                             const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'LMS Account', 'MAC Addresses'];
                             const secretFieldNames = ['Email Password', 'Disk Encryption Key'];
 
-                            const canViewHr = can('employees.edit') || can('employees.create.hr_fields.required');
-                            const canViewIt = can('employees.it.view');
-                            const canViewSecrets = can('employees.secrets.view');
+                            const canViewHr = can('reports.export.hr');
+                            const canViewIt = can('reports.export.it');
+                            const canViewSecrets = can('reports.export.secrets');
 
                             const allAvailableColumns = Array.from(new Set(previewData.sheets.flatMap(s => s.rows.flatMap(r => Object.keys(r)))));
                             
