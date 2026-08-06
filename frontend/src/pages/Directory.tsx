@@ -2267,9 +2267,9 @@ export default function Directory() {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3">
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full xl:flex-1">
-              <div className="relative flex-1 w-full lg:min-w-[300px]">
+          <div className="flex items-center justify-between gap-3 w-full overflow-x-auto pb-2">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="relative flex-1 min-w-[150px]">
                 <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -2279,7 +2279,7 @@ export default function Directory() {
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
                 />
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <FilterDropdown
                   value={siteFilter}
                   onChange={setSiteFilter}
@@ -2308,7 +2308,7 @@ export default function Directory() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 w-full xl:w-auto">
+            <div className="flex items-center gap-1.5 shrink-0">
               {can("imports.manage") && (
                 <>
                   <input
