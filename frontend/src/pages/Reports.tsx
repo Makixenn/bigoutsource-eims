@@ -1166,9 +1166,25 @@ export default function Reports() {
                         >
                           <button
                             onClick={() => {
+                              const commonFieldNames = ['Employee ID', 'Full Name', 'First Name', 'Last Name', 'Status', 'Job Title', 'Department/Campaign', 'Department', 'Account', 'AccountAssignment', 'Site', 'BO Email'];
+                              const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'LMS Account', 'MAC Addresses'];
+                              const secretFieldNames = ['Email Password', 'Disk Encryption Key'];
+                              
+                              const canViewHr = can('employees.edit') || can('employees.create.hr_fields.required');
+                              const canViewIt = can('employees.it.view');
+                              const canViewSecrets = can('employees.secrets.view');
+
                               const allKeys = new Set<string>();
                               previewData.sheets.forEach(sheet => sheet.rows.forEach(row => Object.keys(row).forEach(k => allKeys.add(k))));
-                              setSelectedColumns(Array.from(allKeys));
+                              
+                              const allowedKeys = Array.from(allKeys).filter(col => {
+                                if (commonFieldNames.includes(col)) return true;
+                                if (itFieldNames.includes(col)) return canViewIt;
+                                if (secretFieldNames.includes(col)) return canViewSecrets;
+                                return canViewHr;
+                              });
+                              
+                              setSelectedColumns(allowedKeys);
                             }}
                             className="text-xs font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
                           >
@@ -1195,10 +1211,20 @@ export default function Reports() {
                       >
                         <div className="p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] space-y-6">
                           {(() => {
+                            const commonFieldNames = ['Employee ID', 'Full Name', 'First Name', 'Last Name', 'Status', 'Job Title', 'Department/Campaign', 'Department', 'Account', 'AccountAssignment', 'Site', 'BO Email'];
+                            const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'LMS Account', 'MAC Addresses'];
+                            const secretFieldNames = ['Email Password', 'Disk Encryption Key'];
+
+                            const canViewHr = can('employees.edit') || can('employees.create.hr_fields.required');
+                            const canViewIt = can('employees.it.view');
+                            const canViewSecrets = can('employees.secrets.view');
+
                             const allAvailableColumns = Array.from(new Set(previewData.sheets.flatMap(s => s.rows.flatMap(r => Object.keys(r)))));
-                            const itFieldNames = ['PC Name', 'Remote ID', 'ESET Status', 'Activity Watch', 'Windows Key', 'Disk Encryption Key', 'BIOS Date', 'Outlook Email', 'Google Account', 'Teams Account', 'Mattermost Account', 'Email Password', 'LMS Account', 'MAC Addresses'];
-                            const hrColumns = allAvailableColumns.filter(c => !itFieldNames.includes(c));
+                            
+                            const commonColumns = allAvailableColumns.filter(c => commonFieldNames.includes(c));
                             const itColumns = allAvailableColumns.filter(c => itFieldNames.includes(c));
+                            const secretColumns = allAvailableColumns.filter(c => secretFieldNames.includes(c));
+                            const hrColumns = allAvailableColumns.filter(c => !commonFieldNames.includes(c) && !itFieldNames.includes(c) && !secretFieldNames.includes(c));
 
                             const renderColumnButton = (col: string) => {
                               const isSelected = selectedColumns.includes(col);
@@ -1229,19 +1255,35 @@ export default function Reports() {
 
                             return (
                               <>
-                                {hrColumns.length > 0 && (
+                                {commonColumns.length > 0 && (
                                   <div>
-                                    <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">EMPLOYEE INFORMATION</h4>
+                                    <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">COMMON INFORMATION</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                      {commonColumns.map(renderColumnButton)}
+                                    </div>
+                                  </div>
+                                )}
+                                {canViewHr && hrColumns.length > 0 && (
+                                  <div>
+                                    <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">HR INFORMATION</h4>
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                       {hrColumns.map(renderColumnButton)}
                                     </div>
                                   </div>
                                 )}
-                                {itColumns.length > 0 && (
+                                {canViewIt && itColumns.length > 0 && (
                                   <div>
                                     <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">IT INFORMATION</h4>
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                       {itColumns.map(renderColumnButton)}
+                                    </div>
+                                  </div>
+                                )}
+                                {canViewSecrets && secretColumns.length > 0 && (
+                                  <div>
+                                    <h4 className="text-xs font-black text-[#9CA3AF] uppercase tracking-widest mb-3 px-1">SECRETS</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                      {secretColumns.map(renderColumnButton)}
                                     </div>
                                   </div>
                                 )}
