@@ -75,6 +75,21 @@ const NOTIF_SUB_CAPS = [
   'notifications.system.export_alerts',
 ];
 
+const REPORTS_SUB_CAPS = [
+  'reports.export.master_list',
+  'reports.export.analytics',
+  'reports.export.department_roster',
+  'reports.export.it_asset',
+  'reports.export.site_occupancy',
+  'reports.export.security_audit',
+  'reports.export.terminations',
+  'reports.export.system_audit',
+  'reports.export.evaluations',
+  'reports.export.hr',
+  'reports.export.it',
+  'reports.export.secrets',
+];
+
 type SegControlState = 'hidden' | 'optional' | 'required';
 
 function SegmentedControl({
@@ -159,7 +174,7 @@ export function CapabilityChecklist({
   const grouped = useMemo(() => {
     const byDomain = new Map<string, CapabilityItem[]>();
     for (const item of catalog) {
-      if (ONBOARDING_SUB_CAPS.includes(item.key) || NOTIF_SUB_CAPS.includes(item.key)) continue; // skip rendering them as normal checkboxes
+      if (ONBOARDING_SUB_CAPS.includes(item.key) || NOTIF_SUB_CAPS.includes(item.key) || REPORTS_SUB_CAPS.includes(item.key)) continue; // skip rendering them as normal checkboxes
       const domain = domainOf(item.key);
       if (!byDomain.has(domain)) byDomain.set(domain, []);
       byDomain.get(domain)!.push(item);
@@ -316,6 +331,72 @@ export function CapabilityChecklist({
     );
   };
 
+  const renderReportsSubCaps = () => {
+    const subCaps = catalog.filter(c => REPORTS_SUB_CAPS.includes(c.key));
+    if (subCaps.length === 0) return null;
+    
+    const categories: Record<string, CapabilityItem[]> = {
+      'Report Access Controls': subCaps.filter(c => !['hr', 'it', 'secrets'].includes(c.key.split('.').pop()!)),
+      'Global Column Controls': subCaps.filter(c => ['hr', 'it', 'secrets'].includes(c.key.split('.').pop()!)),
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        className="overflow-hidden"
+      >
+        <div className="mt-4 ml-10 space-y-6 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB] p-4 shadow-inner">
+          {Object.entries(categories).map(([catName, items]) => {
+            if (items.length === 0) return null;
+            return (
+              <div key={catName}>
+                <h5 className="mb-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
+                  {catName}
+                </h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {items.map(sub => {
+                    const checked = selected.includes(sub.key);
+                    return (
+                      <label
+                        key={sub.key}
+                        className={cn(
+                          'flex items-center gap-3 rounded-xl border p-3 transition-colors',
+                          readOnly ? 'cursor-not-allowed opacity-70 border-[#E5E7EB]' : 'cursor-pointer hover:border-[#D1D5DB] hover:bg-white',
+                          checked ? 'border-[#111827] bg-white shadow-sm' : 'border-[#E5E7EB] bg-[#F9FAFB]'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-colors',
+                            checked ? 'border-[#111827] bg-[#111827]' : 'border-[#D1D5DB] bg-white'
+                          )}
+                        >
+                          {checked && <Check className="h-3 w-3 text-white" />}
+                        </span>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={checked}
+                          disabled={readOnly}
+                          onChange={() => onToggle(sub.key)}
+                        />
+                        <span className={cn('text-xs font-bold', checked ? 'text-[#111827]' : 'text-[#4B5563]')}>
+                          {sub.label.replace(/^Export /, '')}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       {grouped.map((group) => (
@@ -358,10 +439,20 @@ export function CapabilityChecklist({
                           const subCaps = catalog.filter(c => NOTIF_SUB_CAPS.includes(c.key) && c.key.startsWith(item.key + '.'));
                           subCaps.forEach(sub => {
                             if (!checked && !selected.includes(sub.key)) {
-                              // Turning ON: select all children
                               onToggle(sub.key);
                             } else if (checked && selected.includes(sub.key)) {
-                              // Turning OFF: unselect all children
+                              onToggle(sub.key);
+                            }
+                          });
+                        }
+
+                        // Auto-toggle sub-capabilities for reports.export
+                        if (item.key === 'reports.export') {
+                          const subCaps = catalog.filter(c => REPORTS_SUB_CAPS.includes(c.key));
+                          subCaps.forEach(sub => {
+                            if (!checked && !selected.includes(sub.key)) {
+                              onToggle(sub.key);
+                            } else if (checked && selected.includes(sub.key)) {
                               onToggle(sub.key);
                             }
                           });
@@ -383,6 +474,7 @@ export function CapabilityChecklist({
                   <AnimatePresence>
                     {isEmployeeCreate && checked && renderProgressiveDisclosure()}
                     {(item.key === 'notifications.hr_action' || item.key === 'notifications.it_action' || item.key === 'notifications.system') && checked && renderNotifSubCaps(item.key)}
+                    {item.key === 'reports.export' && checked && renderReportsSubCaps()}
                   </AnimatePresence>
                 </div>
               );
