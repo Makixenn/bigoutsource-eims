@@ -51,7 +51,6 @@ const NOTIF_SUB_CAPS = [
   'notifications.hr_action.employeeStatus',
   'notifications.hr_action.dateHired',
   'notifications.hr_action.archive',
-  'notifications.hr_action.daily_birthdays',
   'notifications.hr_action.evaluations',
 
   // Accounts & IT Security

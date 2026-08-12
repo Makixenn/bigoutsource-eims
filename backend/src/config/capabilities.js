@@ -72,7 +72,6 @@ export const CAPABILITIES = {
   'notifications.hr_action.emergencyContact': 'Notify on Emergency Contact updates',
   'notifications.hr_action.emergencyContactNumber': 'Notify on Emergency Contact Number updates',
   'notifications.hr_action.archive': 'Notify on Archive Actions',
-  'notifications.hr_action.daily_birthdays': 'Receive Daily Birthday Alerts',
   'notifications.hr_action.evaluations': 'Notify on Evaluation Dates updates',
   'notifications.it_action': 'Receive IT action required notifications',
   'notifications.it_action.provisioning': 'Notify on IT Provisioning handoffs',
@@ -133,7 +132,7 @@ export const ROLE_CAPABILITIES = {
     'reports.view', 'reports.export',
     'auditlogs.view',
     'notifications.hr_action',
-    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.position', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.nickname', 'notifications.hr_action.sex', 'notifications.hr_action.civilStatus', 'notifications.hr_action.sssNo', 'notifications.hr_action.tinNo', 'notifications.hr_action.philhealthNo', 'notifications.hr_action.pagibigNo', 'notifications.hr_action.personalEmail', 'notifications.hr_action.mainContact', 'notifications.hr_action.emergencyContact', 'notifications.hr_action.emergencyContactNumber', 'notifications.hr_action.archive', 'notifications.hr_action.daily_birthdays', 'notifications.hr_action.evaluations',
+    'notifications.hr_action.accountAssignment', 'notifications.hr_action.site', 'notifications.hr_action.position', 'notifications.hr_action.status', 'notifications.hr_action.employeeStatus', 'notifications.hr_action.dateHired', 'notifications.hr_action.birthDate', 'notifications.hr_action.phoneNumber', 'notifications.hr_action.address', 'notifications.hr_action.fullName', 'notifications.hr_action.nickname', 'notifications.hr_action.sex', 'notifications.hr_action.civilStatus', 'notifications.hr_action.sssNo', 'notifications.hr_action.tinNo', 'notifications.hr_action.philhealthNo', 'notifications.hr_action.pagibigNo', 'notifications.hr_action.personalEmail', 'notifications.hr_action.mainContact', 'notifications.hr_action.emergencyContact', 'notifications.hr_action.emergencyContactNumber', 'notifications.hr_action.archive', 'notifications.hr_action.evaluations',
     'notifications.employee_deleted'
   ],
   it_admin: [

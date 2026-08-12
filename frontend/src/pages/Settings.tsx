@@ -28,6 +28,7 @@ import { authService } from '@/src/features/auth/services/authService';
 import { settingsService } from '@/src/features/settings/services/settingsService';
 import { userService } from '@/src/services/userService';
 import { PASSWORD_RULES } from '@/src/lib/utils';
+import { apiRequest } from '@/src/lib/api';
 
 
 type SettingsTab = 'profile' | 'notifications' | 'password';

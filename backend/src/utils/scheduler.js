@@ -29,7 +29,7 @@ export async function processDailyBirthdays() {
     const hrAdmins = [];
     for (const u of allUsers) {
       const capabilities = await RoleService.resolveUserCapabilities(u);
-      if (capabilities.includes('notifications.hr_action.daily_birthdays')) {
+      if (capabilities.includes('notifications.hr_action.birthDate')) {
         hrAdmins.push(u);
       }
     }
@@ -97,14 +97,21 @@ export async function processDailyBirthdays() {
       </div>
     `;
 
+    const emailPromises = [];
     for (const admin of hrAdmins) {
       if (admin.email) {
-        await EmailService.sendRawEmail(
-          admin.email,
-          `🎂 Today's Birthdays - ${birthdayEmployees.length} employee(s)`,
-          emailHtml
-        ).catch(console.error);
+        emailPromises.push(
+          EmailService.sendRawEmail(
+            admin.email,
+            `🎂 Today's Birthdays - ${birthdayEmployees.length} employee(s)`,
+            emailHtml
+          )
+        );
       }
+    }
+    
+    if (emailPromises.length > 0) {
+      Promise.allSettled(emailPromises).catch(console.error);
     }
     console.log(`Birthday email sent to ${hrAdmins.length} HR admin(s).`);
   } catch (error) {
