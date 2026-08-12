@@ -1608,11 +1608,11 @@ export default function EmployeeProfile() {
                           } else if (!employee.isReadyForArchive) {
                             buttonText = 'Archive Request';
                             buttonColor = 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20';
-                            isDisabled = !isSuperAdmin && !canEditIT;
+                            isDisabled = !isSuperAdmin && !can('archiving.initiate');
                           } else {
                             buttonText = 'Finalize Archive';
                             buttonColor = 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20';
-                            isDisabled = !isSuperAdmin && (!canArchivePermission || !canEditHR);
+                            isDisabled = !isSuperAdmin && !can('archiving.finalize');
                           }
 
                           if (!canArchiveEmployee || (isDisabled && !isSuperAdmin)) return null;
