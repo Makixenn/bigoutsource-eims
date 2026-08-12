@@ -1,5 +1,6 @@
 import { NotificationService } from '../services/notification.service.js';
 import { success } from '../utils/apiResponse.js';
+import { CronService } from '../services/cron.service.js';
 
 export const NotificationController = {
   async triggerCron(req, res, next) {

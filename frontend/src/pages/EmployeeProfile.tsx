@@ -2716,12 +2716,18 @@ export default function EmployeeProfile() {
                   {archiveIntent === 'archive' && (archiveStep === 2 || !employee.isReadyForArchive) && (
                     <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-right-4">
                       {!employee.isReadyForArchive ? (
-                        activeITAccountKeys.map(acc => (
-                          <label key={acc.key} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={itCheckboxes[acc.key] || false} onChange={(e) => setItCheckboxes(prev => ({ ...prev, [acc.key]: e.target.checked }))} />
-                            <span className="text-sm font-bold text-gray-700">{acc.label}</span>
-                          </label>
-                        ))
+                        activeITAccountKeys.length > 0 ? (
+                          activeITAccountKeys.map(acc => (
+                            <label key={acc.key} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                              <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={itCheckboxes[acc.key] || false} onChange={(e) => setItCheckboxes(prev => ({ ...prev, [acc.key]: e.target.checked }))} />
+                              <span className="text-sm font-bold text-gray-700">{acc.label}</span>
+                            </label>
+                          ))
+                        ) : (
+                          <div className="text-sm font-bold text-gray-500 italic p-3 text-center border rounded-xl bg-gray-50">
+                            No IT accounts assigned to this employee. You can proceed with the archive request.
+                          </div>
+                        )
                       ) : (
                         <>
                           <label className={cn("flex items-center gap-3 p-3 border rounded-xl transition-colors", employee.archiveInitiator === 'IT' ? "bg-gray-100 opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-gray-50")}>
@@ -2783,7 +2789,7 @@ export default function EmployeeProfile() {
                     const isAnyHrChecked = Boolean(clearanceCheckboxes.it || clearanceCheckboxes.hr || clearanceCheckboxes.operations || clearanceCheckboxes.finance);
                     const isAnyItChecked = activeITAccountKeys.length > 0 
                       ? activeITAccountKeys.some(acc => itCheckboxes[acc.key])
-                      : isAnyHrChecked;
+                      : true;
 
                     const isBtnDisabled = isArchiving || (
                       archiveIntent === 'unarchive'
