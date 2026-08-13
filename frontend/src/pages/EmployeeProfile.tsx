@@ -75,7 +75,7 @@ type EmployeeForm = {
   emailPassword: string;
   lmsAccount: string;
   status: 'active' | 'inactive' | 'separated' | 'floating';
-  employeeStatus: 'Regular' | 'Probationary' | 'Fix-Term' | string;
+  employeeStatus: 'Regular' | 'Probationary' | 'Fixed-Term' | string;
   siteId: string;
   site: string;
   pcName: string;
@@ -121,6 +121,7 @@ type EmployeeForm = {
   evalThirdMonth?: string;
   evalFifthMonth?: string;
   evalSixthMonth?: string;
+  eval180Days?: string;
   evalAnniversary?: string;
   macAddresses: { mac: string; type: string; os: string; specs: string }[];
   idIssuance?: string;
@@ -184,6 +185,7 @@ const emptyEmployee: EmployeeForm = {
   evalThirdMonth: '',
   evalFifthMonth: '',
   evalSixthMonth: '',
+  eval180Days: '',
   evalAnniversary: '',
   macAddresses: [],
   idIssuance: '',
@@ -219,6 +221,12 @@ const editableFields: Array<keyof EmployeeForm> = [
   'separationDate',
   'separationReason',
   'position',
+  'evalFirstMonth',
+  'evalThirdMonth',
+  'evalFifthMonth',
+  'evalSixthMonth',
+  'eval180Days',
+  'evalAnniversary',
   'nickname',
   'sex',
   'civilStatus',
@@ -514,21 +522,25 @@ function actorLabel(log: any) {
   return log.userName || 'System';
 }
 
-function computeEvalDates(firstMonthDate?: string) {
-  if (!firstMonthDate) {
+function computeEvalDates(dateHired?: string) {
+  if (!dateHired) {
     return {
+      evalFirstMonth: '',
       evalThirdMonth: '',
       evalFifthMonth: '',
       evalSixthMonth: '',
+      eval180Days: '',
       evalAnniversary: '',
     };
   }
-  const parts = firstMonthDate.split('T')[0].split('-');
+  const parts = dateHired.split('T')[0].split('-');
   if (parts.length !== 3) {
     return {
+      evalFirstMonth: '',
       evalThirdMonth: '',
       evalFifthMonth: '',
       evalSixthMonth: '',
+      eval180Days: '',
       evalAnniversary: '',
     };
   }
@@ -537,31 +549,34 @@ function computeEvalDates(firstMonthDate?: string) {
   const day = parseInt(parts[2], 10);
   if (isNaN(year) || isNaN(month) || isNaN(day)) {
     return {
+      evalFirstMonth: '',
       evalThirdMonth: '',
       evalFifthMonth: '',
       evalSixthMonth: '',
+      eval180Days: '',
       evalAnniversary: '',
     };
   }
-  const addMonths = (m: number) => {
-    const d = new Date(Date.UTC(year, month - 1 + m, day));
-    return d.toISOString().split('T')[0];
+  const addDays = (d: number) => {
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + d);
+    return date.toISOString().split('T')[0];
   };
 
   return {
-    evalThirdMonth: addMonths(2),
-    evalFifthMonth: addMonths(4),
-    evalSixthMonth: addMonths(5),
-    evalAnniversary: addMonths(11),
+    evalFirstMonth: addDays(30),
+    evalThirdMonth: addDays(60),
+    evalFifthMonth: addDays(120),
+    evalSixthMonth: addDays(150),
+    eval180Days: addDays(180),
+    evalAnniversary: addDays(365),
   };
 }
 
 function formatDateDisplay(dateStr?: string) {
   if (!dateStr) {
     return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100/90 text-gray-500 border border-gray-200/80 select-none">
-        Not set yet
-      </span>
+      <span className="text-[#9CA3AF]">Not Set</span>
     );
   }
   const cleanStr = String(dateStr).split('T')[0];
@@ -575,8 +590,8 @@ function formatDateDisplay(dateStr?: string) {
 function normalizeEmployee(emp: any): EmployeeForm {
   const fullName = emp?.fullName || '';
   const nameParts = parseEmployeeName(fullName);
-  const evalFirstMonth = emp?.evalFirstMonth || emp?.eval_first_month || '';
-  const computedEval = computeEvalDates(evalFirstMonth);
+  const dateHired = emp?.dateHired || emp?.date_hired || '';
+  const computedEval = computeEvalDates(dateHired);
 
   return {
     employeeNumber: emp?.employeeNumber || emp?.employeeId || '',
@@ -629,11 +644,12 @@ function normalizeEmployee(emp: any): EmployeeForm {
     provisioningStatus: emp?.provisioningStatus || 'pending_hr',
     muteNotification: false,
     googleAccount: emp?.googleAccount || '',
-    evalFirstMonth,
-    evalThirdMonth: computedEval.evalThirdMonth || emp?.evalThirdMonth || emp?.eval_third_month || '',
-    evalFifthMonth: computedEval.evalFifthMonth || emp?.evalFifthMonth || emp?.eval_fifth_month || '',
-    evalSixthMonth: computedEval.evalSixthMonth || emp?.evalSixthMonth || emp?.eval_sixth_month || '',
-    evalAnniversary: computedEval.evalAnniversary || emp?.evalAnniversary || emp?.eval_anniversary || '',
+    evalFirstMonth: emp?.evalFirstMonth || emp?.eval_first_month || computedEval.evalFirstMonth || '',
+    evalThirdMonth: emp?.evalThirdMonth || emp?.eval_third_month || computedEval.evalThirdMonth || '',
+    evalFifthMonth: emp?.evalFifthMonth || emp?.eval_fifth_month || computedEval.evalFifthMonth || '',
+    evalSixthMonth: emp?.evalSixthMonth || emp?.eval_sixth_month || computedEval.evalSixthMonth || '',
+    eval180Days: emp?.eval180Days || emp?.eval_180_days || computedEval.eval180Days || '',
+    evalAnniversary: emp?.evalAnniversary || emp?.eval_anniversary || computedEval.evalAnniversary || '',
     macAddresses: Array.isArray(emp?.macAddresses) ? emp.macAddresses : (emp?.mac_addresses ? (Array.isArray(emp.mac_addresses) ? emp.mac_addresses : []) : []),
 
   };
@@ -977,11 +993,13 @@ export default function EmployeeProfile() {
         }
       }
 
-      if (field === 'evalFirstMonth') {
+      if (field === 'dateHired') {
         const computed = computeEvalDates(value);
+        nextForm.evalFirstMonth = computed.evalFirstMonth;
         nextForm.evalThirdMonth = computed.evalThirdMonth;
         nextForm.evalFifthMonth = computed.evalFifthMonth;
         nextForm.evalSixthMonth = computed.evalSixthMonth;
+        nextForm.eval180Days = computed.eval180Days;
         nextForm.evalAnniversary = computed.evalAnniversary;
       }
 
@@ -1171,7 +1189,8 @@ export default function EmployeeProfile() {
       } else {
         if (archiveStep === 2) {
           const requiresOps = isInternalAccount;
-          if (!clearanceCheckboxes.it || !clearanceCheckboxes.hr || (requiresOps && !clearanceCheckboxes.operations) || !clearanceCheckboxes.finance) {
+          const requiresFinance = archiveStatusReason !== 'floating';
+          if (!clearanceCheckboxes.it || !clearanceCheckboxes.hr || (requiresOps && !clearanceCheckboxes.operations) || (requiresFinance && !clearanceCheckboxes.finance)) {
             toast.error("All applicable department clearances must be checked to proceed.");
             return;
           }
@@ -1223,7 +1242,7 @@ export default function EmployeeProfile() {
             archive_it_clearance: true,
             archive_hr_clearance: true,
             archive_ops_clearance: isInternalAccount ? true : false,
-            archive_finance_clearance: true,
+            archive_finance_clearance: archiveStatusReason !== 'floating',
           };
         }
       } else {
@@ -1845,6 +1864,9 @@ export default function EmployeeProfile() {
                             <ProfileField label="Main Contact" icon={Phone} editing={editingHR}>
                               {editingHR ? <Input value={form.mainContact} onChange={(v) => updateForm('mainContact', v)} placeholder="e.g. 0917-123-4567" /> : employee.mainContact || <span className="text-red-500 font-black">Not Assigned</span>}
                             </ProfileField>
+                            <ProfileField label="Alternate Contact" icon={Phone} editing={editingHR}>
+                              {editingHR ? <Input value={form.phone} onChange={(v) => updateForm('phone', v)} placeholder="e.g. 0917-123-4567" /> : employee.phone || <span className="text-red-500 font-black">Not Assigned</span>}
+                            </ProfileField>
                             <ProfileField label="Personal Email" icon={Mail} editing={editingHR}>
                               {editingHR ? <Input value={form.personalEmail} onChange={(v) => updateForm('personalEmail', v)} placeholder="e.g. john@gmail.com" /> : employee.personalEmail || <span className="text-red-500 font-black">Not Assigned</span>}
                             </ProfileField>
@@ -1918,6 +1940,7 @@ export default function EmployeeProfile() {
                                   <Select value={form.employeeStatus} onChange={(v) => updateForm('employeeStatus', v)}>
                                     <option value="Regular">Regular</option>
                                     <option value="Probationary">Probationary</option>
+                                    <option value="Fixed-Term">Fixed-Term</option>
                                     <option value="Contractual">Contractual</option>
                                     <option value="Project-Based">Project-Based</option>
                                     <option value="Intern">Intern</option>
@@ -2349,48 +2372,23 @@ export default function EmployeeProfile() {
                     >
                       <ProfileSection icon={Calendar} title="Evaluation Dates" iconColorClass="text-orange-600 bg-orange-50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <ProfileField label="1st Month" icon={Calendar} editing={isEditing}>
+                          <ProfileField label="30 Days Eval" icon={Calendar} editing={isEditing}>
                             {isEditing ? <Input type="date" value={form.evalFirstMonth || ''} onChange={(v) => updateForm('evalFirstMonth', v)} /> : formatDateDisplay(employee.evalFirstMonth)}
                           </ProfileField>
-                          <ProfileField label="3rd Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? (
-                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
-                                <span>{formatDateDisplay(form.evalThirdMonth)}</span>
-                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
-                              </div>
-                            ) : (
-                              formatDateDisplay(employee.evalThirdMonth)
-                            )}
+                          <ProfileField label="60 Days Eval" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalThirdMonth || ''} onChange={(v) => updateForm('evalThirdMonth', v)} /> : formatDateDisplay(employee.evalThirdMonth)}
                           </ProfileField>
-                          <ProfileField label="5th Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? (
-                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
-                                <span>{formatDateDisplay(form.evalFifthMonth)}</span>
-                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
-                              </div>
-                            ) : (
-                              formatDateDisplay(employee.evalFifthMonth)
-                            )}
+                          <ProfileField label="120 Days Eval" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalFifthMonth || ''} onChange={(v) => updateForm('evalFifthMonth', v)} /> : formatDateDisplay(employee.evalFifthMonth)}
                           </ProfileField>
-                          <ProfileField label="6th Month" icon={Calendar} editing={isEditing}>
-                            {isEditing ? (
-                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
-                                <span>{formatDateDisplay(form.evalSixthMonth)}</span>
-                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
-                              </div>
-                            ) : (
-                              formatDateDisplay(employee.evalSixthMonth)
-                            )}
+                          <ProfileField label="150 Days Eval" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.evalSixthMonth || ''} onChange={(v) => updateForm('evalSixthMonth', v)} /> : formatDateDisplay(employee.evalSixthMonth)}
+                          </ProfileField>
+                          <ProfileField label="180 Days Eval" icon={Calendar} editing={isEditing}>
+                            {isEditing ? <Input type="date" value={form.eval180Days || ''} onChange={(v) => updateForm('eval180Days', v)} /> : formatDateDisplay(employee.eval180Days)}
                           </ProfileField>
                           <ProfileField label="Anniversary" icon={Calendar} editing={isEditing}>
-                            {isEditing ? (
-                              <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#374151] select-none cursor-not-allowed flex items-center justify-between pointer-events-none opacity-80">
-                                <span>{formatDateDisplay(form.evalAnniversary)}</span>
-                                <Calendar className="w-4 h-4 text-[#9CA3AF]" />
-                              </div>
-                            ) : (
-                              formatDateDisplay(employee.evalAnniversary)
-                            )}
+                            {isEditing ? <Input type="date" value={form.evalAnniversary || ''} onChange={(v) => updateForm('evalAnniversary', v)} /> : formatDateDisplay(employee.evalAnniversary)}
                           </ProfileField>
                         </div>
                       </ProfileSection>
@@ -2613,7 +2611,10 @@ export default function EmployeeProfile() {
                         >
                           <option value="Regular">Regular</option>
                           <option value="Probationary">Probationary</option>
-                          <option value="Fix-Term">Fix-Term</option>
+                          <option value="Fixed-Term">Fixed-Term</option>
+                          <option value="Contractual">Contractual</option>
+                          <option value="Project-Based">Project-Based</option>
+                          <option value="Intern">Intern</option>
                         </select>
                       </div>
                       <div>
@@ -2744,10 +2745,12 @@ export default function EmployeeProfile() {
                               <span className="text-sm font-bold text-gray-700">Operations Department</span>
                             </label>
                           )}
-                          <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={clearanceCheckboxes.finance} onChange={(e) => setClearanceCheckboxes(prev => ({ ...prev, finance: e.target.checked }))} />
-                            <span className="text-sm font-bold text-gray-700">Finance Department</span>
-                          </label>
+                          {archiveStatusReason !== 'floating' && (
+                            <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                              <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded" checked={clearanceCheckboxes.finance} onChange={(e) => setClearanceCheckboxes(prev => ({ ...prev, finance: e.target.checked }))} />
+                              <span className="text-sm font-bold text-gray-700">Finance Department</span>
+                            </label>
+                          )}
                         </>
                       )}
                     </div>

@@ -45,7 +45,7 @@ export async function processDailyBirthdays() {
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9fafb; padding: 40px 20px; color: #111827;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
           <!-- Header with Festive Gradient -->
-          <div style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); padding: 40px 20px; text-align: center;">
+          <div style="background-color: #FF7B5F; background-image: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); padding: 40px 20px; text-align: center;">
             <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">🎉 Happy Birthday! 🎈</h1>
             <p style="margin: 10px 0 0; color: #fff5f5; font-size: 16px; opacity: 0.9;">It's time to celebrate our amazing team members!</p>
           </div>

@@ -15,6 +15,7 @@ import { GlobalNotifications } from './components/GlobalNotifications';
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FloatingFAQButton } from './components/FloatingFAQButton';
+import { MobileBlocker } from './components/MobileBlocker';
 
 // Lazy-loaded pages
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -47,6 +48,7 @@ export default function App() {
     <ThemeProvider>
     <TextSizeProvider>
       <Router>
+        <MobileBlocker />
         <ErrorBoundary>
           <Routes>
             
