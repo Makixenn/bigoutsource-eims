@@ -16,7 +16,7 @@ Represents administrators and users who can log into the EIMS platform (HR, IT, 
 The central entity of the system. This represents an actual employee whose data is being managed. This is a massive "flat" table containing over 40 fields covering:
 - **Personal Info**: Name, Sex, Birthdate, Address, Civil Status, Emergency Contacts.
 - **Employment Info**: Department/Account, Position, Employee Status, Date Hired, Separation records.
-- **IT Assets**: PC Name, Device Type, BIOS Date, Windows License Key, RustDesk ID (Remote ID), Disk Encryption, MAC Addresses (stored as JSON).
+- **IT Assets**: PC Name, Device Type, BIOS Date, Windows License Key, REMOTE ID, Disk Encryption, MAC Addresses (stored as JSON).
 - **Accounts**: BigOutsource Email, Outlook Email, Mattermost, Teams, LMS Account.
 - **Archiving Workflow**: Tracks `isArchived`, `provisioningStatus`, and specific department clearances (`archiveHrClearance`, `archiveItClearance`, etc.).
 - **Evaluations**: Specific milestone dates (e.g., `eval_first_month`, `eval_anniversary`).

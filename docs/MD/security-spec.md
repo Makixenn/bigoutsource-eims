@@ -20,7 +20,7 @@ To maintain data integrity across the system, the following invariants are stric
 The system utilizes a 4-tier Role-Based Access Control (RBAC) model:
 
 1. **👑 Super Admin**: Full access to the entire system. Can manage all users, system settings, and records.
-2. **🧑‍💼 HR Admin**: Can manage `/employees` HR-specific fields (e.g., contact info, site, status, department). **Cannot** modify IT-specific fields (Windows key, RustDesk, etc.).
+2. **🧑‍💼 HR Admin**: Can manage `/employees` HR-specific fields (e.g., contact info, site, status, department). **Cannot** modify IT-specific fields (Windows key, REMOTE ID, etc.).
 3. **💻 IT Admin**: Can manage `/employees` IT-specific fields (hardware, software access, licenses). **Cannot** modify core HR fields (Site, Phone, etc.).
 4. **👁️ Viewer**: Strictly read-only access to records based on their department or site visibility.
 
