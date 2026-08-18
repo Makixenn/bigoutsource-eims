@@ -578,16 +578,17 @@ export default function EmployeeImportReview() {
           <Metric label="Imported" value={importedRows.length} tone="gray" />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap gap-2 shrink-0">
             <Tab active={activeView === 'issues'} onClick={() => setActiveView('issues')}>Issues</Tab>
             <Tab active={activeView === 'duplicates'} onClick={() => setActiveView('duplicates')}>Duplicates</Tab>
             <Tab active={activeView === 'ready'} onClick={() => setActiveView('ready')}>Ready</Tab>
           </div>
-          <p className="max-w-xl text-xs font-bold leading-relaxed text-[#6B7280]">
-            Keep and Merge only resolve staged rows. Nothing goes into Employee Records until you click Import Ready Records.
-          </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4 flex-1 xl:justify-end">
+            <p className="max-w-xl text-xs font-bold leading-relaxed text-[#6B7280] xl:text-right">
+              Keep and Merge only resolve staged rows. Nothing goes into Employee Records until you click Import Ready Records.
+            </p>
+            <div className="flex flex-wrap gap-2 shrink-0">
             {activeView === 'issues' && (
               <BulkDeleteButton
                 disabled={!visibleIssueRows.length}
@@ -638,10 +639,11 @@ export default function EmployeeImportReview() {
             </button>
           </div>
         </div>
+      </div>
 
         <>
           {isLoading ? (
-            <div className="overflow-visible rounded-2xl border border-[#E5E7EB] bg-white shadow-sm w-full">
+            <div className="overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white shadow-sm w-full">
               <table className="w-full min-w-[920px] text-left border-collapse">
                 <thead className="bg-[#F9FAFB] [&_th:first-child]:rounded-tl-2xl [&_th:last-child]:rounded-tr-2xl">
                   <tr className="border-b border-[#E5E7EB]">
@@ -694,7 +696,7 @@ export default function EmployeeImportReview() {
               )}
     
               {activeView === 'issues' && (
-                <div className="overflow-visible rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
+                <div className="overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
                   {visibleIssueRows.length ? (
                     <IssueTable
                       rows={visibleIssueRows}
@@ -713,7 +715,7 @@ export default function EmployeeImportReview() {
               )}
     
               {activeView === 'ready' && (
-                <div className="overflow-visible rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
+                <div className="overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white shadow-sm mt-0">
                   {readyRows.length ? (
                     <IssueTable
                       rows={readyRows}
@@ -1164,7 +1166,7 @@ function IssueTable({
   onDelete: (row: ImportRow) => void;
 }) {
   return (
-    <div className="overflow-visible">
+    <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] text-left">
         <thead className="bg-[#F9FAFB] [&_th:first-child]:rounded-tl-2xl [&_th:last-child]:rounded-tr-2xl">
           <tr>

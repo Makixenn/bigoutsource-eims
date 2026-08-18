@@ -69,7 +69,7 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="flex items-center gap-2 text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">
+      <span className="flex items-center gap-2 min-h-[24px] text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">
         {label}
         {required && (
           <span 

@@ -31,7 +31,7 @@ const HR_WRITE_FIELDS = [
 const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus', 'outlookEmail', 'teamsAccount', 'mattermostAccount', 'boEmail', 'bigoutsourceEmail', 'lmsAccount', 'provisioningStatus', 'macAddresses', 'deviceType'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId', 'diskEncryptionKey'];
 const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived', 'is_ready_for_archive', 'isReadyForArchive', 'archiveInitiator', 'archive_initiator', 'archiveItClearance', 'archive_it_clearance', 'archiveHrClearance', 'archive_hr_clearance', 'archiveOpsClearance', 'archive_ops_clearance', 'archiveFinanceClearance', 'archive_finance_clearance'];
-const EVALUATIONS_WRITE_FIELDS = ['idIssuance', 'hoodieIssuance', 'hmoEnrollment', 'hmoMemberCode', 'evalFirstMonth', 'evalThirdMonth', 'evalFifthMonth', 'evalSixthMonth', 'evalAnniversary'];
+const EVALUATIONS_WRITE_FIELDS = ['idIssuance', 'hoodieIssuance', 'hmoEnrollment', 'hmoMemberCode', 'evalFirstMonth', 'evalThirdMonth', 'evalFifthMonth', 'evalSixthMonth', 'eval180Days', 'evalAnniversary'];
 
 function blankFields(target, fields) {
   for (const field of fields) {

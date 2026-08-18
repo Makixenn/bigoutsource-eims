@@ -136,7 +136,7 @@ type AddEmployeeForm = {
   emailPassword: string;
   lmsAccount: string;
   status: "active" | "inactive" | "floating" | "separated";
-  employeeStatus: "Regular" | "Probationary" | "Fix-Term" | string;
+  employeeStatus: "Regular" | "Probationary" | "Fixed-Term" | string;
   siteId: string;
   siteName: string;
   pcName: string;
@@ -2211,7 +2211,7 @@ export default function Directory() {
               "ACCOUNTS",
               "DEVICE & SECURITY",
             ].map((category) => {
-              const categoryFields = selectableDirectoryFields.filter(
+              const categoryFields = directoryFields.filter(
                 (field) => {
                   if (field.category !== category) return false;
                   if (field.requireHR && !showHRFields) return false;
@@ -2864,7 +2864,7 @@ export default function Directory() {
                                   />
                                 </Field>
                               </div>
-                              <div className="md:w-[48%] mt-[1px]">
+                              <div className="md:w-[48%]">
                                 <Field
                                   label="Middle Name"
                                   error={formErrors.middleName}
@@ -2898,7 +2898,7 @@ export default function Directory() {
                                   />
                                 </Field>
                               </div>
-                              <div className="md:w-[26%] mt-[1px]">
+                              <div className="md:w-[26%]">
                                 <Field label="Suffix">
                                   <Select
                                     value={form.suffix || ""}
@@ -2919,7 +2919,7 @@ export default function Directory() {
                             {showHRFields && (
                               <>
                                 <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
-                                <div className="md:w-[48%] mt-[1px]">
+                                <div className="md:w-[48%]">
                                   <Field
                                     label="Position"
                                     required={reqHRFields}
@@ -2954,7 +2954,7 @@ export default function Directory() {
                                 </div>
                               </div>
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
-                                <div className="md:w-[32%]">
+                                <div className="md:w-[38%]">
                                   <Field
                                     label="Nickname"
                                     isFilled={Boolean(form.nickname)}
@@ -2969,26 +2969,7 @@ export default function Directory() {
                                     />
                                   </Field>
                                 </div>
-                                <div className="md:w-[32%] mt-[1px]">
-                                  <Field
-                                    label="Sex"
-                                    required={reqHRFields}
-                                    isFilled={Boolean(form.sex)}
-                                    error={formErrors.sex as string}
-                                  >
-                                    <Select
-                                      value={form.sex || ""}
-                                      onChange={(value) =>
-                                        updateForm("sex", value)
-                                      }
-                                    >
-                                      <option value="">Select Sex</option>
-                                      <option value="Male">Male</option>
-                                      <option value="Female">Female</option>
-                                    </Select>
-                                  </Field>
-                                </div>
-                                <div className="md:w-[32%] mt-[1px]">
+                                <div className="md:w-[40%]">
                                   <Field
                                     label="Civil Status"
                                     required={reqHRFields}
@@ -3006,6 +2987,25 @@ export default function Directory() {
                                       <option value="Married">Married</option>
                                       <option value="Widowed">Widowed</option>
                                       <option value="Divorced">Divorced</option>
+                                    </Select>
+                                  </Field>
+                                </div>
+                                <div className="md:w-[18%]">
+                                  <Field
+                                    label="Sex"
+                                    required={reqHRFields}
+                                    isFilled={Boolean(form.sex)}
+                                    error={formErrors.sex as string}
+                                  >
+                                    <Select
+                                      value={form.sex || ""}
+                                      onChange={(value) =>
+                                        updateForm("sex", value)
+                                      }
+                                    >
+                                      <option value="">-</option>
+                                      <option value="Male">Male</option>
+                                      <option value="Female">Female</option>
                                     </Select>
                                   </Field>
                                 </div>
@@ -3050,18 +3050,18 @@ export default function Directory() {
                           <SectionCard title="Contact Details" eyebrow="Manual">
                             <div className="grid grid-cols-1 gap-4">
                               <Field
-                                label="Phone Number"
+                                label="Main Contact"
                                 required={reqHRFields}
-                                isFilled={Boolean(form.phone)}
-                                error={formErrors.phone}
+                                isFilled={Boolean(form.mainContact)}
+                                error={formErrors.mainContact as string}
                               >
                                 <Input
-                                  value={form.phone}
+                                  value={form.mainContact}
                                   onChange={(value) =>
-                                    updateForm("phone", value)
+                                    updateForm("mainContact", value)
                                   }
                                   placeholder="e.g. 09123456789"
-                                  error={Boolean(formErrors.phone)}
+                                  error={Boolean(formErrors.mainContact)}
                                 />
                               </Field>
                               <Field
@@ -3094,8 +3094,8 @@ export default function Directory() {
                               </Field>
                               <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                                 <div className="md:w-[48%]">
-                                  <Field label="Main Contact" required={reqHRFields} isFilled={Boolean(form.mainContact)} error={formErrors.mainContact as string}>
-                                    <Input value={form.mainContact} onChange={(value) => updateForm("mainContact", value)} placeholder="e.g. 09123456789" />
+                                  <Field label="Alternate Contact" required={reqHRFields} isFilled={Boolean(form.phone)} error={formErrors.phone as string}>
+                                    <Input value={form.phone} onChange={(value) => updateForm("phone", value)} placeholder="e.g. 09123456789" />
                                   </Field>
                                 </div>
                                 <div className="md:w-[48%]">
@@ -3457,10 +3457,11 @@ export default function Directory() {
                                   }}
                                 >
                                   <option value="Regular">Regular</option>
-                                  <option value="Probationary">
-                                    Probationary
-                                  </option>
-                                  <option value="Fix-Term">Fix-Term</option>
+                                  <option value="Probationary">Probationary</option>
+                                  <option value="Fixed-Term">Fixed-Term</option>
+                                  <option value="Contractual">Contractual</option>
+                                  <option value="Project-Based">Project-Based</option>
+                                  <option value="Intern">Intern</option>
                                 </Select>
                               </Field>
                             )}
@@ -3707,7 +3708,22 @@ export default function Directory() {
                                   />
                                 </Field>
                                 <Field
-                                  label="Phone Number"
+                                  label="Main Contact"
+                                  required={reqHRFields}
+                                  isFilled={Boolean(form.mainContact)}
+                                  error={formErrors.mainContact as string}
+                                >
+                                  <Input
+                                    value={form.mainContact}
+                                    onChange={(value) =>
+                                      updateForm("mainContact", value)
+                                    }
+                                    placeholder="e.g. 09123456789"
+                                    error={Boolean(formErrors.mainContact)}
+                                  />
+                                </Field>
+                                <Field
+                                  label="Alternate Contact"
                                   error={formErrors.phone}
                                 >
                                   <Input
@@ -3955,10 +3971,11 @@ export default function Directory() {
                                 }}
                               >
                                 <option value="Regular">Regular</option>
-                                <option value="Probationary">
-                                  Probationary
-                                </option>
-                                <option value="Fix-Term">Fix-Term</option>
+                                <option value="Probationary">Probationary</option>
+                                <option value="Fixed-Term">Fixed-Term</option>
+                                <option value="Contractual">Contractual</option>
+                                <option value="Project-Based">Project-Based</option>
+                                <option value="Intern">Intern</option>
                               </Select>
                             </Field>
                             {showHRFields && (

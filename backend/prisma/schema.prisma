@@ -97,6 +97,7 @@ model Employee {
   evalThirdMonth    String   @default("") @map("eval_third_month")
   evalFifthMonth    String   @default("") @map("eval_fifth_month")
   evalSixthMonth    String   @default("") @map("eval_sixth_month")
+  eval180Days       String   @default("") @map("eval_180_days")
   evalAnniversary   String   @default("") @map("eval_anniversary")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
