@@ -11,6 +11,7 @@ import { siteService } from '@/src/services/siteService';
 import { auditLogService } from '@/src/features/reports/services/auditLogService';
 import { accountService } from '@/src/services/accountService';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { Capability } from '@/src/lib/permissions';
 
 // ─── Shared utilities ─────────────────────────────────────────────────────────
 
